@@ -46,43 +46,74 @@ in the pricing sheet. To feature a different one, copy its `size`, `price`,
 ## Where the prices came from
 
 Source: **`SKYHEGLOBAL ACTIVE SKU'S - OCTOBER 8-11.xlsx`**
-→ sheet **`LIST OF OFFERS`** → rows **4–34** (the E4:E34 SKU range)
+→ sheet **`LIST OF OFFERS`** → rows **4–34** — the complete E4:E34 range, all 31 SKUs
 → column **H, `MARKDOWN PRICE`** (column G `ORIG PRICE` is shown struck through).
 
 Every product in `data/products.ts` records its `sheetRow` and `gbfSku` so any
 figure can be traced back to a specific cell.
 
-| Product | Size | Markdown | Orig | Sheet row | GBF SKU |
-|---|---|---|---|---|---|
-| Pure H2O | 750ml | ₱960 | ₱995 | 12 | 10347447 |
-| 2-in-1 Body & Hair Cleanser | 350ml | ₱590 | ₱625 | 5 | 10340773 |
-| Gentle Shampoo | 350ml | ₱585 | ₱615 | 8 | 10339121 |
-| Diaper Change Cream | 100ml | ₱570 | ₱600 | 9 | 10351560 |
-| Moisturizing Body Milk | 350ml | ₱845 | ₱890 | 21 | 10339125 |
-| Nourishing & Moisturizing Cream | 100ml | ₱560 | ₱590 | 10 | 10339120 |
-| Sweet Almond Oil Spray | 75ml | ₱495 | ₱520 | 18 | 10347430 |
-| Skin Freshening Fragrance | 200ml | ₱470 | ₱495 | 17 | 10339117 |
-| CicaBébé Organic 3-in-1 | 40ml | ₱645 | ₱680 | 19 | 10340775 |
+| Row | GBF SKU | Product | Size | Markdown | Orig | Group |
+|---|---|---|---|---|---|---|
+| 4 | 10339118 | 2-in-1 Body & Hair Cleanser | 200ml | ₱525 | ₱535 | First essentials |
+| 5 | 10340773 | 2-in-1 Body & Hair Cleanser | 350ml | ₱590 | ₱625 | First essentials |
+| 6 | 10339128 | 2-in-1 Body & Hair Cleanser | 750ml | ₱995 | ₱1,050 | First essentials |
+| 7 | 10339114 | Gentle Shampoo | 200ml | ₱450 | ₱470 | First essentials |
+| 8 | 10339121 | Gentle Shampoo | 350ml | ₱585 | ₱615 | First essentials |
+| 9 | 10351560 | Diaper Change Cream | 100ml | ₱570 | ₱600 | First essentials |
+| 10 | 10339120 | Nourishing & Moisturizing Cream | 100ml | ₱560 | ₱590 | Routine |
+| 11 | 10340773 | Pure H2O | 350ml | ₱590 | ₱625 | First essentials |
+| 12 | 10347447 | Pure H2O | 750ml | ₱960 | ₱995 | First essentials |
+| 13 | 10347429 | Pure H2O Refill | 400ml | ₱610 | ₱645 | First essentials |
+| 14 | 10351561 | Liquid Powder | 100ml | ₱835 | ₱880 | Routine |
+| 15 | 10339131 | Stretch Marks Cream | 200ml | ₱1,130 | ₱1,190 | For Mommy |
+| 16 | 10339123 | Nursing Balm | 40ml | ₱685 | ₱720 | For Mommy |
+| 17 | 10339117 | Skin Freshening Fragrance | 200ml | ₱470 | ₱495 | Routine |
+| 18 | 10347430 | Sweet Almond Oil Spray | 75ml | ₱495 | ₱520 | Routine |
+| 19 | 10340775 | CicaBébé Organic 3-in-1 | 40ml | ₱645 | ₱680 | Just in case |
+| 20 | 10339117 | Organic Arnica Gel | 20ml | ₱470 | ₱495 | Just in case |
+| 21 | 10339125 | Moisturizing Body Milk | 350ml | ₱845 | ₱890 | Routine |
+| 22 | 10340773 | Kids Detangling Shampoo | — | ₱590 | ₱620 | Routine |
+| 23 | 10339117 | Styling Gel | 100ml | ₱470 | ₱495 | Routine |
+| 24 | 10339130 | Gentle Cleansing Milk | 750ml | ₱1,090 | ₱1,150 | First essentials |
+| 25 | 10339128 | Atopiane Soothing Cleansing Cream | 350ml | ₱995 | ₱1,050 | Just in case |
+| 26 | 10339128 | Atopiane Protective Cleansing Oil | 350ml | ₱995 | ₱1,050 | Just in case |
+| 27 | 10339131 | Atopiane Lipid-Replenishing Body Balm | 350ml | ₱1,130 | ₱1,190 | Just in case |
+| 28 | 10351562 | Atopiane Emollient Face Cream | 50ml | ₱595 | ₱630 | Just in case |
+| 29 | 10339121 | Cradle Cap Shampoo | 150ml | ₱585 | ₱620 | First essentials |
+| 30 | 10347443 | Expert Baby Mosquito Stick | — | ₱880 | ₱895 | Out and about |
+| 31 | 10339125 | Baby Sunstick SPF 50+ | — | ₱845 | ₱865 | Out and about |
+| 32 | 10351563 | Extra Rich Soap | 150g | ₱330 | ₱345 | First essentials |
+| 33 | 10355717 | Sun Spray | — | ₱1,630 | ₱1,850 | Out and about |
+| 34 | 10340779 | Sun Cream | — | ₱795 | ₱895 | Out and about |
 
-Excluded on request: Pure H2O 350ml (row 11), Gentle Shampoo 200ml (row 7).
+"—" means the sheet gives no size. GBF SKU numbers repeat across rows in the
+sheet (e.g. 10340773 appears three times) — they are copied as-is.
+
+**Placeholder artwork** (`imageIsPlaceholder: true` in `data/products.ts`):
+Kids Detangling Shampoo and the Pure H2O 400ml refill are not listed on
+biolane.ph, so they use a drawn stand-in SVG. The 200ml / 750ml cleanser, the
+200ml shampoo and the 750ml cleansing milk reuse the 350ml packshot, and the
+100ml nourishing cream shows the 200ml art — all as biolane.ph itself does.
 
 ---
 
 ## The maths behind the reward
 
-Verified by brute-forcing all 512 baskets (`npm run verify`):
+Verified against the real 31-SKU price list (`npm run verify` — exact
+subset-sum for reachable totals, 20k sampled baskets for closability):
 
 - **₱2,299 is never exactly reachable.** Every price is a multiple of 5, so the
   real boundary is **₱2,295 (locked) → ₱2,300 (unlocked)**.
-- **Cheapest qualifying basket is ₱2,300** — Pure H2O + Body Milk + Almond Oil Spray.
-- **Minimum 3 products**, but only **6 of 84** three-item baskets qualify, and
-  all six contain *both* Pure H2O (₱960) and Body Milk (₱845).
-- **Any 5 products always qualify** (cheapest five = ₱2,680).
+- **Cheapest qualifying basket is ₱2,300.**
+- **Minimum 2 products**, but only **13 of 465** pairs qualify — each needs the
+  ₱1,630 Sun Spray or two of the ₱1,000+ items. Realistic path is 3–4.
+- **Any 6 products always qualify.**
 - Every locked basket can be closed by adding at most 3 products, so the
   suggestion engine can never hit a dead end.
+- All 31 products together come to ₱22,940.
 
-**For the BA script:** the realistic path is 4–5 products. Telling a mom
-"just two more" is usually wrong.
+**For the BA script:** most baskets unlock at 3–4 products. "Just one more"
+is usually true once she is past ₱1,600.
 
 ---
 

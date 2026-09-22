@@ -38,9 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-PH" className={`${nunito.variable} ${inter.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      </head>
+      {/* next/font self-hosts both families, so no third-party font origin is ever contacted. */}
       <body>{children}</body>
     </html>
   )

@@ -301,13 +301,28 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
           {submitting ? 'Sending…' : 'Join the Biolane Mom Community'}
         </button>
 
+        {/* Policy links open in a new tab so she never loses a half-filled form. */}
         <p className="text-center text-[11px] leading-relaxed text-ink-soft/70">
           By joining you agree to our{' '}
-          <a href={campaign.termsUrl} className="underline">
-            Terms &amp; Conditions
-          </a>{' '}
-          and{' '}
-          <a href={campaign.privacyPolicyUrl} className="underline">
+          {campaign.termsUrl && (
+            <>
+              <a
+                href={campaign.termsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                Terms &amp; Conditions
+              </a>{' '}
+              and{' '}
+            </>
+          )}
+          <a
+            href={campaign.privacyPolicyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
             Privacy Policy
           </a>
           .

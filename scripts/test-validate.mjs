@@ -1,7 +1,8 @@
 /**
  * Validation helper tests.
  *     node scripts/test-validate.mjs
- * (Node 22.6+ strips the TypeScript annotations natively.)
+ * (Node 22.18+ / 23.6+ strip the TypeScript annotations natively; see
+ *  the "engines" field in package.json.)
  */
 import { normalisePhMobile, isPlausibleEmail, addDays, tidy } from '../lib/validate.ts'
 

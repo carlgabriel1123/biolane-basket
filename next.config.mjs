@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 
-// Served from https://carlgabriel1123.github.io/biolane-basket/
-// Change this if the repo is renamed.
-const repoName = 'biolane-basket'
+// Served from https://carlgabriel1123.github.io/<repo>/
+// In CI the repo name comes from GitHub itself, so renaming the repo needs
+// no code change. The fallback is only for local GITHUB_PAGES=true builds.
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'biolane-basket'
 const isGitHubPages = process.env.GITHUB_PAGES === 'true'
 
 const nextConfig = {

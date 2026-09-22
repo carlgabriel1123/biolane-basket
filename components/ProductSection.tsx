@@ -50,8 +50,18 @@ export default function ProductSection({
         )}
       </div>
 
-      {/* One column on phones, two from iPad width up. */}
-      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 md:gap-3">
+      {/*
+        One column on phones. Two-up from iPad portrait (md). Back to one at
+        lg, where the 340px status rail leaves only ~284px per card, and
+        two-up again at xl where there is room. A lone card never splits.
+      */}
+      <div
+        className={
+          items.length > 1
+            ? 'grid grid-cols-1 gap-2.5 md:grid-cols-2 md:gap-3 lg:grid-cols-1 xl:grid-cols-2'
+            : 'grid grid-cols-1 gap-2.5'
+        }
+      >
         {items.map((product, i) => (
           <ProductCard
             key={product.id}

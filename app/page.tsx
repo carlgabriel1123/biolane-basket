@@ -239,7 +239,7 @@ export default function Page() {
             <button
               type="button"
               onClick={handleStartOver}
-              className="min-h-[36px] shrink-0 rounded-full border border-ink/15 px-3 text-[12px] font-semibold text-ink"
+              className="min-h-[44px] shrink-0 rounded-full border border-ink/15 px-3 text-[12px] font-semibold text-ink"
             >
               Start over
             </button>
@@ -251,7 +251,7 @@ export default function Page() {
             Biolane Nesting Checklist
           </h2>
           <p className="mt-1 text-[13.5px] leading-relaxed text-ink-soft md:text-[15px]">
-            Tick what you&rsquo;re taking home. Most moms unlock the bag with 4&ndash;5
+            Tick what you&rsquo;re taking home. Most moms unlock the bag with 3&ndash;4
             essentials.
           </p>
           <p className="mt-2 rounded-lg bg-sky-soft px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft/85 md:inline-block md:text-xs">
@@ -284,38 +284,45 @@ export default function Page() {
             ))}
           </fieldset>
 
+          {/*
+            Phones/iPad portrait: appears below the products once she starts,
+            capped to the same width as the form beneath it.
+            Desktop: always visible in the right rail (progress reads ₱0 before
+            she starts, so the column is never blank), sticky, and it scrolls
+            internally rather than sliding under the fixed basket bar.
+          */}
           <aside
             aria-label="Your basket status"
-            className={started ? 'mt-7 flex flex-col gap-4 lg:sticky lg:top-6 lg:mt-5' : 'hidden lg:block'}
+            className={
+              started
+                ? 'mt-7 flex w-full flex-col gap-4 md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:mt-5 lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto'
+                : 'hidden lg:sticky lg:top-6 lg:mt-5 lg:flex lg:flex-col lg:gap-4'
+            }
           >
-            {started && (
-              <>
-                <RewardProgress
-                  total={basket.total}
-                  remaining={basket.remaining}
-                  unlocked={basket.unlocked}
-                />
+            <RewardProgress
+              total={basket.total}
+              remaining={basket.remaining}
+              unlocked={basket.unlocked}
+            />
 
-                {!basket.unlocked && basket.count > 0 && (
-                  <Suggestions
-                    items={suggestions}
-                    remaining={basket.remaining}
-                    onAdd={toggle}
-                  />
-                )}
+            {started && !basket.unlocked && basket.count > 0 && (
+              <Suggestions
+                items={suggestions}
+                remaining={basket.remaining}
+                onAdd={toggle}
+              />
+            )}
 
-                {basket.unlocked && (
-                  <RewardUnlocked
-                    personalizationName={personalizationName}
-                    onChangeName={setPersonalizationName}
-                  />
-                )}
+            {started && basket.unlocked && (
+              <RewardUnlocked
+                personalizationName={personalizationName}
+                onChangeName={setPersonalizationName}
+              />
+            )}
 
-                {/* Values are retained verbatim if the basket drops back below. */}
-                {basket.unlocked && personalizationName === '' && (
-                  <p className="sr-only">Enter a name to personalize your bag.</p>
-                )}
-              </>
+            {/* Values are retained verbatim if the basket drops back below. */}
+            {started && basket.unlocked && personalizationName === '' && (
+              <p className="sr-only">Enter a name to personalize your bag.</p>
             )}
           </aside>
         </div>

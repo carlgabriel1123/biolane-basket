@@ -31,9 +31,13 @@ export const campaign = {
   /** Promo dates — shown in the footer. Free text, edit as needed. */
   promoDates: 'Grand Baby Fair · October 8–11',
 
-  /** Links — replace with the real URLs when available. */
-  privacyPolicyUrl: '#privacy',
-  termsUrl: '#terms',
+  /**
+   * Policy links. Privacy points at Biolane PH's live policy page.
+   * biolane.ph has no Terms page yet — leave termsUrl empty and the form
+   * simply omits the Terms link until there is a real URL to give it.
+   */
+  privacyPolicyUrl: 'https://biolane.ph/policies/privacy-policy',
+  termsUrl: '',
 
   /** Community section */
   communityHeading: 'Welcome to the Biolane Mom Community',

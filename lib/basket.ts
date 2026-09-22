@@ -4,14 +4,15 @@ import { products, productById, type Product } from '@/data/products'
 /**
  * Basket maths.
  *
- * VERIFIED FACTS about the current price list (all 512 baskets brute-forced):
+ * VERIFIED FACTS about the current 31-SKU price list (scripts/verify-basket.mjs):
  *   • Every price is a multiple of 5, so ₱2,299 is NEVER exactly reachable.
  *     The real boundary is ₱2,295 (locked) → ₱2,300 (unlocked).
- *   • Cheapest qualifying basket = ₱2,300 (Pure H2O + Body Milk + Almond Oil).
- *   • Minimum 3 items; only 6 of 84 three-item baskets qualify, and all six
- *     contain BOTH Pure H2O (₱960) and Body Milk (₱845).
- *   • Any 5 items always qualify (cheapest five = ₱2,680).
- *   • Every sub-threshold basket can be closed by adding at most 3 products.
+ *   • Cheapest qualifying basket = ₱2,300.
+ *   • Minimum 2 items (only 13 of 465 pairs qualify — each needs the ₱1,630
+ *     Sun Spray or two of the ₱1,000+ items); realistic path is 3–4.
+ *   • Any 6 items always qualify.
+ *   • Every locked basket can be closed by adding at most 3 products
+ *     (checked on 20k sampled baskets plus the adversarial shapes).
  * If prices change, re-run scripts/verify-basket.mjs.
  */
 

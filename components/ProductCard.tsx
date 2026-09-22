@@ -111,9 +111,11 @@ export default function ProductCard({
           <span className="block font-display text-[15px] font-bold leading-snug text-ink sm:text-base">
             {product.name}
           </span>
-          <span className="mt-0.5 block text-xs font-medium uppercase tracking-wide text-ink-soft/70">
-            {product.size}
-          </span>
+          {product.size && (
+            <span className="mt-0.5 block text-xs font-medium uppercase tracking-wide text-ink-soft/70">
+              {product.size}
+            </span>
+          )}
           <span className="mt-1 flex items-baseline gap-1.5">
             <span className="font-display text-lg font-extrabold text-blue">
               {peso(product.price)}

@@ -38,8 +38,11 @@ const STORAGE_KEY = 'biolane-nesting-submissions'
  * │   • n8n / Make / Zapier — a webhook trigger                      │
  * │   • Airtable / Supabase — via one of the above, or an edge fn    │
  * │                                                                  │
- * │ Set it in .env.local (and as a repo secret for the deploy):      │
- * │   NEXT_PUBLIC_SUBMIT_WEBHOOK_URL=https://…                       │
+ * │ For the live site: add a repository secret named                 │
+ * │   NEXT_PUBLIC_SUBMIT_WEBHOOK_URL                                 │
+ * │ (Settings → Secrets and variables → Actions). deploy.yml already │
+ * │ passes it to the build. For local runs put the same line in      │
+ * │ .env.local.                                                      │
  * │                                                                  │
  * │ Until then every lead is kept in localStorage on the phone, and  │
  * │ the confirmation screen shows "Will sync" instead of "Saved".    │

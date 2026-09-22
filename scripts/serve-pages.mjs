@@ -12,8 +12,16 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'out')
-const BASE = '/biolane-basket'
 const PORT = Number(process.env.PORT || 3100)
+
+// Read the basePath the build actually used from its own HTML, so this
+// mirror can never disagree with next.config.mjs (e.g. after a repo rename).
+const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')
+const BASE = indexHtml.match(/href="([^"]*?)\/_next\/static\//)?.[1] ?? ''
+if (BASE === '') {
+  console.error('out/index.html has no basePath — build it with GITHUB_PAGES=true first.')
+  process.exit(1)
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
