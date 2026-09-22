@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- PLACEHOLDER: no official packshot on biolane.ph. Replace with the real Kids Detangling Shampoo image. -->
+  <rect width="400" height="400" rx="32" fill="#eef5fb"/>
+  <rect x="150" y="60" width="100" height="270" rx="26" fill="#d6e6f2" stroke="#1f79b3" stroke-width="3"/>
+  <rect x="170" y="30" width="60" height="44" rx="10" fill="#1f79b3"/>
+  <text x="200" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#003b61">Kids Detangling</text>
+  <text x="200" y="386" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#3c4770">Shampoo</text>
+</svg>

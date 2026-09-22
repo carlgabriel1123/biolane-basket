@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- PLACEHOLDER: no official refill packshot on biolane.ph. Replace with the real Pure H2O 400ml refill image. -->
+  <rect width="400" height="400" rx="32" fill="#fff4f1"/>
+  <path d="M130 90 h140 l20 40 v190 a20 20 0 0 1 -20 20 h-140 a20 20 0 0 1 -20 -20 v-190 z" fill="#ffe4db" stroke="#1f79b3" stroke-width="3"/>
+  <rect x="180" y="52" width="40" height="40" rx="8" fill="#1f79b3"/>
+  <text x="200" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#003b61">Pure H2O Refill</text>
+  <text x="200" y="386" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#3c4770">400ml</text>
+</svg>
