@@ -40,7 +40,7 @@ export default function ProductSection({
       <div className="mb-3">
         <h2
           id={headingId}
-          className="font-display text-[17px] font-extrabold leading-snug text-ink"
+          className="font-display text-[17px] font-extrabold leading-snug text-ink md:text-xl"
         >
           {title}
           {isJustInCase && <span aria-hidden="true"> 💛</span>}
@@ -50,7 +50,8 @@ export default function ProductSection({
         )}
       </div>
 
-      <div className="flex flex-col gap-2.5">
+      {/* One column on phones, two from iPad width up. */}
+      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 md:gap-3">
         {items.map((product, i) => (
           <ProductCard
             key={product.id}

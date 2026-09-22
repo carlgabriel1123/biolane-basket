@@ -28,6 +28,25 @@ export type SubmitResult =
 
 const STORAGE_KEY = 'biolane-nesting-submissions'
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────┐
+ * │ TO CONNECT A REAL BACKEND                                        │
+ * │                                                                  │
+ * │ This site is a static export on GitHub Pages, so there is no     │
+ * │ server of its own. Point it at a webhook that accepts JSON:      │
+ * │   • Google Sheets  — an Apps Script "web app" URL                │
+ * │   • n8n / Make / Zapier — a webhook trigger                      │
+ * │   • Airtable / Supabase — via one of the above, or an edge fn    │
+ * │                                                                  │
+ * │ Set it in .env.local (and as a repo secret for the deploy):      │
+ * │   NEXT_PUBLIC_SUBMIT_WEBHOOK_URL=https://…                       │
+ * │                                                                  │
+ * │ Until then every lead is kept in localStorage on the phone, and  │
+ * │ the confirmation screen shows "Will sync" instead of "Saved".    │
+ * └──────────────────────────────────────────────────────────────────┘
+ */
+const WEBHOOK_URL = process.env.NEXT_PUBLIC_SUBMIT_WEBHOOK_URL ?? ''
+
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return 'BIO-' + crypto.randomUUID().slice(0, 8).toUpperCase()
@@ -47,25 +66,6 @@ function stashLocally(submission: Submission): void {
   }
 }
 
-/**
- * Submit a completed checklist.
- *
- * ┌──────────────────────────────────────────────────────────────────┐
- * │ TO CONNECT A REAL BACKEND                                        │
- * │                                                                  │
- * │ The POST below already targets /api/submit. Open                 │
- * │   app/api/submit/route.ts                                        │
- * │ and forward the payload to whichever service you choose:         │
- * │   • Google Sheets  — Apps Script web-app URL, or Sheets API      │
- * │   • Airtable       — POST https://api.airtable.com/v0/{base}/... │
- * │   • Supabase       — supabase.from('submissions').insert(...)    │
- * │   • CRM / ESP      — Klaviyo, HubSpot, Mailchimp                 │
- * │                                                                  │
- * │ Put credentials in .env.local (server-side only, never NEXT_     │
- * │ PUBLIC_*). Until then the route accepts and logs the payload,    │
- * │ and every lead is ALSO kept in localStorage as a safety net.     │
- * └──────────────────────────────────────────────────────────────────┘
- */
 export async function submitChecklist(
   data: Omit<Submission, 'submissionId' | 'timestamp'>
 ): Promise<SubmitResult> {
@@ -77,23 +77,30 @@ export async function submitChecklist(
 
   stashLocally(submission)
 
+  if (!WEBHOOK_URL) {
+    // No backend configured yet — the local copy is the record.
+    return { ok: true, submissionId: submission.submissionId, storedRemotely: false }
+  }
+
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 8000)
 
-    const res = await fetch('/api/submit', {
+    const res = await fetch(WEBHOOK_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // text/plain avoids a CORS preflight, which Apps Script web apps
+      // cannot answer. The body is still JSON.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(submission),
       signal: controller.signal,
     })
     clearTimeout(timeout)
 
-    if (!res.ok) {
-      // Lead is already stashed locally, so the mom is not blocked.
-      return { ok: true, submissionId: submission.submissionId, storedRemotely: false }
+    return {
+      ok: true,
+      submissionId: submission.submissionId,
+      storedRemotely: res.ok,
     }
-    return { ok: true, submissionId: submission.submissionId, storedRemotely: true }
   } catch {
     // Offline / flaky booth wifi. The local copy means nothing is lost.
     return { ok: true, submissionId: submission.submissionId, storedRemotely: false }

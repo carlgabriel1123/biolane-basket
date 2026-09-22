@@ -86,15 +86,35 @@ Verified by brute-forcing all 512 baskets (`npm run verify`):
 
 ---
 
+## Deployment
+
+Live at **https://carlgabriel1123.github.io/biolane-basket/**
+
+Every push to `main` runs `.github/workflows/deploy.yml`: it runs the tests,
+builds a static export, and publishes it to GitHub Pages. Nothing to do by hand.
+Watch it at https://github.com/carlgabriel1123/biolane-basket/actions.
+
+The site is served from the `/biolane-basket/` sub-path; `next.config.mjs`
+sets that from the repo name. Rename the repo → update `repoName` there.
+
 ## Connecting a real backend
 
-Submissions currently POST to `/api/submit`, which validates and logs them.
-Every lead is *also* written to `localStorage` as a safety net, so a dropped
-connection at the booth never loses a signup.
+This is a static site with no server of its own, so submissions go to a
+webhook you provide. Set it as a repository secret named
+`NEXT_PUBLIC_SUBMIT_WEBHOOK_URL` (Settings → Secrets → Actions) and add it to
+the build step in `deploy.yml`, or put it in `.env.local` for local runs:
 
-To go live, open **`app/api/submit/route.ts`** and fill in the marked block —
-Google Sheets (Apps Script webhook), Airtable, Supabase, or your CRM. Put
-credentials in `.env.local`, server-side only, never `NEXT_PUBLIC_*`.
+```
+NEXT_PUBLIC_SUBMIT_WEBHOOK_URL=https://script.google.com/macros/s/…/exec
+```
+
+Anything that accepts a JSON POST works: a Google Apps Script web app writing
+to a Sheet, an n8n / Make / Zapier webhook, or a small edge function in front
+of Airtable or Supabase. See the comment block in `lib/submission.ts`.
+
+Until a webhook is set, every lead is kept in the phone's `localStorage` and
+the confirmation screen shows "Will sync" instead of "Saved". A dropped
+connection at the booth never loses a signup either way.
 
 The stored record contains: submission ID, timestamp, name, email, mobile
 (normalised to `+639XXXXXXXXX`), baby stage, due date (only when Expecting),

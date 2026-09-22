@@ -228,7 +228,7 @@ export default function Page() {
 
       {/* Bottom padding clears the sticky basket bar + the iOS home indicator. */}
       <main
-        className="mx-auto max-w-md px-4"
+        className="mx-auto max-w-md px-4 md:max-w-3xl lg:max-w-6xl lg:px-8"
         style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}
       >
         {restored && (
@@ -246,72 +246,83 @@ export default function Page() {
           </div>
         )}
 
-        <div ref={checklistRef} className="scroll-mt-4 pt-6">
-          <h2 className="font-display text-[22px] font-extrabold leading-tight text-ink">
+        <div ref={checklistRef} className="scroll-mt-4 pt-6 md:pt-10 md:text-center lg:text-left">
+          <h2 className="font-display text-[22px] font-extrabold leading-tight text-ink md:text-3xl">
             Biolane Nesting Checklist
           </h2>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-ink-soft">
+          <p className="mt-1 text-[13.5px] leading-relaxed text-ink-soft md:text-[15px]">
             Tick what you&rsquo;re taking home. Most moms unlock the bag with 4&ndash;5
             essentials.
           </p>
-          <p className="mt-2 rounded-lg bg-sky-soft px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft/85">
+          <p className="mt-2 rounded-lg bg-sky-soft px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft/85 md:inline-block md:text-xs">
             This is a checklist, not a checkout &mdash; nothing is purchased or charged here.
           </p>
         </div>
 
-        <fieldset className="mt-5 flex flex-col gap-7 border-0 p-0">
-          <legend className="sr-only">
-            Choose the Biolane essentials you are taking home
-          </legend>
+        {/*
+          Phones: products, then progress/reward stacked below.
+          Desktop (lg+): products on the left, a sticky status rail on the right.
+        */}
+        <div className="lg:mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-10">
+          <fieldset className="mt-5 flex flex-col gap-7 border-0 p-0 md:gap-9">
+            <legend className="sr-only">
+              Choose the Biolane essentials you are taking home
+            </legend>
 
-          {grouped.map((g, i) => (
-            <ProductSection
-              key={g.id}
-              groupId={g.id}
-              title={g.title}
-              caption={g.caption}
-              items={g.items}
-              selectedIds={selectedIds}
-              suggestedIds={suggestedIds}
-              onToggle={toggle}
-              priorityFirst={i === 0}
-            />
-          ))}
-        </fieldset>
-
-        {started && (
-          <div className="mt-7 flex flex-col gap-4">
-            <RewardProgress
-              total={basket.total}
-              remaining={basket.remaining}
-              unlocked={basket.unlocked}
-            />
-
-            {!basket.unlocked && basket.count > 0 && (
-              <Suggestions
-                items={suggestions}
-                remaining={basket.remaining}
-                onAdd={toggle}
+            {grouped.map((g, i) => (
+              <ProductSection
+                key={g.id}
+                groupId={g.id}
+                title={g.title}
+                caption={g.caption}
+                items={g.items}
+                selectedIds={selectedIds}
+                suggestedIds={suggestedIds}
+                onToggle={toggle}
+                priorityFirst={i === 0}
               />
-            )}
+            ))}
+          </fieldset>
 
-            {basket.unlocked && (
-              <RewardUnlocked
-                personalizationName={personalizationName}
-                onChangeName={setPersonalizationName}
-              />
-            )}
+          <aside
+            aria-label="Your basket status"
+            className={started ? 'mt-7 flex flex-col gap-4 lg:sticky lg:top-6 lg:mt-5' : 'hidden lg:block'}
+          >
+            {started && (
+              <>
+                <RewardProgress
+                  total={basket.total}
+                  remaining={basket.remaining}
+                  unlocked={basket.unlocked}
+                />
 
-            {/* Values are retained verbatim if the basket drops back below. */}
-            {basket.unlocked && personalizationName === '' && (
-              <p className="sr-only">Enter a name to personalize your bag.</p>
-            )}
-          </div>
-        )}
+                {!basket.unlocked && basket.count > 0 && (
+                  <Suggestions
+                    items={suggestions}
+                    remaining={basket.remaining}
+                    onAdd={toggle}
+                  />
+                )}
 
-        <div ref={formRef} className="scroll-mt-4">
+                {basket.unlocked && (
+                  <RewardUnlocked
+                    personalizationName={personalizationName}
+                    onChangeName={setPersonalizationName}
+                  />
+                )}
+
+                {/* Values are retained verbatim if the basket drops back below. */}
+                {basket.unlocked && personalizationName === '' && (
+                  <p className="sr-only">Enter a name to personalize your bag.</p>
+                )}
+              </>
+            )}
+          </aside>
+        </div>
+
+        <div ref={formRef} className="scroll-mt-4 md:mx-auto md:max-w-lg">
           {showForm && (
-            <div className="mt-7">
+            <div className="mt-7 md:mt-10">
               <CommunityForm
                 values={form}
                 onChange={setForm}
@@ -322,20 +333,22 @@ export default function Page() {
           )}
         </div>
 
-        {started && (
-          <button
-            type="button"
-            onClick={handleStartOver}
-            className="mt-8 min-h-[44px] w-full rounded-full border border-ink/10 px-4 text-[12.5px] font-semibold text-ink-soft/80 transition-colors hover:border-blue hover:text-blue"
-          >
-            Start over for the next mom
-          </button>
-        )}
+        <div className="md:mx-auto md:max-w-lg">
+          {started && (
+            <button
+              type="button"
+              onClick={handleStartOver}
+              className="mt-8 min-h-[44px] w-full rounded-full border border-ink/10 px-4 text-[12.5px] font-semibold text-ink-soft/80 transition-colors hover:border-blue hover:text-blue"
+            >
+              Start over for the next mom
+            </button>
+          )}
 
-        <footer className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft/60">
-          <p>{campaign.promoDates}</p>
-          <p className="mt-1">{campaign.rewardDisclaimer}</p>
-        </footer>
+          <footer className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft/60 md:text-xs">
+            <p>{campaign.promoDates}</p>
+            <p className="mt-1">{campaign.rewardDisclaimer}</p>
+          </footer>
+        </div>
       </main>
 
       <BasketBar

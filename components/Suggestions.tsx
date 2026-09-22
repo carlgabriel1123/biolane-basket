@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import type { Product } from '@/data/products'
+import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
 
 interface Props {
@@ -51,7 +52,7 @@ export default function Suggestions({ items, remaining, onAdd }: Props) {
             >
               <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-sky-soft">
                 <Image
-                  src={p.image}
+                  src={asset(p.image)}
                   alt=""
                   fill
                   sizes="40px"

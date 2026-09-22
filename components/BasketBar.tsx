@@ -47,7 +47,7 @@ export default function BasketBar({
           />
         </div>
 
-        <div className="mx-auto flex max-w-md items-center gap-3 px-4 py-2.5">
+        <div className="mx-auto flex max-w-md items-center gap-3 px-4 py-2.5 md:max-w-3xl lg:max-w-6xl lg:px-8">
           <div className="min-w-0 flex-1">
             {unlocked ? (
               <p className="font-display text-[13px] font-extrabold uppercase tracking-wide text-gold">

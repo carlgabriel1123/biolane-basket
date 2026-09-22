@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useId, useState } from 'react'
 import type { Product } from '@/data/products'
+import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
 
 interface Props {
@@ -95,7 +96,7 @@ export default function ProductCard({
         {/* Packshot */}
         <span className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl bg-sky-soft sm:h-20 sm:w-20">
           <Image
-            src={product.image}
+            src={asset(product.image)}
             alt={`${product.name} ${product.size}`}
             fill
             sizes="80px"

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { campaign } from '@/data/campaign'
+import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
 import type { Submission } from '@/lib/submission'
 
@@ -28,10 +29,10 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
   })
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-4 pb-16 pt-8">
+    <main className="mx-auto min-h-dvh max-w-md px-4 pb-16 pt-8 md:max-w-lg md:pt-12">
       <div className="text-center">
         <Image
-          src="/images/brand/biolane-logo.png"
+          src={asset('/images/brand/biolane-logo.png')}
           alt="Biolane"
           width={110}
           height={32}
