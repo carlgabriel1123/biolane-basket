@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------
+   Biolane brand tokens.
+   Sourced from the live biolane.ph theme (Shopify colour schemes).
+   --------------------------------------------------------------- */
+@theme {
+  --color-ink: #003b61;        /* deep navy — headings, primary text   */
+  --color-ink-soft: #3c4770;   /* muted navy — secondary text          */
+  --color-blue: #1f79b3;       /* brand blue — buttons, active states  */
+  --color-blue-deep: #00537f;  /* hover / pressed                      */
+  --color-sky: #d6e6f2;        /* pale blue — section backgrounds      */
+  --color-sky-soft: #eef5fb;   /* lightest blue wash                   */
+  --color-cream: #fbf2cc;      /* warm cream — reward surfaces         */
+  --color-cream-soft: #fefaeb;
+  --color-blush: #ffe4db;      /* soft peach — just-in-case section    */
+  --color-blush-soft: #fff4f1;
+  --color-gold: #c8901b;       /* reward accent, AA on cream           */
+  --color-gold-soft: #f2d456;
+  --color-mint: #cfece7;
+
+  --font-display: var(--font-nunito), ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 1.25rem;
+
+  --shadow-soft: 0 1px 2px rgb(0 59 97 / 0.04), 0 8px 24px -12px rgb(0 59 97 / 0.16);
+  --shadow-lift: 0 2px 4px rgb(0 59 97 / 0.06), 0 16px 32px -16px rgb(0 59 97 / 0.28);
+  --shadow-bar: 0 -2px 16px -4px rgb(0 59 97 / 0.18);
+}
+
+/* ---------------------------------------------------------------
+   Base
+   --------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+  /* Sticky basket bar is ~92px; keep anchored sections clear of it. */
+  scroll-padding-top: 1rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-sky-soft);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* Never allow a stray wide element to scroll the page sideways. */
+  overflow-x: hidden;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Visible focus for keyboard users and for BAs tabbing quickly. */
+/* tabindex="-1" targets are programmatic focus (headings), not keyboard stops. */
+:where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 3px solid var(--color-blue);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* ---------------------------------------------------------------
+   Reward unlock — restrained, premium. No confetti storm.
+   --------------------------------------------------------------- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes sheen {
+  0%   { background-position: -180% 0; }
+  100% { background-position: 280% 0; }
+}
+.reward-sheen {
+  background-image: linear-gradient(
+    100deg,
+    transparent 38%,
+    rgb(255 255 255 / 0.62) 50%,
+    transparent 62%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: sheen 1.5s ease-out 1 both;
+}
+
+@keyframes soft-pop {
+  0%   { transform: scale(0.88); opacity: 0; }
+  60%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop { animation: soft-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Progress bar fill */
+.progress-fill {
+  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
