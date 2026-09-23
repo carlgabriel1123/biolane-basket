@@ -98,12 +98,36 @@ function stashLocally(submission: Submission): void {
   writeStore(rest)
 }
 
+/**
+ * The database has it — delete the phone's copy. On a shared booth phone a
+ * saved record is only a privacy risk (name, email, mobile, due date), so
+ * only records still waiting to be sent are ever kept.
+ */
 function markSynced(id: string, seq: number): void {
+  const remaining = readStore().filter((s) => !(s.submissionId === id && s.seq <= seq))
+  if (remaining.length) writeStore(remaining)
+  else {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** One-time clean-up of copies left behind by older versions of the site. */
+function purgeSynced(): void {
   const all = readStore()
-  const rec = all.find((s) => s.submissionId === id && s.seq === seq)
-  if (!rec) return
-  rec.synced = true
-  writeStore(all)
+  const pending = all.filter((s) => !s.synced)
+  if (pending.length === all.length) return
+  if (pending.length) writeStore(pending)
+  else {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 async function post(submission: Submission): Promise<boolean> {
@@ -139,6 +163,7 @@ export function sendSubmission(submission: Submission): Promise<boolean> {
 
 /** Re-send every record the database has not accepted yet. */
 export function flushPending(): void {
+  purgeSynced()
   for (const rec of readStore().filter((s) => !s.synced)) {
     const { synced: _synced, ...submission } = rec
     queue = queue.then(() => post(submission)).catch(() => undefined)

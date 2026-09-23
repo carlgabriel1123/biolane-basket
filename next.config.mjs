@@ -1,20 +1,35 @@
 /** @type {import('next').NextConfig} */
 
-// Hosted on Vercel (https://biolane-basket.vercel.app), which runs Next.js
-// natively: the sign-up API route in app/api/submit runs on its server.
+// Main host: Vercel (https://biolane-basket.vercel.app) — runs the sign-up
+// API route in app/api/submit that saves to Supabase.
+//
+// Fallback: with GITHUB_PAGES=true this builds a static copy for
+// carlgabriel1123.github.io/biolane-basket/. The workflow removes app/api
+// first (a static site cannot run it), so that copy keeps sign-ups on the
+// phone and re-sends them once they reach a server that can save them.
+const isGitHubPages = process.env.GITHUB_PAGES === 'true'
+const basePath = isGitHubPages ? '/biolane-basket' : ''
+
 const nextConfig = {
   reactStrictMode: true,
 
-  images: {
-    // Vercel resizes the packshots and serves them as AVIF/WebP — much
-    // lighter on booth wifi than the original PNGs.
-    formats: ['image/avif', 'image/webp'],
-  },
+  ...(isGitHubPages
+    ? {
+        output: 'export',
+        trailingSlash: true,
+        basePath,
+        assetPrefix: `${basePath}/`,
+        images: { unoptimized: true },
+      }
+    : {
+        // Vercel resizes the packshots and serves AVIF/WebP — lighter on
+        // booth wifi than the original PNGs.
+        images: { formats: ['image/avif', 'image/webp'] },
+      }),
 
   env: {
-    // Served from the domain root. lib/asset.ts prefixes static paths with
-    // this, so hosting under a sub-path later only needs this one value.
-    NEXT_PUBLIC_BASE_PATH: '',
+    // lib/asset.ts and lib/submission.ts prefix paths with this.
+    NEXT_PUBLIC_BASE_PATH: basePath,
   },
 }
 

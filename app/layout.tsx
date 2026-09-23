@@ -1,17 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import { Nunito, Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 
-const nunito = Nunito({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
+// Fonts are stored in the repo (app/fonts, from @fontsource-variable) rather
+// than fetched from Google Fonts at build time — that fetch kept failing on
+// the build servers and broke deploys.
+const nunito = localFont({
+  src: './fonts/nunito-latin-wght-normal.woff2',
+  weight: '200 1000',
   variable: '--font-nunito',
   display: 'swap',
 })
 
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
+const inter = localFont({
+  src: './fonts/inter-latin-wght-normal.woff2',
+  weight: '100 900',
   variable: '--font-inter',
   display: 'swap',
 })
