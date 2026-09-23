@@ -97,35 +97,59 @@ export interface ChoiceChipProps extends Omit<InputHTMLAttributes<HTMLInputEleme
   tone?: StageTone
   /** 'radio' (default) or 'checkbox'. */
   kind?: 'radio' | 'checkbox'
+  /**
+   * Tighter layout for two-column grids on phones: the check mark sits on
+   * the icon well instead of taking its own column, so a label like
+   * "Grandparent" still fits at 375px.
+   */
+  compact?: boolean
 }
 
 /** A tappable card wrapping a native radio/checkbox, so keyboards and screen readers just work. */
-export function ChoiceChip({ label, hint, icon, tone, kind = 'radio', className = '', checked, ...input }: ChoiceChipProps) {
+export function ChoiceChip({ label, hint, icon, tone, kind = 'radio', compact = false, className = '', checked, ...input }: ChoiceChipProps) {
   const t = tone ?? STAGE_TONES.baby
   return (
     <label
-      className={`press flex min-h-[52px] cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-2.5 transition-colors has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue ${
-        checked ? `${t.accent} ${t.bg} shadow-soft` : 'border-ink/10 bg-white hover:border-ink/25'
-      } ${className}`}
+      className={`press flex min-h-[52px] cursor-pointer items-center rounded-2xl border-2 transition-colors has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue ${
+        compact ? 'gap-2.5 px-3 py-2' : 'gap-3 px-4 py-2.5'
+      } ${checked ? `${t.accent} ${t.bg} shadow-soft` : 'border-ink/10 bg-white hover:border-ink/25'} ${className}`}
     >
       <input type={kind} className="sr-only" checked={checked} {...input} />
       {icon && (
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${checked ? `${t.tint} ${t.text}` : 'bg-sky-soft text-ink-soft'}`}>
-          {icon}
+        <span className="relative shrink-0">
+          <span
+            className={`grid place-items-center rounded-full ${compact ? 'h-8 w-8' : 'h-9 w-9'} ${
+              checked ? `${t.tint} ${t.text}` : 'bg-sky-soft text-ink-soft'
+            }`}
+          >
+            {icon}
+          </span>
+          {compact && (
+            <span
+              aria-hidden="true"
+              className={`absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-ink text-white ring-2 ring-white transition-opacity ${
+                checked ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <CheckIcon size={10} strokeWidth={3.5} />
+            </span>
+          )}
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold leading-snug text-ink">{label}</span>
+        <span className={`block font-semibold leading-snug text-ink ${compact ? 'text-[14px]' : 'text-[15px]'}`}>{label}</span>
         {hint && <span className="block text-[12px] leading-snug text-ink-soft">{hint}</span>}
       </span>
-      <span
-        aria-hidden="true"
-        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${
-          checked ? 'border-ink bg-ink text-white' : 'border-ink/25 bg-white text-transparent'
-        }`}
-      >
-        <CheckIcon size={14} strokeWidth={3} />
-      </span>
+      {!compact && (
+        <span
+          aria-hidden="true"
+          className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${
+            checked ? 'border-ink bg-ink text-white' : 'border-ink/25 bg-white text-transparent'
+          }`}
+        >
+          <CheckIcon size={14} strokeWidth={3} />
+        </span>
+      )}
     </label>
   )
 }

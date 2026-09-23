@@ -257,13 +257,14 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             onBlur={validateGroupOnBlur('relationship')}
           >
             <legend className={labelClass}>Are you…</legend>
-            {/* One column on phones: "Grandparent" plus its icon and check needs the width. */}
-            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+            {/* Two columns everywhere; compact chips keep "Grandparent" on one line at 375px. */}
+            <div className="mt-2 grid grid-cols-2 gap-2">
               {relationships.map((option) => {
                 const active = values.relationship === option.value
                 const Icon = RELATIONSHIP_ICONS[option.value]
                 return (
                   <ChoiceChip
+                    compact
                     key={option.value}
                     name="relationship"
                     value={option.value}
