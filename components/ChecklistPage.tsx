@@ -78,13 +78,79 @@ export default function ChecklistPage({
 
   const pickIds = useMemo(() => new Set(picks?.map((p) => p.id) ?? []), [picks])
 
-  // "See all" holds only what isn't already in her picks, so nothing repeats.
+  /* ---- "You might also like" ----
+   * Her stage's suggestions stay hidden until she adds her first product,
+   * then appear under the Checklist and stay (even if she empties it). */
+  const recs = useMemo(
+    () =>
+      picks
+        ? plan.suggestions
+            .map((id) => productById.get(id))
+            .filter((p): p is Product => Boolean(p) && !pickIds.has(p!.id))
+        : [],
+    [plan, picks, pickIds]
+  )
+  const recIds = useMemo(() => new Set(recs.map((p) => p.id)), [recs])
+  const [recsRevealed, setRecsRevealed] = useState(basket.count > 0)
+  useEffect(() => {
+    if (basket.count > 0) setRecsRevealed(true)
+  }, [basket.count])
+  const showRecs = recsRevealed && recs.length > 0
+  const recsRef = useRef<HTMLDivElement>(null)
+  const recsHeadingId = useId()
+
+  // A one-time nudge above the basket bar, per stage, when the section
+  // appears somewhere she can't see it (usually below a long checklist).
+  // Coming back to a saved basket doesn't count as "just appeared".
+  const nudgedStages = useRef(new Set<BabyStage>(basket.count > 0 ? [stage] : []))
+  const [nudge, setNudge] = useState(false)
+  const [recsAnnouncement, setRecsAnnouncement] = useState('')
+  useEffect(() => {
+    if (!showRecs || nudgedStages.current.has(stage)) return
+    nudgedStages.current.add(stage)
+    setRecsAnnouncement(
+      `You might also like ${recs.length} more for ${stageShortName(stage)}, listed under your checklist.`
+    )
+    const el = recsRef.current
+    const onScreen = el ? el.getBoundingClientRect().top < window.innerHeight - 140 : true
+    setNudge(!onScreen)
+  }, [showRecs, stage, recs.length])
+  useEffect(() => {
+    if (!nudge) return
+    const timer = setTimeout(() => setNudge(false), 8000)
+    const el = recsRef.current
+    const seen =
+      el && 'IntersectionObserver' in window
+        ? new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) setNudge(false)
+          })
+        : null
+    if (el && seen) seen.observe(el)
+    return () => {
+      clearTimeout(timer)
+      seen?.disconnect()
+    }
+  }, [nudge])
+  const goToRecs = () => {
+    setNudge(false)
+    const el = recsRef.current
+    if (!el) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+    el.focus({ preventScroll: true })
+  }
+
+  // "See all" holds only what isn't in her Checklist or her suggestions, so
+  // nothing repeats (suggestions surface after her first add).
   const otherGroups = useMemo(
     () =>
       productGroups
-        .map((g) => ({ ...g, items: products.filter((p) => p.group === g.id && !pickIds.has(p.id)) }))
+        .map((g) => ({
+          ...g,
+          items: products.filter((p) => p.group === g.id && !pickIds.has(p.id) && !recIds.has(p.id)),
+        }))
         .filter((g) => g.items.length > 0),
-    [pickIds]
+    [pickIds, recIds]
   )
   const otherCount = otherGroups.reduce((s, g) => s + g.items.length, 0)
 
@@ -160,6 +226,9 @@ export default function ChecklistPage({
         <p className="sr-only" aria-live="polite">
           {stageAnnouncement}
         </p>
+        <p className="sr-only" aria-live="polite">
+          {recsAnnouncement}
+        </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-sky px-3 py-1.5 text-[12.5px] font-semibold text-ink">
@@ -231,15 +300,37 @@ export default function ChecklistPage({
         {/* Her picks (or, for Others, the whole catalogue by category) */}
         <div className="lg:col-start-1 lg:row-start-1">
           {picks ? (
-            <ProductSection
-              title={campaign.checklistSectionTitle}
-              caption={plan.caption}
-              items={picks}
-              quantities={quantities}
-              suggestedIds={suggestedIds}
-              onChange={onChangeQty}
-              priorityFirst
-            />
+            <>
+              <ProductSection
+                title={campaign.checklistSectionTitle}
+                caption={plan.caption}
+                items={picks}
+                quantities={quantities}
+                suggestedIds={suggestedIds}
+                onChange={onChangeQty}
+                priorityFirst
+              />
+              {showRecs && (
+                <div
+                  ref={recsRef}
+                  id="you-might-also-like"
+                  tabIndex={-1}
+                  aria-labelledby={recsHeadingId}
+                  className="animate-rise mt-6 scroll-mt-6 outline-none"
+                >
+                  <ProductSection
+                    headingId={recsHeadingId}
+                    title={campaign.recsTitle}
+                    caption={`More favourites for ${stageShortName(stage)}.`}
+                    items={recs}
+                    quantities={quantities}
+                    suggestedIds={suggestedIds}
+                    onChange={onChangeQty}
+                    tone="sky"
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex flex-col gap-3">
               <div className="mb-1">
@@ -351,10 +442,44 @@ export default function ChecklistPage({
         )}
       </div>
 
+      {nudge && (
+        <div
+          className="animate-rise fixed inset-x-0 z-30 flex justify-center px-4"
+          style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+        >
+          <div className="flex items-center gap-1 rounded-full bg-ink py-1 pl-1 pr-1 text-white shadow-lift">
+            <button
+              type="button"
+              onClick={goToRecs}
+              className="flex min-h-[44px] items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold hover:bg-white/10"
+            >
+              <span aria-hidden="true">✨</span>
+              {campaign.recsTitle}: {recs.length} more
+              <span className="font-bold text-sky underline underline-offset-4">See them</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setNudge(false)}
+              aria-label="Dismiss"
+              className="grid h-11 w-11 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
+                <path d="M5.5 5.5l9 9m0-9-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <footer className="mt-10 text-center text-[11px] leading-relaxed text-ink-soft/60 md:text-xs">
         <p>{campaign.promoDates}</p>
         <p className="mt-1">{campaign.rewardDisclaimer}</p>
       </footer>
     </main>
   )
+}
+
+/** "Baby · 0 to 12 months" → "Baby". */
+function stageShortName(stage: BabyStage): string {
+  return stagePlans[stage].label.split(' · ')[0]
 }

@@ -136,11 +136,13 @@ export default function Page() {
   const stage: BabyStage = form.babyStage || 'others'
   const basket = useMemo(() => computeBasket(quantities), [quantities])
 
+  // "Almost there" looks in her Checklist first, then her stage's
+  // "You might also like" list, before falling back to everything.
   const stagePool = useMemo<Product[]>(() => {
-    const picks = stagePlans[stage].picks
+    const { picks, suggestions: extras } = stagePlans[stage]
     return picks === 'all'
       ? products
-      : picks.map((id) => productById.get(id)).filter((p): p is Product => Boolean(p))
+      : [...picks, ...extras].map((id) => productById.get(id)).filter((p): p is Product => Boolean(p))
   }, [stage])
 
   const suggestions = useMemo(() => suggestProducts(quantities, stagePool), [quantities, stagePool])

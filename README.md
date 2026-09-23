@@ -31,6 +31,8 @@ Everything tweakable lives in three data files. No component needs touching.
 | Want to change | File | Field |
 |---|---|---|
 | Which products each baby stage sees first, and their order | `data/stages.ts` | `picks` |
+| "You might also like" per stage | `data/stages.ts` | `suggestions` |
+| "You might also like" heading | `data/campaign.ts` | `recsTitle` |
 | Line under the Checklist heading, per stage | `data/stages.ts` | `caption` |
 | "Checklist" heading | `data/campaign.ts` | `checklistSectionTitle` |
 | Baby stage options on the form | `data/campaign.ts` | `babyStages` |
@@ -49,18 +51,34 @@ Everything tweakable lives in three data files. No component needs touching.
 
 **After any price, threshold, or picks edit, run `npm run verify`.** It fails
 if a pick is misspelled or repeated, if a stage's picks can no longer reach
-the reward, or if a sun or mosquito product is picked for Expecting or Baby.
+the reward, if a suggestion repeats a Checklist item, or if a sun or mosquito
+product is listed for Expecting or Baby.
 
-### What each stage sees first
+### What each stage sees
 
-| Stage | Picks (in order) |
-|---|---|
-| Expecting | Stretch Marks Cream, Nursing Balm, Pure H2O 750ml, 2-in-1 Cleanser 350ml, Diaper Change Cream, Body Milk, Nourishing Cream, Almond Oil Spray, Cradle Cap Shampoo, CicaBébé |
-| Baby 0 to 12 months | Pure H2O 750ml, Pure H2O Refill, 2-in-1 Cleanser 350ml, Gentle Shampoo 350ml, Cradle Cap Shampoo, Diaper Change Cream, Cleansing Milk, Body Milk, Nourishing Cream, Almond Oil Spray, Liquid Powder, Arnica Gel, CicaBébé, Nursing Balm |
-| Toddler 1 to 4 years old | 2-in-1 Cleanser 750ml, Kids Detangling Shampoo, Styling Gel, Extra Rich Soap, Body Milk, Skin Fragrance, Sun Spray, Sunstick, Sun Cream, Mosquito Stick, Arnica Gel, CicaBébé |
-| Others | All 31 products, by category |
+The lists come from the Biolane team (September 2026). **Checklist** shows
+first, in this order. **You might also like** appears under it as soon as
+the visitor adds their first product (a small "See them" nudge points to it
+if it's off-screen). Everything else stays under "See all".
 
-Sun and mosquito products are never picked for Expecting or Baby:
+| Stage | Checklist (in order) | You might also like |
+|---|---|---|
+| Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream | Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
+| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap |
+| Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Nourishing Cream 100ml |
+| Others | All 31 products, by category | — |
+
+**Waiting for a fair price** — the team's lists also name these, but they are
+not on the fair price list (LIST OF OFFERS has them only inside bundle sets,
+or not at all), so the site can't show a price for them yet. They are
+recorded in `data/stages.ts` → `awaitingPrice`, and `npm run verify` prints them:
+
+- Expecting checklist: Diaper Change Cream 50ml, Soothing Intimate Hygiene Gel
+- Expecting suggestions: Soothing Repair Balm, Pure H2O Wipes x72, Cleansing Wipes x72
+- Baby suggestions: First Teeth Toothpaste, Pure H2O Wipes x72, Cleansing Milk Wipes x72, Baby Powder
+- Toddler suggestions: Pure H2O Wipes x72, Cleansing Milk Wipes x72
+
+Sun and mosquito products are never listed for Expecting or Baby:
 biolane.ph says the mosquito stick is "from 6 months" and to keep babies
 under 6 months in the shade, and "Baby" covers 0 to 12 months. They stay
 available under "See all".

@@ -126,6 +126,7 @@ console.log('\nStage picks:')
 const ids = new Set(P.map((p) => p.id))
 const priceOf = new Map(P.map((p) => [p.id, p.price]))
 const stageFacts = []
+const awaiting = []
 for (const { value } of babyStages) {
   const plan = stagePlans[value]
   check(`stage "${value}" has a plan`, Boolean(plan))
@@ -144,14 +145,30 @@ for (const { value } of babyStages) {
   let a = 0, k = 0
   for (const v of sorted) { a += v; k++; if (a >= T) break }
   stageFacts.push(`  ${value.padEnd(10)}: ${plan.picks.length} picks, unlock with ${k} different ones (one of each)`)
+
+  // "You might also like" (suggestions)
+  const recs = plan.suggestions ?? []
+  const recUnknown = recs.filter((id) => !ids.has(id))
+  const recDupes = recs.filter((id, i) => recs.indexOf(id) !== i)
+  const overlap = recs.filter((id) => plan.picks.includes(id))
+  check(`"${value}" suggestions are all real product ids`, recUnknown.length === 0, recUnknown.join(', '))
+  check(`"${value}" suggestions have no repeats`, recDupes.length === 0, recDupes.join(', '))
+  check(`"${value}" suggestions don't repeat a Checklist item`, overlap.length === 0, overlap.join(', '))
+  stageFacts[stageFacts.length - 1] += `, ${recs.length} suggestions`
+  const waiting = [...(plan.awaitingPrice?.picks ?? []), ...(plan.awaitingPrice?.suggestions ?? [])]
+  if (waiting.length) awaiting.push(`  ${value.padEnd(10)}: ${waiting.join(', ')}`)
+}
+if (stagePlans.others?.picks === 'all') {
+  check('"others" has no suggestions (it already shows everything)', (stagePlans.others.suggestions ?? []).length === 0)
 }
 // Sun and mosquito products must never be picked below 6 months (biolane.ph guidance).
 const sixMonthsPlus = ['sunstick', 'suncream', 'sunspray', 'mosquito-stick']
 // 'baby' is 0 to 12 months, so it includes under-6-month babies.
 for (const young of ['expecting', 'baby']) {
-  const picks = stagePlans[young]?.picks
-  const bad = Array.isArray(picks) ? picks.filter((id) => sixMonthsPlus.includes(id)) : []
-  check(`"${young}" picks exclude 6-months-plus products`, bad.length === 0, bad.join(', '))
+  const plan = stagePlans[young]
+  const listed = [...(Array.isArray(plan?.picks) ? plan.picks : []), ...(plan?.suggestions ?? [])]
+  const bad = listed.filter((id) => sixMonthsPlus.includes(id))
+  check(`"${young}" picks and suggestions exclude 6-months-plus products`, bad.length === 0, bad.join(', '))
 }
 
 /* ---------- facts ---------- */
@@ -167,6 +184,11 @@ console.log(
 console.log(`  any N products always unlock    : N >= ${guaranteedN}`)
 console.log(`  all products together           : PHP ${sumAll}`)
 console.log(`  all prices multiples of 5       : ${P.every((p) => p.price % 5 === 0)}`)
+
+if (awaiting.length) {
+  console.log('\nRequested but not on the fair price list (not shown until priced):')
+  awaiting.forEach((l) => console.log(l))
+}
 
 console.log(failures === 0 ? '\nAll invariants hold.\n' : `\n${failures} INVARIANT(S) BROKEN.\n`)
 process.exit(failures === 0 ? 0 : 1)

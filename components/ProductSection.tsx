@@ -15,10 +15,12 @@ interface Props {
   /** Render as an accordion that opens and closes. */
   collapsible?: boolean
   defaultOpen?: boolean
-  tone?: 'plain' | 'blush'
+  tone?: 'plain' | 'blush' | 'sky'
   priorityFirst?: boolean
   /** Heading level for this section's title; product names go one below. */
   headingLevel?: 2 | 3
+  /** Use this id on the title, e.g. so a wrapper can be labelled by it. */
+  headingId?: string
 }
 
 export default function ProductSection({
@@ -33,12 +35,14 @@ export default function ProductSection({
   tone = 'plain',
   priorityFirst = false,
   headingLevel = 2,
+  headingId: headingIdProp,
 }: Props) {
   const Heading = headingLevel === 3 ? 'h3' : 'h2'
   const cardLevel = headingLevel === 3 ? 4 : 3
   const [open, setOpen] = useState(defaultOpen)
   const panelId = useId()
-  const headingId = useId()
+  const autoHeadingId = useId()
+  const headingId = headingIdProp ?? autoHeadingId
   const inBasket = items.filter((p) => (quantities[p.id] ?? 0) > 0).length
   const isOpen = collapsible ? open : true
 
@@ -68,7 +72,9 @@ export default function ProductSection({
   const shell =
     tone === 'blush'
       ? 'rounded-card border border-blush bg-blush-soft p-3 sm:p-4'
-      : collapsible
+      : tone === 'sky'
+        ? 'rounded-card border border-sky bg-sky-soft p-3 sm:p-4'
+        : collapsible
         ? 'rounded-card border border-ink/10 bg-white/70 p-3 sm:p-4'
         : ''
 

@@ -28,6 +28,8 @@ export const campaign = {
   checklistSubheading: 'Let’s build your baby’s essentials together.',
   /** Heading above the products she is shown, for every stage. */
   checklistSectionTitle: 'Checklist',
+  /** Heading of the stage's suggestions, shown after her first add (data/stages.ts → suggestions). */
+  recsTitle: 'You might also like',
   checklistIntro: 'We’re here to help you discover what’s best for your little one.',
 
   /** Reward banner on the checklist: "{amount} and get a FREE {rewardName}!" */
