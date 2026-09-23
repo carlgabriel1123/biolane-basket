@@ -1,12 +1,16 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { babyStages, campaign, type BabyStage } from '@/data/campaign'
+import { babyStages, campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { track } from '@/lib/analytics'
 import { addDays, isPlausibleEmail, manilaToday, normalisePhMobile, tidy } from '@/lib/validate'
 
 export interface CommunityValues {
   name: string
+  /** "Are you…" — Dad, Mom, Grandparent, or Others. */
+  relationship: Relationship | ''
+  /** Filled in only when relationship is 'others'. */
+  relationshipOther: string
   email: string
   mobile: string
   babyStage: BabyStage | ''
@@ -40,6 +44,12 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
     }
     // Switching away from "Expecting" clears the due date in the SAME update,
     // so an orphaned date can never reach the payload.
+    // Switching away from Others clears its text in the same update.
+    if (key === 'relationship' && value !== 'others') {
+      onChange({ ...values, relationship: value as Relationship, relationshipOther: '' })
+      setErrors((e) => ({ ...e, relationship: undefined, relationshipOther: undefined }))
+      return
+    }
     if (key === 'babyStage' && value !== 'expecting') {
       onChange({ ...values, babyStage: value as BabyStage, dueDate: '' })
       setErrors((e) => ({ ...e, babyStage: undefined, dueDate: undefined }))
@@ -53,6 +63,10 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
     const next: Errors = {}
 
     if (tidy(values.name).length < 2) next.name = 'Please enter your name.'
+
+    if (!values.relationship) next.relationship = 'Please choose one.'
+    else if (values.relationship === 'others' && tidy(values.relationshipOther).length < 2)
+      next.relationshipOther = 'Please tell us who you are to the baby.'
 
     if (!isPlausibleEmail(values.email)) next.email = 'Please check your email address.'
 
@@ -70,12 +84,20 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
 
     // Work out the first problem from `next`, not the DOM: React hasn't
     // re-rendered the error states yet at this point.
-    const order: Array<keyof CommunityValues> = ['name', 'email', 'mobile', 'babyStage', 'dueDate']
+    const order: Array<keyof CommunityValues> = [
+      'name',
+      'relationship',
+      'relationshipOther',
+      'email',
+      'mobile',
+      'babyStage',
+      'dueDate',
+    ]
     const firstKey = order.find((k) => next[k])
     if (firstKey) {
       const el =
-        firstKey === 'babyStage'
-          ? document.querySelector<HTMLElement>('input[name="babyStage"]')
+        firstKey === 'babyStage' || firstKey === 'relationship'
+          ? document.querySelector<HTMLElement>(`input[name="${firstKey}"]`)
           : document.getElementById(firstKey)
       el?.focus({ preventScroll: true })
       ;(el?.closest('label, div') ?? el)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -88,11 +110,11 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
   const nextOnEnter = (nextId: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return
     e.preventDefault()
-    const el =
-      nextId === 'babyStage'
-        ? document.querySelector<HTMLElement>('input[name="babyStage"]:checked') ??
-          document.querySelector<HTMLElement>('input[name="babyStage"]')
-        : document.getElementById(nextId)
+    const isRadioGroup = nextId === 'babyStage' || nextId === 'relationship'
+    const el = isRadioGroup
+      ? document.querySelector<HTMLElement>(`input[name="${nextId}"]:checked`) ??
+        document.querySelector<HTMLElement>(`input[name="${nextId}"]`)
+      : document.getElementById(nextId)
     el?.focus()
   }
 
@@ -144,7 +166,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             onChange={(e) => set('name', e.target.value)}
             autoComplete="name"
             enterKeyHint="next"
-            onKeyDown={nextOnEnter('email')}
+            onKeyDown={nextOnEnter('relationship')}
             data-invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? 'name-error' : undefined}
             aria-invalid={Boolean(errors.name)}
@@ -153,6 +175,74 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
           />
           {err('name')}
         </div>
+
+        {/* Are you… — right after Name */}
+        <fieldset data-invalid={Boolean(errors.relationship)}>
+          <legend className="text-[13.5px] font-semibold text-ink">Are you…</legend>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {relationships.map((option) => {
+              const active = values.relationship === option.value
+              return (
+                <label
+                  key={option.value}
+                  className={
+                    'flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border-2 px-4 transition-colors has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue ' +
+                    (active ? 'border-blue bg-sky-soft' : 'border-ink/15 bg-white')
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="relationship"
+                    value={option.value}
+                    checked={active}
+                    onChange={() => set('relationship', option.value)}
+                    className="sr-only"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className={
+                      'grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ' +
+                      (active ? 'border-blue' : 'border-ink/30')
+                    }
+                  >
+                    <span
+                      className={
+                        'h-2.5 w-2.5 rounded-full bg-blue transition-opacity ' +
+                        (active ? 'opacity-100' : 'opacity-0')
+                      }
+                    />
+                  </span>
+                  <span className="text-[14px] text-ink">{option.label}</span>
+                </label>
+              )
+            })}
+          </div>
+          {err('relationship')}
+        </fieldset>
+
+        {/* Others — specify */}
+        {values.relationship === 'others' && (
+          <div className="animate-rise -mt-1">
+            <label htmlFor="relationshipOther" className="text-[13.5px] font-semibold text-ink">
+              Please specify
+            </label>
+            <input
+              id="relationshipOther"
+              type="text"
+              value={values.relationshipOther}
+              onChange={(e) => set('relationshipOther', e.target.value)}
+              maxLength={40}
+              enterKeyHint="next"
+              onKeyDown={nextOnEnter('email')}
+              data-invalid={Boolean(errors.relationshipOther)}
+              aria-describedby={errors.relationshipOther ? 'relationshipOther-error' : undefined}
+              aria-invalid={Boolean(errors.relationshipOther)}
+              placeholder="Tita, ninang, family friend"
+              className={inputBase + ' ' + borderFor('relationshipOther')}
+            />
+            {err('relationshipOther')}
+          </div>
+        )}
 
         {/* Email */}
         <div>

@@ -3,7 +3,8 @@
 Mobile-first microsite for the Biolane Philippines Grand Baby Fair activation.
 A mom scans a QR at the booth and:
 
-1. **Tells us about herself and her little one** — name, email, mobile,
+1. **Tells us about herself and her little one** — name, whether she is
+   Dad, Mom, Grandparent or Others (with a box to specify), email, mobile,
    baby stage, due date if expecting, optional marketing consent. Her lead
    is saved the moment she taps Join.
 2. **Builds her checklist** — the ₱2,299 reward is introduced here, and the
@@ -32,6 +33,7 @@ Everything tweakable lives in three data files. No component needs touching.
 | Which products each baby stage sees first, and their order | `data/stages.ts` | `picks` |
 | Stage headings on the checklist | `data/stages.ts` | `title`, `caption` |
 | Baby stage options on the form | `data/campaign.ts` | `babyStages` |
+| "Are you…" options on the form | `data/campaign.ts` | `relationships` |
 | Reward threshold | `data/campaign.ts` | `rewardThreshold` |
 | Most units of one product per mom | `data/campaign.ts` | `maxQtyPerItem` |
 | Reward name | `data/campaign.ts` | `rewardName`, `rewardShortName` |

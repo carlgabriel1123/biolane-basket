@@ -1,8 +1,12 @@
-import type { BabyStage } from '../data/campaign.ts'
+import type { BabyStage, Relationship } from '../data/campaign.ts'
 
 /** The sign-up details from the first screen. */
 export interface LeadInfo {
   name: string
+  /** "Are you…": dad, mom, grandparent, or others. */
+  relationship: Relationship
+  /** What she typed when relationship is 'others'. */
+  relationshipOther?: string
   email: string
   /** Normalised to +639XXXXXXXXX. */
   mobile: string

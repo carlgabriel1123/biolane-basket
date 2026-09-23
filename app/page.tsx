@@ -7,7 +7,7 @@ import Confirmation from '@/components/Confirmation'
 import BasketBar from '@/components/BasketBar'
 import BasketSheet from '@/components/BasketSheet'
 import type { CommunityValues } from '@/components/CommunityForm'
-import { campaign, type BabyStage } from '@/data/campaign'
+import { campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { productById, products, type Product } from '@/data/products'
 import { stagePlans } from '@/data/stages'
 import {
@@ -49,6 +49,8 @@ const SESSION_KEY = 'biolane-nesting-session'
 
 const EMPTY_FORM: CommunityValues = {
   name: '',
+  relationship: '',
+  relationshipOther: '',
   email: '',
   mobile: '',
   babyStage: '',
@@ -68,6 +70,9 @@ interface SavedSession {
   result: Result | null
 }
 
+const isRelationship = (v: unknown): v is Relationship =>
+  typeof v === 'string' && relationships.some((r) => r.value === v)
+
 const isStage = (v: unknown): v is BabyStage =>
   typeof v === 'string' && Object.prototype.hasOwnProperty.call(stagePlans, v)
 
@@ -77,6 +82,8 @@ function cleanForm(raw: unknown): CommunityValues {
   const str = (v: unknown) => (typeof v === 'string' ? v : '')
   return {
     name: str(f.name),
+    relationship: isRelationship(f.relationship) ? f.relationship : '',
+    relationshipOther: f.relationship === 'others' ? str(f.relationshipOther) : '',
     email: str(f.email),
     mobile: str(f.mobile),
     // 'newborn' was merged into 'baby' (0 to 12 months).
@@ -154,7 +161,8 @@ export default function Page() {
           setResult(saved.result)
           setSubmissionId(saved.result.submission.submissionId)
           initial = 'done'
-        } else if (typeof saved.submissionId === 'string' && savedForm.babyStage) {
+        // A session saved before "Are you…" existed must answer it first.
+        } else if (typeof saved.submissionId === 'string' && savedForm.babyStage && savedForm.relationship) {
           setSubmissionId(saved.submissionId)
           joinedRef.current = true
           if (saved.step === 'checklist') initial = 'checklist'
@@ -245,6 +253,10 @@ export default function Page() {
         seq: nextSeq(),
         event,
         name: tidy(values.name),
+        relationship: values.relationship || 'others',
+        ...(values.relationship === 'others' && tidy(values.relationshipOther)
+          ? { relationshipOther: tidy(values.relationshipOther) }
+          : {}),
         email: values.email.trim(),
         mobile: normalisePhMobile(values.mobile) ?? values.mobile.trim(),
         babyStage: values.babyStage || 'others',

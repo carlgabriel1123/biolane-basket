@@ -59,3 +59,13 @@ export const babyStages = [
 ] as const
 
 export type BabyStage = (typeof babyStages)[number]['value']
+
+/** "Are you…" options on the sign-up form, shown in this order. */
+export const relationships = [
+  { value: 'dad', label: 'Dad' },
+  { value: 'mom', label: 'Mom' },
+  { value: 'grandparent', label: 'Grandparent' },
+  { value: 'others', label: 'Others' },
+] as const
+
+export type Relationship = (typeof relationships)[number]['value']
