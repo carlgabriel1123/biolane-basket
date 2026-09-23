@@ -39,18 +39,7 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
           className="mx-auto h-auto w-[124px] md:w-[146px]"
         />
 
-        <div className="mt-6 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft">
-          <span aria-hidden="true" className="text-2xl">
-            🎁
-          </span>
-          <p className="text-[13px] leading-snug text-ink-soft md:text-sm">
-            <span className="font-display text-[15px] font-extrabold text-ink md:text-base">
-              {campaign.rewardTeaserAmount}
-            </span>{' '}
-            on Biolane and get a free {campaign.rewardName}.
-          </p>
-        </div>
-
+        {/* The ₱2,299 reward is introduced on the checklist, after she joins. */}
         {returning && (
           <p className="mt-4 rounded-xl bg-sky-soft px-4 py-3 text-[13px] leading-snug text-ink-soft">
             Update your details or baby stage, then continue. Your basket is saved.

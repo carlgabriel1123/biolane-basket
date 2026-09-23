@@ -3,11 +3,11 @@
 Mobile-first microsite for the Biolane Philippines Grand Baby Fair activation.
 A mom scans a QR at the booth and:
 
-1. **Joins the Biolane Mom Community** — name, email, mobile, baby stage,
-   due date if expecting, optional marketing consent. Her lead is saved the
-   moment she submits.
-2. **Builds her checklist** — the products picked for her baby stage come
-   first, everything else is folded under "See all". Each product has
+1. **Tells us about herself and her little one** — name, email, mobile,
+   baby stage, due date if expecting, optional marketing consent. Her lead
+   is saved the moment she taps Join.
+2. **Builds her checklist** — the ₱2,299 reward is introduced here, and the
+   products picked for her baby stage come first, everything else is folded under "See all". Each product has
    **Add**, then **− qty +**. Her total climbs toward ₱2,299 and unlocks a
    free personalized toiletry bag.
 3. **Shows the confirmation** to the Biolane team at the booth.
@@ -36,7 +36,7 @@ Everything tweakable lives in three data files. No component needs touching.
 | Most units of one product per mom | `data/campaign.ts` | `maxQtyPerItem` |
 | Reward name | `data/campaign.ts` | `rewardName`, `rewardShortName` |
 | Sign-up button text | `data/campaign.ts` | `joinCtaLabel` |
-| Community heading and copy | `data/campaign.ts` | `communityHeading`, `communityCopy` |
+| Sign-up page heading | `data/campaign.ts` | `communityHeading`, `communitySubheading` |
 | Promo dates | `data/campaign.ts` | `promoDates` |
 | Privacy / Terms links | `data/campaign.ts` | `privacyPolicyUrl`, `termsUrl` |
 | Consent wording | `data/campaign.ts` | `consentLabel` |

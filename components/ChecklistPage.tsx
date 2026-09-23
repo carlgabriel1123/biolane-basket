@@ -204,7 +204,20 @@ export default function ChecklistPage({
           </div>
         )}
 
-        <p className="mt-2 text-[12px] leading-relaxed text-ink-soft/80">
+        {/* The reward, introduced here — right after she joins. */}
+        <div className="mt-4 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft md:max-w-xl">
+          <span aria-hidden="true" className="text-2xl">
+            🎁
+          </span>
+          <p className="text-[13px] leading-snug text-ink-soft md:text-sm">
+            <span className="font-display text-[15px] font-extrabold text-ink md:text-base">
+              {campaign.rewardTeaserAmount}
+            </span>{' '}
+            on Biolane and get a free {campaign.rewardName}.
+          </p>
+        </div>
+
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-soft/80">
           This is a checklist, not a checkout — nothing is charged here. Tap Add, then use − and + for
           more than one.
         </p>

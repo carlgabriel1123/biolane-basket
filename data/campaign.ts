@@ -14,7 +14,7 @@ export const campaign = {
   maxQtyPerItem: 10,
 
   /** Button that submits the sign-up form and opens the checklist. */
-  joinCtaLabel: 'Join and see my checklist',
+  joinCtaLabel: 'Join',
 
   /** Hero copy */
   headline: 'Are you nesting, Mommy?',
@@ -45,7 +45,8 @@ export const campaign = {
   termsUrl: '',
 
   /** Community section */
-  communityHeading: 'Welcome to the Biolane Mom Community',
+  communityHeading: 'Welcome to Biolane!',
+  communitySubheading: 'First, tell us a little about you & your little one.',
   consentLabel:
     "Yes, I'd love to receive Biolane's baby-care tips, monthly emails, special offers, product updates and community news.",
 } as const

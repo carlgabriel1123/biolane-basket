@@ -121,16 +121,21 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
       <h1
         id="community-heading"
         tabIndex={-1}
-        className="font-display text-[21px] font-extrabold leading-snug text-ink outline-none md:text-2xl"
+        className="outline-none"
       >
-        {campaign.communityHeading} <span aria-hidden="true">💛</span>
+        <span className="block font-display text-[26px] font-extrabold leading-tight text-ink md:text-3xl">
+          {campaign.communityHeading}
+        </span>
+        <span className="mt-1.5 block text-[15px] font-semibold leading-snug text-ink-soft md:text-base">
+          {campaign.communitySubheading}
+        </span>
       </h1>
 
       <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
         {/* Name */}
         <div>
           <label htmlFor="name" className="text-[13.5px] font-semibold text-ink">
-            Mommy&rsquo;s name
+            Name
           </label>
           <input
             id="name"
