@@ -1,12 +1,14 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useRef } from 'react'
-import { campaign } from '@/data/campaign'
+import { useEffect, useRef, useState } from 'react'
+import { campaign, type BabyStage } from '@/data/campaign'
 import type { BasketState } from '@/lib/basket'
 import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
 import { isPrintableBagName } from '@/lib/validate'
+import { BagIcon, CheckIcon, XIcon } from './icons'
+import { Button, stageTone } from './ui'
 import QtyStepper from './QtyStepper'
 
 interface Props {
@@ -19,6 +21,21 @@ interface Props {
   onFinish: () => void
   /** Close the sheet and take her to the bag-name field. */
   onGoToPersonalization: () => void
+  /** Tints the line-item thumbnails with her stage's colour. */
+  stage?: BabyStage
+}
+
+/** Phones get a bottom sheet that slides up; wider screens a centred card that rises. */
+function useWideScreen(): boolean {
+  const [wide, setWide] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const update = () => setWide(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return wide
 }
 
 export default function BasketSheet({
@@ -30,9 +47,12 @@ export default function BasketSheet({
   onClose,
   onFinish,
   onGoToPersonalization,
+  stage,
 }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const wide = useWideScreen()
+  const well = stage ? stageTone(stage).tint : 'bg-sky-soft'
 
   // Focus, Escape, background scroll lock, and a simple focus trap.
   useEffect(() => {
@@ -95,7 +115,7 @@ export default function BasketSheet({
         aria-label="Close basket"
         tabIndex={-1}
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-ink/45"
+        className="animate-fade absolute inset-0 cursor-default bg-ink/45"
       />
 
       <div
@@ -103,45 +123,53 @@ export default function BasketSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="basket-sheet-title"
-        className="animate-rise relative flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-[1.75rem] bg-white shadow-lift md:rounded-card"
+        className={`${wide ? 'animate-rise' : 'animate-slide-up'} relative flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-[1.75rem] bg-white shadow-lift md:rounded-card`}
       >
-        <div className="flex items-center gap-3 border-b border-ink/10 px-5 pb-3 pt-4">
+        {/* Decorative drag handle: this is a sheet you can pull down. */}
+        <span aria-hidden="true" className="mx-auto mt-2.5 block h-1.5 w-10 shrink-0 rounded-pill bg-ink/15 md:hidden" />
+
+        <div className="flex items-center gap-3 border-b border-ink/10 px-5 pb-3 pt-3 md:pt-4">
           <div className="min-w-0 flex-1">
             <h2 id="basket-sheet-title" className="font-display text-[19px] font-extrabold text-ink">
               Your nesting basket
             </h2>
-            <p className="text-[12.5px] text-ink-soft">
+            <p className="text-[12.5px] tabular-nums text-ink-soft">
               {basket.units} {basket.units === 1 ? 'item' : 'items'} ·{' '}
               {basket.count} {basket.count === 1 ? 'product' : 'products'}
             </p>
           </div>
+          {/* Plain button (not <IconButton>) so the focus-trap ref can land on it. */}
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close basket"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-sky-soft"
+            className="press grid h-11 w-11 shrink-0 place-items-center rounded-pill text-ink-soft hover:bg-sky-soft hover:text-blue"
           >
-            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
-              <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
+            <XIcon size={20} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {basket.lines.length === 0 ? (
-            <div className="py-10 text-center">
-              <p className="font-display text-[16px] font-bold text-ink">Your basket is empty</p>
+            <div className="flex flex-col items-center py-8 text-center">
+              <span aria-hidden="true" className="grid h-16 w-16 place-items-center rounded-pill bg-sky text-blue">
+                <BagIcon size={28} />
+              </span>
+              <p className="mt-3 font-display text-[16px] font-bold text-ink">Your basket is empty</p>
               <p className="mt-1 text-[13px] text-ink-soft">
                 Add essentials from your checklist and they&rsquo;ll appear here.
               </p>
+              <Button variant="secondary" onClick={onClose} className="mt-4">
+                Back to checklist
+              </Button>
             </div>
           ) : (
             <ul className="flex flex-col divide-y divide-ink/10">
               {basket.lines.map(({ product, qty, lineTotal }) => (
                 <li key={product.id} className="flex items-center gap-3 py-3">
-                  <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-sky-soft">
-                    <Image src={asset(product.image)} alt="" fill sizes="48px" className="object-contain p-1" />
+                  <span className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl ${well}`}>
+                    <Image src={asset(product.image)} alt="" fill sizes="56px" className="object-contain p-1.5" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[14px] font-semibold leading-snug text-ink">
@@ -171,9 +199,9 @@ export default function BasketSheet({
           className="border-t border-ink/10 px-5 pt-3"
           style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
         >
-          <div className="h-2 w-full overflow-hidden rounded-full bg-sky">
+          <div className="h-2 w-full overflow-hidden rounded-pill bg-sky">
             <div
-              className={`progress-fill h-full rounded-full ${
+              className={`progress-fill h-full rounded-pill ${
                 basket.unlocked ? 'bg-gradient-to-r from-gold-soft to-gold' : 'bg-blue'
               }`}
               style={{ width: `${pct}%` }}
@@ -215,14 +243,15 @@ export default function BasketSheet({
                 {peso(basket.total)}
               </p>
             </div>
-            <button
-              type="button"
+            <Button
+              size="lg"
               onClick={onFinish}
+              loading={finishing}
               disabled={finishing || basket.count === 0}
-              className="min-h-[52px] rounded-full bg-blue px-6 text-[15px] font-bold text-white shadow-lift transition-colors hover:bg-blue-deep disabled:cursor-not-allowed disabled:opacity-60"
+              iconRight={<CheckIcon size={20} />}
             >
               {finishing ? 'Saving…' : 'Finish checklist'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

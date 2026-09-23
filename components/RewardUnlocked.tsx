@@ -2,6 +2,7 @@
 
 import { campaign } from '@/data/campaign'
 import { isPrintableBagName } from '@/lib/validate'
+import { GiftIcon, PartyIcon } from './icons'
 
 interface Props {
   personalizationName: string
@@ -32,13 +33,16 @@ export default function RewardUnlocked({
       />
 
       <div className="relative">
-        <p className="animate-pop text-3xl" aria-hidden="true">
-          🎉
-        </p>
+        <span
+          aria-hidden="true"
+          className="animate-pop mx-auto grid h-14 w-14 place-items-center rounded-pill bg-gold text-white shadow-soft"
+        >
+          <PartyIcon size={28} />
+        </span>
 
         <h2
           id="reward-unlocked-heading"
-          className="mt-1 font-display text-2xl font-extrabold text-ink"
+          className="mt-3 font-display text-2xl font-extrabold text-ink"
         >
           You did it!
         </h2>
@@ -47,11 +51,11 @@ export default function RewardUnlocked({
           Your Biolane nesting reward is unlocked.
         </p>
 
-        <p className="mt-4 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold">
-          <span aria-hidden="true">🎁</span> Free {campaign.rewardName}
+        <p className="mt-4 flex items-center justify-center gap-1.5 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold">
+          <GiftIcon size={18} /> Free {campaign.rewardName}
         </p>
 
-        <div className="mt-5 rounded-xl bg-white/80 p-4 text-left">
+        <div className="mt-5 rounded-2xl bg-white/80 p-4 text-left">
           <label
             htmlFor="personalization"
             className="block font-display text-[14px] font-bold text-ink"
@@ -71,11 +75,17 @@ export default function RewardUnlocked({
             aria-describedby="personalization-help"
             aria-invalid={invalid || undefined}
             /* 16px minimum stops iOS Safari auto-zooming on focus. */
-            className="mt-2 min-h-[50px] w-full rounded-xl border-2 border-ink/15 bg-white px-4 text-[16px] font-semibold text-ink placeholder:font-normal placeholder:text-ink-soft/45 focus:border-blue focus:outline-none"
+            className={`mt-2 min-h-[50px] w-full rounded-2xl border-2 bg-white px-4 text-[16px] font-semibold text-ink placeholder:font-normal placeholder:text-ink-soft/45 focus:outline-none ${
+              invalid ? 'border-danger focus:border-danger' : 'border-ink/15 focus:border-blue'
+            }`}
           />
 
           <div className="mt-1.5 flex items-start justify-between gap-3">
-            <p id="personalization-help" className="text-[11.5px] text-ink-soft/75">
+            <p
+              id="personalization-help"
+              role={invalid ? 'alert' : undefined}
+              className={`text-[11.5px] ${invalid ? 'font-semibold text-danger' : 'text-ink-soft/75'}`}
+            >
               {invalid
                 ? 'We can only print letters, spaces, hyphens and apostrophes.'
                 : 'Letters and spaces only.'}
@@ -86,7 +96,7 @@ export default function RewardUnlocked({
           </div>
 
           {personalizationName.trim() !== '' && !invalid && (
-            <p className="mt-3 rounded-lg bg-cream-soft px-3 py-2 text-center">
+            <p className="mt-3 rounded-xl bg-cream-soft px-3 py-2 text-center">
               <span className="block text-[10.5px] uppercase tracking-wide text-ink-soft/70">
                 Preview on bag
               </span>

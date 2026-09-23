@@ -2,9 +2,12 @@
 
 import Image from 'next/image'
 import { useEffect, useId, useRef, useState } from 'react'
+import type { BabyStage } from '@/data/campaign'
 import { isPriced, type CatalogItem } from '@/data/products'
 import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
+import { CheckIcon, HelpCircleIcon, InfoIcon, PlusIcon } from './icons'
+import { Badge, IconButton, stageTone } from './ui'
 import QtyStepper from './QtyStepper'
 
 interface Props {
@@ -16,6 +19,8 @@ interface Props {
   priority?: boolean
   /** Level of the product name heading (one below its section's heading). */
   headingLevel?: 3 | 4
+  /** Tints the image well with her stage's colour. */
+  stage?: BabyStage
 }
 
 export default function ProductCard({
@@ -25,6 +30,7 @@ export default function ProductCard({
   suggested = false,
   priority = false,
   headingLevel = 3,
+  stage,
 }: Props) {
   const [showWhy, setShowWhy] = useState(false)
   const whyId = useId()
@@ -35,6 +41,7 @@ export default function ProductCard({
   // Two products share a name in different sizes (Pure H2O 350 / 750), so
   // every control's label includes the size.
   const fullName = product.size ? `${product.name} ${product.size}` : product.name
+  const well = stage ? stageTone(stage).tint : 'bg-sky-soft'
 
   // Add and the stepper replace each other, so the button she just used
   // disappears. Hand focus to its replacement instead of dropping it.
@@ -72,35 +79,26 @@ export default function ProductCard({
       ].join(' ')}
     >
       {/* "Why this?" — the BA talking point. */}
-      <button
-        type="button"
+      <IconButton
         onClick={() => setShowWhy((v) => !v)}
         aria-expanded={showWhy}
         aria-controls={whyId}
         aria-label={`Why choose ${fullName}?`}
-        className="absolute right-1.5 top-1.5 z-10 grid h-11 w-11 place-items-center rounded-full text-ink-soft/70 transition-colors hover:bg-sky-soft hover:text-blue active:bg-sky"
+        className="absolute right-1.5 top-1.5 z-10 aria-expanded:bg-sky-soft aria-expanded:text-blue"
       >
-        <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
-          <circle cx="10" cy="10" r="8.25" stroke="currentColor" strokeWidth="1.5" />
-          <path
-            d="M10 14.2v-.01M10 11.3c0-1.5 1.9-1.7 1.9-3.2A1.9 1.9 0 0 0 8.2 7.6"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
+        <HelpCircleIcon size={20} />
+      </IconButton>
 
       <div className="flex gap-3 p-3 sm:gap-4 sm:p-4">
-        {/* Packshot, with a tick once it's in her basket */}
-        <div className="relative h-[76px] w-[76px] shrink-0 sm:h-20 sm:w-20">
-          <div className="relative h-full w-full overflow-hidden rounded-xl bg-sky-soft">
+        {/* Packshot in a stage-tinted well, with a tick once it's in her basket */}
+        <div className="relative h-[88px] w-[88px] shrink-0">
+          <div className={`relative h-full w-full overflow-hidden rounded-2xl ${well}`}>
             <Image
               src={asset(product.image)}
               alt={fullName}
               fill
-              sizes="80px"
-              className="object-contain p-1.5"
+              sizes="88px"
+              className="object-contain p-2"
               priority={priority}
               loading={priority ? undefined : 'lazy'}
             />
@@ -108,41 +106,33 @@ export default function ProductCard({
           {inBasket && (
             <span
               aria-hidden="true"
-              className="animate-pop absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-blue text-white ring-2 ring-white"
+              className="animate-pop absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-pill bg-ink text-white ring-2 ring-white"
             >
-              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none">
-                <path
-                  d="M3.5 8.4l3 3 6-6.4"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <CheckIcon size={14} strokeWidth={3} />
             </span>
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <Heading className="pr-9 font-display text-[15px] font-bold leading-snug text-ink sm:text-base">
+          <Heading className="pr-10 font-display text-[15px] font-bold leading-snug text-ink sm:text-base">
             {product.name}
           </Heading>
           {product.size && (
-            <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-ink-soft/70">
-              {product.size}
+            <p className="mt-1">
+              <Badge tone="soft">{product.size}</Badge>
             </p>
           )}
-          <p className="mt-1 text-[13px] leading-snug text-ink-soft">{product.blurb}</p>
+          <p className="mt-1.5 text-[13px] leading-snug text-ink-soft">{product.blurb}</p>
 
           {/* Price on the left, Add / stepper on the right; wraps on narrow cards. */}
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             {priced ? (
               <p className="flex items-baseline gap-1.5">
-                <span className="font-display text-lg font-extrabold text-blue">
+                <span className="font-display text-lg font-extrabold tabular-nums text-blue">
                   {peso(priced.price)}
                 </span>
                 {priced.origPrice > priced.price && (
-                  <span className="text-xs text-ink-soft/55 line-through">
+                  <span className="text-xs tabular-nums text-ink-soft/55 line-through">
                     {peso(priced.origPrice)}
                   </span>
                 )}
@@ -152,23 +142,24 @@ export default function ProductCard({
             )}
 
             {!priced ? (
-              <span className="inline-flex min-h-[44px] items-center rounded-full border-2 border-dashed border-ink/20 px-4 text-[13px] font-semibold text-ink-soft">
+              <span className="inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border-2 border-dashed border-ink/20 px-4 text-[13px] font-semibold text-ink-soft">
+                <InfoIcon size={16} />
                 Ask our team
               </span>
             ) : inBasket ? (
               <QtyStepper name={fullName} qty={qty} onChange={step} plusRef={plusRef} />
             ) : (
+              /* A plain button (not <Button>) so the focus hand-off ref can land on it;
+                 styled as Button secondary/sm with a 44px target. */
               <button
                 ref={addRef}
                 type="button"
                 onClick={add}
                 aria-label={`Add ${fullName}`}
-                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border-2 border-blue px-5 text-[14px] font-bold text-blue transition-colors hover:bg-blue hover:text-white active:bg-blue-deep active:text-white"
+                className="press inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-pill border-2 border-blue bg-white px-4 text-[13.5px] font-bold text-blue hover:bg-blue hover:text-white active:bg-blue-deep active:text-white"
               >
-                <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
-                  <path d="M10 5v10M5 10h10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                </svg>
-                Add
+                <PlusIcon size={16} strokeWidth={2.5} />
+                <span>Add</span>
               </button>
             )}
           </div>
@@ -178,7 +169,7 @@ export default function ProductCard({
       {showWhy && (
         <div
           id={whyId}
-          className="animate-rise mx-3 mb-3 rounded-xl bg-sky-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft sm:mx-4 sm:mb-4"
+          className="animate-rise mx-3 mb-3 rounded-2xl bg-sky-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft sm:mx-4 sm:mb-4"
         >
           {product.whyThis}
         </div>
