@@ -126,12 +126,6 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
         {campaign.communityHeading} <span aria-hidden="true">💛</span>
       </h1>
 
-      {campaign.communityCopy.map((line, i) => (
-        <p key={i} className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">
-          {line}
-        </p>
-      ))}
-
       <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
         {/* Name */}
         <div>

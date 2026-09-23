@@ -46,21 +46,21 @@ Everything tweakable lives in three data files. No component needs touching.
 
 **After any price, threshold, or picks edit, run `npm run verify`.** It fails
 if a pick is misspelled or repeated, if a stage's picks can no longer reach
-the reward, or if a sun or mosquito product is picked for Expecting or Newborn.
+the reward, or if a sun or mosquito product is picked for Expecting or Baby.
 
 ### What each stage sees first
 
 | Stage | Picks (in order) |
 |---|---|
 | Expecting | Stretch Marks Cream, Nursing Balm, Pure H2O 750ml, 2-in-1 Cleanser 350ml, Diaper Change Cream, Body Milk, Nourishing Cream, Almond Oil Spray, Cradle Cap Shampoo, CicaBébé |
-| Newborn 0–3m | Pure H2O 750ml, Pure H2O Refill, 2-in-1 Cleanser 350ml, Cradle Cap Shampoo, Cleansing Milk, Diaper Change Cream, Body Milk, Nourishing Cream, Almond Oil Spray, Liquid Powder, CicaBébé, Nursing Balm |
-| Baby 4–12m | Pure H2O 750ml, 2-in-1 Cleanser 750ml, Gentle Shampoo 350ml, Diaper Change Cream, Body Milk, Nourishing Cream, Almond Oil Spray, Skin Fragrance, Sunstick, Sun Cream, Mosquito Stick, Arnica Gel, CicaBébé |
-| Toddler 1–4y | 2-in-1 Cleanser 750ml, Kids Detangling Shampoo, Styling Gel, Extra Rich Soap, Body Milk, Skin Fragrance, Sun Spray, Sunstick, Sun Cream, Mosquito Stick, Arnica Gel, CicaBébé |
+| Baby 0 to 12 months | Pure H2O 750ml, Pure H2O Refill, 2-in-1 Cleanser 350ml, Gentle Shampoo 350ml, Cradle Cap Shampoo, Diaper Change Cream, Cleansing Milk, Body Milk, Nourishing Cream, Almond Oil Spray, Liquid Powder, Arnica Gel, CicaBébé, Nursing Balm |
+| Toddler 1 to 4 years old | 2-in-1 Cleanser 750ml, Kids Detangling Shampoo, Styling Gel, Extra Rich Soap, Body Milk, Skin Fragrance, Sun Spray, Sunstick, Sun Cream, Mosquito Stick, Arnica Gel, CicaBébé |
 | Others | All 31 products, by category |
 
-Sun and mosquito products are never picked for Expecting or Newborn:
+Sun and mosquito products are never picked for Expecting or Baby:
 biolane.ph says the mosquito stick is "from 6 months" and to keep babies
-under 6 months in the shade.
+under 6 months in the shade, and "Baby" covers 0 to 12 months. They stay
+available under "See all".
 
 ---
 
@@ -189,7 +189,7 @@ Uncomment the Meta Pixel / GA4 lines to connect. The site runs fine without them
 - A refresh keeps her place, details and basket — but only in that browser
   tab (`sessionStorage`). Finishing or Start over clears it, so the next mom
   never sees the last one's details.
-- **Change** next to her stage opens the five stage options right on the
+- **Change** next to her stage opens the four stage options right on the
   checklist. Tapping one swaps her picks instantly and keeps her basket; her
   lead record is re-sent with the new stage. The phone's Back button still
   returns to the sign-up with every field filled in.

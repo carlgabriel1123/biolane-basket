@@ -79,7 +79,8 @@ function cleanForm(raw: unknown): CommunityValues {
     name: str(f.name),
     email: str(f.email),
     mobile: str(f.mobile),
-    babyStage: isStage(f.babyStage) ? f.babyStage : '',
+    // 'newborn' was merged into 'baby' (0 to 12 months).
+    babyStage: f.babyStage === 'newborn' ? 'baby' : isStage(f.babyStage) ? f.babyStage : '',
     dueDate: str(f.dueDate),
     consent: f.consent === true,
   }

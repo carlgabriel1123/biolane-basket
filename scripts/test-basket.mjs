@@ -55,21 +55,21 @@ eq('raising qty alone can unlock', computeBasket(r).unlocked, true)
 eq('surplus reported, remaining 0', [computeBasket(r).surplus, computeBasket(r).remaining], [2580 - T, 0])
 
 console.log('\nSuggestions:')
-const newbornPicks = stagePlans.newborn.picks.map((id) => productById.get(id))
-const s1 = suggestProducts({}, newbornPicks)
+const babyPicks = stagePlans.baby.picks.map((id) => productById.get(id))
+const s1 = suggestProducts({}, babyPicks)
 eq('empty basket gets a suggestion set', s1.length > 0 && s1.length <= 3, true)
 eq('suggestions close the gap', s1.reduce((a, p) => a + p.price, 0) >= T, true)
-eq('suggestions come from her picks first', s1.every((p) => stagePlans.newborn.picks.includes(p.id)), true)
-eq('deterministic', suggestProducts({}, newbornPicks).map((p) => p.id), s1.map((p) => p.id))
-const s2 = suggestProducts({ 'pure-h2o-750': 1 }, newbornPicks)
+eq('suggestions come from her picks first', s1.every((p) => stagePlans.baby.picks.includes(p.id)), true)
+eq('deterministic', suggestProducts({}, babyPicks).map((p) => p.id), s1.map((p) => p.id))
+const s2 = suggestProducts({ 'pure-h2o-750': 1 }, babyPicks)
 eq('never suggests something already in the basket', s2.some((p) => p.id === 'pure-h2o-750'), false)
-eq('nothing suggested once unlocked', suggestProducts(r, newbornPicks), [])
+eq('nothing suggested once unlocked', suggestProducts(r, babyPicks), [])
 // every pick already chosen once, still below threshold? impossible here, so force a small pool
 const tinyPool = [productById.get('rich-soap-150')]
 const s3 = suggestProducts({}, tinyPool)
 eq('falls back to the whole catalogue when her picks cannot close the gap', s3.length > 0 && s3.reduce((a, p) => a + p.price, 0) >= T, true)
 const everythingOnce = Object.fromEntries(products.map((p) => [p.id, 1]))
-eq('unlocked basket → no suggestions', suggestProducts(everythingOnce, newbornPicks).length, 0)
+eq('unlocked basket → no suggestions', suggestProducts(everythingOnce, babyPicks).length, 0)
 // Locked, and no single unchosen product closes the gap (max = 1):
 // falls back to the priciest unchosen product instead of an empty box.
 const soapOnly = { 'rich-soap-150': 1 } // PHP 330, gap 1969, dearest product is 1630

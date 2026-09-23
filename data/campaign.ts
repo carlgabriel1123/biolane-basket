@@ -17,7 +17,6 @@ export const campaign = {
   joinCtaLabel: 'Join and see my checklist',
 
   /** Hero copy */
-  eyebrow: 'Biolane Grand Baby Fair',
   headline: 'Are you nesting, Mommy?',
   subheadline: "Let's get baby ready.",
   supportingText:
@@ -47,20 +46,15 @@ export const campaign = {
 
   /** Community section */
   communityHeading: 'Welcome to the Biolane Mom Community',
-  communityCopy: [
-    "Your Biolane journey doesn't end at the Baby Fair.",
-    'Join our community for helpful baby-care content, routines, special offers, product updates, events and little surprises along the way.',
-  ],
   consentLabel:
     "Yes, I'd love to receive Biolane's baby-care tips, monthly emails, special offers, product updates and community news.",
 } as const
 
 export const babyStages = [
   { value: 'expecting', label: 'Expecting' },
-  { value: 'newborn', label: 'Newborn — 0–3 months' },
-  { value: 'baby', label: 'Baby — 4–12 months' },
-  { value: 'toddler', label: 'Toddler — 1–4 years' },
-  { value: 'others', label: 'Others — shopping for family or a gift' },
+  { value: 'baby', label: 'Baby — 0 to 12 months' },
+  { value: 'toddler', label: 'Toddler — 1 to 4 years old' },
+  { value: 'others', label: 'Others' },
 ] as const
 
 export type BabyStage = (typeof babyStages)[number]['value']

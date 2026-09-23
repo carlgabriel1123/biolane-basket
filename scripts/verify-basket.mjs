@@ -147,7 +147,8 @@ for (const { value } of babyStages) {
 }
 // Sun and mosquito products must never be picked below 6 months (biolane.ph guidance).
 const sixMonthsPlus = ['sunstick', 'suncream', 'sunspray', 'mosquito-stick']
-for (const young of ['expecting', 'newborn']) {
+// 'baby' is 0 to 12 months, so it includes under-6-month babies.
+for (const young of ['expecting', 'baby']) {
   const picks = stagePlans[young]?.picks
   const bad = Array.isArray(picks) ? picks.filter((id) => sixMonthsPlus.includes(id)) : []
   check(`"${young}" picks exclude 6-months-plus products`, bad.length === 0, bad.join(', '))

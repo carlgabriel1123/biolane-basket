@@ -39,11 +39,7 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
           className="mx-auto h-auto w-[124px] md:w-[146px]"
         />
 
-        <p className="mt-5 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-blue md:text-xs">
-          {campaign.eyebrow}
-        </p>
-
-        <div className="mt-4 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft">
+        <div className="mt-6 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft">
           <span aria-hidden="true" className="text-2xl">
             🎁
           </span>
