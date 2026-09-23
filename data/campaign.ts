@@ -10,6 +10,12 @@ export const campaign = {
   rewardName: 'Personalized Biolane Toiletry Bag',
   rewardShortName: 'Personalized Toiletry Bag',
 
+  /** Most units of one product a single mom can add. */
+  maxQtyPerItem: 10,
+
+  /** Button that submits the sign-up form and opens the checklist. */
+  joinCtaLabel: 'Join and see my checklist',
+
   /** Hero copy */
   eyebrow: 'Biolane Grand Baby Fair',
   headline: 'Are you nesting, Mommy?',
@@ -54,6 +60,7 @@ export const babyStages = [
   { value: 'newborn', label: 'Newborn — 0–3 months' },
   { value: 'baby', label: 'Baby — 4–12 months' },
   { value: 'toddler', label: 'Toddler — 1–4 years' },
+  { value: 'others', label: 'Others — shopping for family or a gift' },
 ] as const
 
 export type BabyStage = (typeof babyStages)[number]['value']

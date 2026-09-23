@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { babyStages, campaign, type BabyStage } from '@/data/campaign'
 import { track } from '@/lib/analytics'
 import { addDays, isPlausibleEmail, manilaToday, normalisePhMobile, tidy } from '@/lib/validate'
@@ -28,15 +28,10 @@ const inputBase =
 
 export default function CommunityForm({ values, onChange, onSubmit, submitting }: Props) {
   const [errors, setErrors] = useState<Errors>({})
-  const headingRef = useRef<HTMLHeadingElement>(null)
   const started = useRef(false)
 
   const today = manilaToday()
   const maxDue = addDays(today, 300)
-
-  useEffect(() => {
-    headingRef.current?.focus()
-  }, [])
 
   const set = <K extends keyof CommunityValues>(key: K, value: CommunityValues[K]) => {
     if (!started.current) {
@@ -101,16 +96,16 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
   return (
     <section
       aria-labelledby="community-heading"
-      className="rounded-card border border-ink/10 bg-white p-5 shadow-soft"
+      className="rounded-card border border-ink/10 bg-white p-5 shadow-soft md:p-7"
     >
-      <h2
+      {/* This form is the first screen, so its heading is the page's h1. */}
+      <h1
         id="community-heading"
-        ref={headingRef}
         tabIndex={-1}
-        className="font-display text-[19px] font-extrabold leading-snug text-ink outline-none"
+        className="font-display text-[21px] font-extrabold leading-snug text-ink outline-none md:text-2xl"
       >
         {campaign.communityHeading} <span aria-hidden="true">💛</span>
-      </h2>
+      </h1>
 
       {campaign.communityCopy.map((line, i) => (
         <p key={i} className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">
@@ -298,7 +293,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
           disabled={submitting}
           className="min-h-[54px] w-full rounded-full bg-blue px-6 text-[15px] font-bold text-white shadow-lift transition-colors hover:bg-blue-deep disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {submitting ? 'Sending…' : 'Join the Biolane Mom Community'}
+          {submitting ? 'Opening your checklist…' : campaign.joinCtaLabel}
         </button>
 
         {/* Policy links open in a new tab so she never loses a half-filled form. */}

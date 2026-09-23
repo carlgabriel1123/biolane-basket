@@ -1,60 +1,77 @@
-import { campaign } from '@/data/campaign'
-import { products, productById, type Product } from '@/data/products'
+import { campaign } from '../data/campaign.ts'
+import { products, productById } from '../data/products.ts'
+import type { Product } from '../data/products.ts'
 
 /**
- * Basket maths.
+ * Basket maths. The basket is a map of product id → quantity.
  *
  * VERIFIED FACTS about the current 31-SKU price list (scripts/verify-basket.mjs):
  *   • Every price is a multiple of 5, so ₱2,299 is NEVER exactly reachable.
  *     The real boundary is ₱2,295 (locked) → ₱2,300 (unlocked).
- *   • Cheapest qualifying basket = ₱2,300.
- *   • Minimum 2 items (only 13 of 465 pairs qualify — each needs the ₱1,630
- *     Sun Spray or two of the ₱1,000+ items); realistic path is 3–4.
- *   • Any 6 items always qualify.
- *   • Every locked basket can be closed by adding at most 3 products
- *     (checked on 20k sampled baskets plus the adversarial shapes).
- * If prices change, re-run scripts/verify-basket.mjs.
+ *   • Every stage's picks can reach the threshold on their own.
+ * If prices or picks change, re-run `npm run verify`.
  */
+
+export type Quantities = Record<string, number>
+
+export interface BasketLine {
+  product: Product
+  qty: number
+  lineTotal: number
+}
 
 export interface BasketState {
   total: number
+  /** Distinct products in the basket. */
   count: number
+  /** Total units across all products. */
+  units: number
   remaining: number
   unlocked: boolean
   surplus: number
-  selected: Product[]
+  /** In the order she added them. */
+  lines: BasketLine[]
 }
 
-/** Total is ALWAYS derived from the selected set — never accumulated. */
-export function computeBasket(selectedIds: Set<string>): BasketState {
-  const selected = products.filter((p) => selectedIds.has(p.id))
-  const total = selected.reduce((sum, p) => sum + p.price, 0)
+export function clampQty(n: number): number {
+  if (!Number.isFinite(n)) return 0
+  return Math.max(0, Math.min(campaign.maxQtyPerItem, Math.floor(n)))
+}
+
+/** Returns a new basket with `id` set to `qty` (0 removes it). */
+export function setQty(q: Quantities, id: string, qty: number): Quantities {
+  if (!productById.has(id)) return q
+  const next = { ...q }
+  const v = clampQty(qty)
+  if (v === 0) delete next[id]
+  else next[id] = v
+  return next
+}
+
+/** Total is ALWAYS derived from the quantities — never accumulated. */
+export function computeBasket(q: Quantities): BasketState {
+  const lines: BasketLine[] = []
+  for (const [id, qty] of Object.entries(q)) {
+    const product = productById.get(id)
+    if (!product || qty <= 0) continue
+    lines.push({ product, qty, lineTotal: product.price * qty })
+  }
+  const total = lines.reduce((s, l) => s + l.lineTotal, 0)
+  const units = lines.reduce((s, l) => s + l.qty, 0)
   const unlocked = total >= campaign.rewardThreshold
 
   return {
     total,
-    count: selected.length,
+    count: lines.length,
+    units,
     remaining: Math.max(campaign.rewardThreshold - total, 0),
     unlocked,
     surplus: Math.max(total - campaign.rewardThreshold, 0),
-    selected,
+    lines,
   }
 }
 
-/**
- * Suggest the set of unchecked products that closes the gap with the SMALLEST
- * overshoot. Searches every unchecked subset of size 1–3 (≤129 combinations).
- *
- * Deterministic: same basket in → identical list out. Ties break by fewest
- * items, then lowest total, then catalogue order.
- */
-export function suggestProducts(selectedIds: Set<string>, max = 3): Product[] {
-  const { unlocked, remaining } = computeBasket(selectedIds)
-  if (unlocked || remaining <= 0) return []
-
-  const pool = products.filter((p) => !selectedIds.has(p.id))
-  if (pool.length === 0) return []
-
+function bestClosingSet(pool: Product[], remaining: number, max: number): Product[] | null {
   let best: { items: Product[]; overshoot: number; total: number } | null = null
 
   const consider = (items: Product[]) => {
@@ -65,9 +82,7 @@ export function suggestProducts(selectedIds: Set<string>, max = 3): Product[] {
       !best ||
       overshoot < best.overshoot ||
       (overshoot === best.overshoot && items.length < best.items.length) ||
-      (overshoot === best.overshoot &&
-        items.length === best.items.length &&
-        total < best.total)
+      (overshoot === best.overshoot && items.length === best.items.length && total < best.total)
     ) {
       best = { items, overshoot, total }
     }
@@ -80,27 +95,41 @@ export function suggestProducts(selectedIds: Set<string>, max = 3): Product[] {
   }
   walk(0, [])
 
-  // Verified unreachable with the current price list, but never render an
-  // empty suggestion box — fall back to the cheapest remaining products.
-  if (!best) {
-    return [...pool].sort((a, b) => a.price - b.price).slice(0, max)
+  return best ? (best as { items: Product[] }).items : null
+}
+
+/**
+ * Suggest up to `max` products she hasn't added yet that close the gap with
+ * the SMALLEST overshoot. `preferred` (her stage's picks) is searched first;
+ * the whole catalogue is the fallback. Deterministic: same basket in →
+ * identical list out.
+ */
+export function suggestProducts(q: Quantities, preferred: Product[], max = 3): Product[] {
+  const { unlocked, remaining } = computeBasket(q)
+  if (unlocked || remaining <= 0) return []
+
+  const notChosen = (p: Product) => !(q[p.id] > 0)
+
+  const fromPicks = bestClosingSet(preferred.filter(notChosen), remaining, max)
+  if (fromPicks) return fromPicks
+
+  const everything = products.filter(notChosen)
+  const fromAll = bestClosingSet(everything, remaining, max)
+  if (fromAll) return fromAll
+
+  // Nothing unchosen can close the gap in ≤max products (she has nearly
+  // everything). Never show an empty box: offer the priciest remaining ones.
+  return [...everything].sort((a, b) => b.price - a.price).slice(0, max)
+}
+
+/** Resolve stored quantities against the live catalogue. */
+export function sanitiseQuantities(raw: unknown): Quantities {
+  const out: Quantities = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const [id, qty] of Object.entries(raw as Record<string, unknown>)) {
+    if (!productById.has(id) || typeof qty !== 'number') continue
+    const v = clampQty(qty)
+    if (v > 0) out[id] = v
   }
-
-  const chosen: Product[] = (best as { items: Product[] }).items
-  return chosen
-}
-
-/** The cheapest single product that would close the gap on its own, if any. */
-export function cheapestCloser(selectedIds: Set<string>): Product | null {
-  const { unlocked, remaining } = computeBasket(selectedIds)
-  if (unlocked) return null
-  const closers = products
-    .filter((p) => !selectedIds.has(p.id) && p.price >= remaining)
-    .sort((a, b) => a.price - b.price)
-  return closers[0] ?? null
-}
-
-/** Resolve stored ids against the live catalogue, dropping anything removed. */
-export function sanitiseIds(ids: string[]): Set<string> {
-  return new Set(ids.filter((id) => productById.has(id)))
+  return out
 }

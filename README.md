@@ -1,16 +1,23 @@
 # Biolane Nesting Checklist — Grand Baby Fair
 
 Mobile-first microsite for the Biolane Philippines Grand Baby Fair activation.
-A nesting mom scans a QR at the booth, ticks the essentials she's taking home,
-watches her basket total climb toward ₱2,299, and unlocks a free personalized
-toiletry bag. Then she joins the Biolane Mom Community.
+A mom scans a QR at the booth and:
+
+1. **Joins the Biolane Mom Community** — name, email, mobile, baby stage,
+   due date if expecting, optional marketing consent. Her lead is saved the
+   moment she submits.
+2. **Builds her checklist** — the products picked for her baby stage come
+   first, everything else is folded under "See all". Each product has
+   **Add**, then **− qty +**. Her total climbs toward ₱2,299 and unlocks a
+   free personalized toiletry bag.
+3. **Shows the confirmation** to the Biolane team at the booth.
 
 Next.js 15 · TypeScript · Tailwind v4 · no external UI libraries.
 
 ```bash
 npm install
 npm run dev      # http://localhost:3100
-npm test         # validation + basket invariants
+npm test         # validation, basket maths, and price/stage invariants
 npm run build
 ```
 
@@ -18,13 +25,18 @@ npm run build
 
 ## What you will want to edit
 
-Everything tweakable lives in two files. No component needs touching.
+Everything tweakable lives in three data files. No component needs touching.
 
 | Want to change | File | Field |
 |---|---|---|
+| Which products each baby stage sees first, and their order | `data/stages.ts` | `picks` |
+| Stage headings on the checklist | `data/stages.ts` | `title`, `caption` |
+| Baby stage options on the form | `data/campaign.ts` | `babyStages` |
 | Reward threshold | `data/campaign.ts` | `rewardThreshold` |
+| Most units of one product per mom | `data/campaign.ts` | `maxQtyPerItem` |
 | Reward name | `data/campaign.ts` | `rewardName`, `rewardShortName` |
-| Headline / subhead / CTA | `data/campaign.ts` | `headline`, `subheadline`, `ctaLabel` |
+| Sign-up button text | `data/campaign.ts` | `joinCtaLabel` |
+| Community heading and copy | `data/campaign.ts` | `communityHeading`, `communityCopy` |
 | Promo dates | `data/campaign.ts` | `promoDates` |
 | Privacy / Terms links | `data/campaign.ts` | `privacyPolicyUrl`, `termsUrl` |
 | Consent wording | `data/campaign.ts` | `consentLabel` |
@@ -32,14 +44,23 @@ Everything tweakable lives in two files. No component needs touching.
 | Product blurbs / BA talking points | `data/products.ts` | `blurb`, `whyThis` |
 | Product images | `public/images/products/` | replace the file, keep the name |
 
-**After any price or threshold edit, run `npm run verify`.** It brute-forces
-every possible basket and tells you if the maths still supports the copy.
+**After any price, threshold, or picks edit, run `npm run verify`.** It fails
+if a pick is misspelled or repeated, if a stage's picks can no longer reach
+the reward, or if a sun or mosquito product is picked for Expecting or Newborn.
 
-### Swapping a product's featured size
+### What each stage sees first
 
-Each product carries an `otherSizes` array listing the other sizes that exist
-in the pricing sheet. To feature a different one, copy its `size`, `price`,
-`gbfSku` and `sheetRow` up into the main fields. Nothing else changes.
+| Stage | Picks (in order) |
+|---|---|
+| Expecting | Stretch Marks Cream, Nursing Balm, Pure H2O 750ml, 2-in-1 Cleanser 350ml, Diaper Change Cream, Body Milk, Nourishing Cream, Almond Oil Spray, Cradle Cap Shampoo, CicaBébé |
+| Newborn 0–3m | Pure H2O 750ml, Pure H2O Refill, 2-in-1 Cleanser 350ml, Cradle Cap Shampoo, Cleansing Milk, Diaper Change Cream, Body Milk, Nourishing Cream, Almond Oil Spray, Liquid Powder, CicaBébé, Nursing Balm |
+| Baby 4–12m | Pure H2O 750ml, 2-in-1 Cleanser 750ml, Gentle Shampoo 350ml, Diaper Change Cream, Body Milk, Nourishing Cream, Almond Oil Spray, Skin Fragrance, Sunstick, Sun Cream, Mosquito Stick, Arnica Gel, CicaBébé |
+| Toddler 1–4y | 2-in-1 Cleanser 750ml, Kids Detangling Shampoo, Styling Gel, Extra Rich Soap, Body Milk, Skin Fragrance, Sun Spray, Sunstick, Sun Cream, Mosquito Stick, Arnica Gel, CicaBébé |
+| Others | All 31 products, by category |
+
+Sun and mosquito products are never picked for Expecting or Newborn:
+biolane.ph says the mosquito stick is "from 6 months" and to keep babies
+under 6 months in the shade.
 
 ---
 
@@ -163,11 +184,16 @@ Uncomment the Meta Pixel / GA4 lines to connect. The site runs fine without them
 
 ## Booth behaviour worth knowing
 
-- **Start over** is available from every screen, and wipes all state in one tap.
-- The basket (not the mom's details) survives a refresh for **10 minutes**.
-  Personal data is never restored, so the next mom never sees the last one's.
-- Submitting freezes an immutable snapshot with a **claim code** (`BIO-XXXXXXXX`).
-  Unticking afterwards cannot change what staff see.
+- **Start over** is on the checklist and the confirmation, and wipes
+  everything in one tap.
+- A refresh keeps her place, details and basket — but only in that browser
+  tab (`sessionStorage`). Finishing or Start over clears it, so the next mom
+  never sees the last one's details.
+- **Change** next to her stage goes back to the sign-up with every field
+  filled in. Her basket is kept. The phone's Back button walks back the same way.
+- One record per mom: it is saved on sign-up and updated on finish with the
+  same **claim code** (`BIO-XXXXXXXX`). Changing the basket afterwards
+  cannot change what staff see.
 - If the network drops, the confirmation still appears with an amber
   **"Will sync"** badge. It is still a valid claim — hand over the bag.
 - Consent is never pre-checked and never blocks submission.

@@ -1,0 +1,68 @@
+'use client'
+
+import Image from 'next/image'
+import { campaign } from '@/data/campaign'
+import { asset } from '@/lib/asset'
+import CommunityForm, { type CommunityValues } from './CommunityForm'
+
+interface Props {
+  values: CommunityValues
+  onChange: (next: CommunityValues) => void
+  onSubmit: () => void
+  submitting: boolean
+  /** True when she came back via "Change" — adjusts the intro line. */
+  returning: boolean
+}
+
+/** Screen 1: logo, the reward, and the Biolane Mom Community sign-up. */
+export default function JoinPage({ values, onChange, onSubmit, submitting, returning }: Props) {
+  return (
+    <main className="relative overflow-hidden px-4 pb-16 pt-7 md:pt-12">
+      <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-sky/60 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-20 top-40 h-52 w-52 rounded-full bg-blush/40 blur-3xl" />
+
+      <div className="relative mx-auto max-w-md md:max-w-xl">
+        <Image
+          src={asset('/images/brand/biolane-logo.png')}
+          alt="Biolane"
+          width={132}
+          height={38}
+          priority
+          className="mx-auto h-auto w-[124px] md:w-[146px]"
+        />
+
+        <p className="mt-5 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-blue md:text-xs">
+          {campaign.eyebrow}
+        </p>
+
+        <div className="mt-4 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft">
+          <span aria-hidden="true" className="text-2xl">
+            🎁
+          </span>
+          <p className="text-[13px] leading-snug text-ink-soft md:text-sm">
+            <span className="font-display text-[15px] font-extrabold text-ink md:text-base">
+              {campaign.rewardTeaserAmount}
+            </span>{' '}
+            on Biolane and get a free {campaign.rewardName}.
+          </p>
+        </div>
+
+        {returning && (
+          <p className="mt-4 rounded-xl bg-sky-soft px-4 py-3 text-[13px] leading-snug text-ink-soft">
+            Update your details or baby stage, then continue. Your basket is saved.
+          </p>
+        )}
+
+        <div className="mt-5">
+          <CommunityForm values={values} onChange={onChange} onSubmit={onSubmit} submitting={submitting} />
+        </div>
+
+        <p className="mt-5 text-center text-[11px] leading-relaxed text-ink-soft/70">
+          {campaign.promoDates}
+          <br />
+          {campaign.rewardDisclaimer}
+        </p>
+      </div>
+    </main>
+  )
+}

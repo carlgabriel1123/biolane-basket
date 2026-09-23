@@ -113,14 +113,15 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
             <li key={p.id} className="flex items-baseline justify-between gap-3 py-2">
               <span className="min-w-0 flex-1">
                 <span className="block text-[13.5px] font-semibold leading-snug text-ink">
-                  {p.name}
+                  {p.name} <span className="font-display font-extrabold text-blue">× {p.qty}</span>
                 </span>
                 <span className="text-[11.5px] text-ink-soft/70">
-                  {p.size} · SKU {p.gbfSku}
+                  {p.size ? `${p.size} · ` : ''}SKU {p.gbfSku}
+                  {p.qty > 1 ? ` · ${peso(p.price)} each` : ''}
                 </span>
               </span>
               <span className="shrink-0 text-[14px] font-semibold tabular-nums text-ink">
-                {peso(p.price)}
+                {peso(p.lineTotal)}
               </span>
             </li>
           ))}

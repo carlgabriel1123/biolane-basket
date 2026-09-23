@@ -8,7 +8,7 @@
     "start": "next start -p 3100",
     "lint": "next lint",
     "verify": "node scripts/verify-basket.mjs",
-    "test": "node scripts/test-validate.mjs && node scripts/verify-basket.mjs",
+    "test": "node scripts/test-validate.mjs && node scripts/test-basket.mjs && node scripts/verify-basket.mjs",
     "serve:pages": "node scripts/serve-pages.mjs"
   },
   "dependencies": {

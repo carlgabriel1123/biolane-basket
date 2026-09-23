@@ -10,10 +10,12 @@ export type AnalyticsEvent =
   | 'nesting_started'
   | 'product_selected'
   | 'product_removed'
+  | 'quantity_changed'
   | 'reward_progress'
   | 'reward_unlocked'
   | 'community_signup_started'
   | 'community_signup_completed'
+  | 'basket_opened'
   | 'form_submitted'
 
 type Payload = Record<string, string | number | boolean | undefined>

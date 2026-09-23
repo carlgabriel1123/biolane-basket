@@ -14,7 +14,8 @@
  */
 
 import { products } from '../data/products.ts'
-import { campaign } from '../data/campaign.ts'
+import { campaign, babyStages } from '../data/campaign.ts'
+import { stagePlans } from '../data/stages.ts'
 
 const P = products.map(({ id, name, price }) => ({ id, name, price }))
 const T = campaign.rewardThreshold
@@ -120,8 +121,41 @@ check(
     (bad ? '' : ' — suggestion engine can always close the gap')
 )
 
+/* ---------- stage picks (data/stages.ts) ---------- */
+console.log('\nStage picks:')
+const ids = new Set(P.map((p) => p.id))
+const priceOf = new Map(P.map((p) => [p.id, p.price]))
+const stageFacts = []
+for (const { value } of babyStages) {
+  const plan = stagePlans[value]
+  check(`stage "${value}" has a plan`, Boolean(plan))
+  if (!plan || plan.picks === 'all') {
+    stageFacts.push(`  ${value.padEnd(10)}: all ${n} products`)
+    continue
+  }
+  const unknown = plan.picks.filter((id) => !ids.has(id))
+  const dupes = plan.picks.filter((id, i) => plan.picks.indexOf(id) !== i)
+  check(`"${value}" picks are all real product ids`, unknown.length === 0, unknown.join(', '))
+  check(`"${value}" picks have no repeats`, dupes.length === 0, dupes.join(', '))
+  const sum = plan.picks.reduce((s, id) => s + (priceOf.get(id) ?? 0), 0)
+  check(`"${value}" picks alone can reach PHP ${T}`, sum >= T, `one of each = PHP ${sum}`)
+  // fewest picks (one each) needed to unlock
+  const sorted = plan.picks.map((id) => priceOf.get(id) ?? 0).sort((a, b) => b - a)
+  let a = 0, k = 0
+  for (const v of sorted) { a += v; k++; if (a >= T) break }
+  stageFacts.push(`  ${value.padEnd(10)}: ${plan.picks.length} picks, unlock with ${k} of them at minimum`)
+}
+// Sun and mosquito products must never be picked below 6 months (biolane.ph guidance).
+const sixMonthsPlus = ['sunstick', 'suncream', 'sunspray', 'mosquito-stick']
+for (const young of ['expecting', 'newborn']) {
+  const picks = stagePlans[young]?.picks
+  const bad = Array.isArray(picks) ? picks.filter((id) => sixMonthsPlus.includes(id)) : []
+  check(`"${young}" picks exclude 6-months-plus products`, bad.length === 0, bad.join(', '))
+}
+
 /* ---------- facts ---------- */
 console.log('\nFacts for the BA script:')
+stageFacts.forEach((l) => console.log(l))
 console.log(`  minimum products to unlock      : ${minItems}`)
 console.log(`  cheapest qualifying basket      : PHP ${minQual}`)
 console.log(`  highest possible LOCKED total   : PHP ${maxSub}`)

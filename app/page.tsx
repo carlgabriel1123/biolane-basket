@@ -1,23 +1,39 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Hero from '@/components/Hero'
-import ProductSection from '@/components/ProductSection'
-import RewardProgress from '@/components/RewardProgress'
-import Suggestions from '@/components/Suggestions'
-import RewardUnlocked from '@/components/RewardUnlocked'
-import CommunityForm, { type CommunityValues } from '@/components/CommunityForm'
+import JoinPage from '@/components/JoinPage'
+import ChecklistPage from '@/components/ChecklistPage'
 import Confirmation from '@/components/Confirmation'
 import BasketBar from '@/components/BasketBar'
-import { campaign } from '@/data/campaign'
-import { products, productGroups } from '@/data/products'
-import { computeBasket, sanitiseIds, suggestProducts } from '@/lib/basket'
+import BasketSheet from '@/components/BasketSheet'
+import type { CommunityValues } from '@/components/CommunityForm'
+import { campaign, type BabyStage } from '@/data/campaign'
+import { productById, products, type Product } from '@/data/products'
+import { stagePlans } from '@/data/stages'
+import {
+  computeBasket,
+  sanitiseQuantities,
+  setQty,
+  suggestProducts,
+  type Quantities,
+} from '@/lib/basket'
 import { makeProgressTracker, track } from '@/lib/analytics'
-import { submitChecklist, type Submission } from '@/lib/submission'
-import { tidy, normalisePhMobile } from '@/lib/validate'
+import { newSubmissionId, sendSubmission, type Submission } from '@/lib/submission'
+import { normalisePhMobile, tidy } from '@/lib/validate'
 
-const BASKET_KEY = 'biolane-nesting-basket'
-const RESTORE_WINDOW_MS = 10 * 60 * 1000
+/**
+ * Three screens in one page:
+ *   join      → the Biolane Mom Community sign-up (saves the lead)
+ *   checklist → her stage's picks, quantities, reward
+ *   done      → confirmation to show at the booth
+ * The browser Back button walks back through them. The live session sits in
+ * sessionStorage (this tab only) so a refresh keeps her place; finishing or
+ * Start over wipes it, so the next mom never sees the last one's details.
+ */
+
+type Step = 'join' | 'checklist' | 'done'
+
+const SESSION_KEY = 'biolane-nesting-session'
 
 const EMPTY_FORM: CommunityValues = {
   name: '',
@@ -28,186 +44,231 @@ const EMPTY_FORM: CommunityValues = {
   consent: false, // never pre-checked, on every render path
 }
 
+interface SavedSession {
+  step: Step
+  form: CommunityValues
+  quantities: Quantities
+  personalizationName: string
+  submissionId: string | null
+}
+
 export default function Page() {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [started, setStarted] = useState(false)
-  const [showForm, setShowForm] = useState(false)
-  const [restored, setRestored] = useState(false)
-
-  // These live OUTSIDE the basket, so unchecking a product never wipes them.
-  const [personalizationName, setPersonalizationName] = useState('')
+  const [step, setStep] = useState<Step>('join')
   const [form, setForm] = useState<CommunityValues>(EMPTY_FORM)
+  const [quantities, setQuantities] = useState<Quantities>({})
+  const [personalizationName, setPersonalizationName] = useState('')
+  const [submissionId, setSubmissionId] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [finishing, setFinishing] = useState(false)
+  const [result, setResult] = useState<{ submission: Submission; storedRemotely: boolean } | null>(null)
 
-  const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState<{ submission: Submission; storedRemotely: boolean } | null>(
-    null
-  )
-
-  const checklistRef = useRef<HTMLDivElement>(null)
-  const formRef = useRef<HTMLDivElement>(null)
+  const hydrated = useRef(false)
+  const stepRef = useRef<Step>('join')
+  const joinedRef = useRef(false)
   const progressTracker = useRef(makeProgressTracker())
   const unlockAnnounced = useRef(false)
 
-  const basket = useMemo(() => computeBasket(selectedIds), [selectedIds])
-  const suggestions = useMemo(() => suggestProducts(selectedIds), [selectedIds])
-  // Only ring cards once the Suggestions panel is actually on screen to
-  // explain them — otherwise the gold rings read as unexplained decoration.
-  const suggestedIds = useMemo(
-    () =>
-      basket.count > 0 && !basket.unlocked
-        ? new Set(suggestions.map((p) => p.id))
-        : new Set<string>(),
-    [suggestions, basket.count, basket.unlocked]
-  )
+  stepRef.current = step
+  joinedRef.current = submissionId !== null
 
-  /* ---------------- restore: basket only, never PII ---------------- */
+  const stage = (form.babyStage || 'others') as BabyStage
+  const basket = useMemo(() => computeBasket(quantities), [quantities])
+
+  const stagePool = useMemo<Product[]>(() => {
+    const picks = stagePlans[stage].picks
+    return picks === 'all'
+      ? products
+      : picks.map((id) => productById.get(id)).filter((p): p is Product => Boolean(p))
+  }, [stage])
+
+  const suggestions = useMemo(() => suggestProducts(quantities, stagePool), [quantities, stagePool])
+
+  /* ---------------- navigation ---------------- */
+  const goTo = useCallback((next: Step) => {
+    window.history.pushState({ step: next }, '')
+    setStep(next)
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [])
+
+  /* ---------------- restore + Back button ---------------- */
   useEffect(() => {
+    let initial: Step = 'join'
     try {
-      const raw = window.localStorage.getItem(BASKET_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as { ids: string[]; at: number }
-      if (!parsed?.at || Date.now() - parsed.at > RESTORE_WINDOW_MS) {
-        window.localStorage.removeItem(BASKET_KEY)
-        return
-      }
-      const ids = sanitiseIds(parsed.ids ?? [])
-      if (ids.size > 0) {
-        setSelectedIds(ids)
-        setStarted(true)
-        setRestored(true)
+      const raw = window.sessionStorage.getItem(SESSION_KEY)
+      if (raw) {
+        const saved = JSON.parse(raw) as Partial<SavedSession>
+        if (saved.form) setForm({ ...EMPTY_FORM, ...saved.form })
+        setQuantities(sanitiseQuantities(saved.quantities))
+        if (typeof saved.personalizationName === 'string') setPersonalizationName(saved.personalizationName)
+        if (typeof saved.submissionId === 'string') {
+          setSubmissionId(saved.submissionId)
+          joinedRef.current = true
+          if (saved.step === 'checklist') initial = 'checklist'
+        }
       }
     } catch {
-      // Private mode / blocked storage — carry on with a clean basket.
+      // Blocked storage — start clean.
     }
+    setStep(initial)
+    window.history.replaceState({ step: initial }, '')
+    hydrated.current = true
+
+    const onPop = (e: PopStateEvent) => {
+      // The confirmation is a terminal, read-only state: Back stays on it.
+      if (stepRef.current === 'done') {
+        window.history.pushState({ step: 'done' }, '')
+        return
+      }
+      const target = ((e.state as { step?: Step } | null)?.step ?? 'join') as Step
+      const allowed: Step = target === 'checklist' && joinedRef.current ? 'checklist' : 'join'
+      setSheetOpen(false)
+      setStep(allowed)
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
   }, [])
 
   useEffect(() => {
+    if (!hydrated.current || step === 'done') return
     try {
-      if (selectedIds.size === 0) window.localStorage.removeItem(BASKET_KEY)
-      else
-        window.localStorage.setItem(
-          BASKET_KEY,
-          JSON.stringify({ ids: [...selectedIds], at: Date.now() })
-        )
+      const session: SavedSession = { step, form, quantities, personalizationName, submissionId }
+      window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
     } catch {
-      /* storage unavailable — the app still works fully in memory */
+      /* storage unavailable — everything still works in memory */
     }
-  }, [selectedIds])
+  }, [step, form, quantities, personalizationName, submissionId])
 
   /* ---------------- analytics ---------------- */
   useEffect(() => {
+    if (step !== 'checklist') return
     progressTracker.current(basket.total, campaign.rewardThreshold)
     if (basket.unlocked && !unlockAnnounced.current) {
       unlockAnnounced.current = true
       track('reward_unlocked', { total: basket.total })
     }
     if (!basket.unlocked) unlockAnnounced.current = false
-  }, [basket.total, basket.unlocked])
+  }, [step, basket.total, basket.unlocked])
 
-  /* ---------------- actions ---------------- */
-  const handleStart = useCallback(() => {
-    setStarted(true)
-    track('nesting_started')
-    requestAnimationFrame(() => {
-      checklistRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }, [])
-
-  const toggle = useCallback((id: string) => {
-    setStarted(true)
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-        track('product_removed', { id })
-      } else {
-        next.add(id)
-        track('product_selected', { id })
-      }
-      return next
-    })
-  }, [])
-
-  const handleContinue = useCallback(() => {
-    setShowForm(true)
-    requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }, [])
-
-  const handleStartOver = useCallback(() => {
-    if (
-      result === null &&
-      !window.confirm('Clear this session? The next mom starts fresh.')
-    ) {
-      return
-    }
-    try {
-      window.localStorage.removeItem(BASKET_KEY)
-    } catch {
-      /* ignore */
-    }
-    setSelectedIds(new Set())
-    setPersonalizationName('')
-    setForm(EMPTY_FORM)
-    setShowForm(false)
-    setStarted(false)
-    setRestored(false)
-    setResult(null)
-    unlockAnnounced.current = false
-    progressTracker.current = makeProgressTracker()
-    window.scrollTo({ top: 0, behavior: 'auto' })
-  }, [result])
-
-  const handleSubmit = useCallback(async () => {
-    if (submitting) return
-    setSubmitting(true) // synchronous — blocks the double-tap
-    track('community_signup_completed')
-
-    const snapshot = {
+  /* ---------------- building the record ---------------- */
+  const buildSubmission = useCallback(
+    (id: string, event: Submission['event']): Submission => ({
+      submissionId: id,
+      timestamp: new Date().toISOString(),
+      event,
       name: tidy(form.name),
       email: form.email.trim(),
       mobile: normalisePhMobile(form.mobile) ?? form.mobile.trim(),
-      babyStage: form.babyStage as Exclude<CommunityValues['babyStage'], ''>,
+      babyStage: stage,
       ...(form.babyStage === 'expecting' && form.dueDate ? { dueDate: form.dueDate } : {}),
       marketingConsent: form.consent,
-      selectedProducts: basket.selected.map((p) => ({
-        id: p.id,
-        name: p.name,
-        size: p.size,
-        gbfSku: p.gbfSku,
-        price: p.price,
+      selectedProducts: basket.lines.map(({ product, qty, lineTotal }) => ({
+        id: product.id,
+        name: product.name,
+        size: product.size,
+        gbfSku: product.gbfSku,
+        price: product.price,
+        qty,
+        lineTotal,
       })),
       basketTotal: basket.total,
       rewardUnlocked: basket.unlocked,
       ...(basket.unlocked && personalizationName.trim()
         ? { personalizationName: tidy(personalizationName) }
         : {}),
+    }),
+    [form, stage, basket, personalizationName]
+  )
+
+  /* ---------------- actions ---------------- */
+  const handleJoin = useCallback(() => {
+    const id = submissionId ?? newSubmissionId()
+    const firstTime = submissionId === null
+    setSubmissionId(id)
+    joinedRef.current = true
+    // Save the lead now, so a mom who stops here is still captured. Not
+    // awaited: slow booth wifi must never hold her on the form.
+    void sendSubmission(buildSubmission(id, 'signup'))
+    if (firstTime) {
+      track('community_signup_completed', { stage })
+      track('nesting_started', { stage })
     }
+    goTo('checklist')
+  }, [submissionId, buildSubmission, stage, goTo])
 
-    const res = await submitChecklist(snapshot)
-    track('form_submitted', { total: basket.total, unlocked: basket.unlocked })
+  const changeQty = useCallback(
+    (id: string, qty: number) => {
+      const before = quantities[id] ?? 0
+      const next = setQty(quantities, id, qty)
+      const after = next[id] ?? 0
+      if (after === before) return
+      setQuantities(next)
+      if (before === 0) track('product_selected', { id })
+      else if (after === 0) track('product_removed', { id })
+      else track('quantity_changed', { id, qty: after })
+    },
+    [quantities]
+  )
 
-    if (res.ok) {
-      setResult({
-        submission: {
-          ...snapshot,
-          submissionId: res.submissionId,
-          timestamp: new Date().toISOString(),
-        },
-        storedRemotely: res.storedRemotely,
-      })
-      try {
-        window.localStorage.removeItem(BASKET_KEY)
-      } catch {
-        /* ignore */
-      }
+  const openBasket = useCallback(() => {
+    setSheetOpen(true)
+    track('basket_opened', { units: basket.units, total: basket.total })
+  }, [basket.units, basket.total])
+
+  const closeBasket = useCallback(() => setSheetOpen(false), [])
+
+  const goToPersonalization = useCallback(() => {
+    setSheetOpen(false)
+    // Wait for the sheet to unmount and the scroll lock to lift.
+    window.setTimeout(() => {
+      const input = document.getElementById('personalization')
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      input?.focus({ preventScroll: true })
+    }, 60)
+  }, [])
+
+  const handleFinish = useCallback(async () => {
+    if (finishing || basket.count === 0 || !submissionId) return
+    setFinishing(true) // synchronous — blocks the double-tap
+    const submission = buildSubmission(submissionId, 'checklist_completed')
+    const storedRemotely = await sendSubmission(submission)
+    track('form_submitted', { total: basket.total, units: basket.units, unlocked: basket.unlocked })
+    setResult({ submission, storedRemotely })
+    setSheetOpen(false)
+    setFinishing(false)
+    try {
+      window.sessionStorage.removeItem(SESSION_KEY)
+    } catch {
+      /* ignore */
     }
-    setSubmitting(false)
-  }, [submitting, form, basket, personalizationName])
+    goTo('done')
+  }, [finishing, basket, submissionId, buildSubmission, goTo])
 
-  /* ---------------- terminal state ---------------- */
-  if (result) {
+  const handleStartOver = useCallback(() => {
+    if (stepRef.current !== 'done' && !window.confirm('Clear this session? The next mom starts fresh.')) {
+      return
+    }
+    try {
+      window.sessionStorage.removeItem(SESSION_KEY)
+    } catch {
+      /* ignore */
+    }
+    setForm(EMPTY_FORM)
+    setQuantities({})
+    setPersonalizationName('')
+    setSubmissionId(null)
+    joinedRef.current = false
+    setSheetOpen(false)
+    setResult(null)
+    unlockAnnounced.current = false
+    progressTracker.current = makeProgressTracker()
+    window.history.replaceState({ step: 'join' }, '')
+    setStep('join')
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [])
+
+  /* ---------------- screens ---------------- */
+  if (step === 'done' && result) {
     return (
       <Confirmation
         submission={result.submission}
@@ -217,155 +278,51 @@ export default function Page() {
     )
   }
 
-  const grouped = productGroups.map((g) => ({
-    ...g,
-    items: products.filter((p) => p.group === g.id),
-  }))
+  if (step === 'checklist' && submissionId) {
+    return (
+      <>
+        <ChecklistPage
+          firstName={tidy(form.name).split(' ')[0] || 'Mommy'}
+          stage={stage}
+          quantities={quantities}
+          basket={basket}
+          suggestions={suggestions}
+          personalizationName={personalizationName}
+          onPersonalizationChange={setPersonalizationName}
+          onChangeQty={changeQty}
+          onChangeStage={() => goTo('join')}
+          onOpenBasket={openBasket}
+          onStartOver={handleStartOver}
+        />
+        <BasketBar
+          count={basket.count}
+          units={basket.units}
+          total={basket.total}
+          remaining={basket.remaining}
+          unlocked={basket.unlocked}
+          onOpen={openBasket}
+        />
+        <BasketSheet
+          open={sheetOpen}
+          basket={basket}
+          personalizationName={personalizationName}
+          finishing={finishing}
+          onChange={changeQty}
+          onClose={closeBasket}
+          onFinish={handleFinish}
+          onGoToPersonalization={goToPersonalization}
+        />
+      </>
+    )
+  }
 
   return (
-    <>
-      <Hero onStart={handleStart} />
-
-      {/* Bottom padding clears the sticky basket bar + the iOS home indicator. */}
-      <main
-        className="mx-auto max-w-md px-4 md:max-w-3xl lg:max-w-6xl lg:px-8"
-        style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}
-      >
-        {restored && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl bg-cream-soft px-4 py-3">
-            <p className="flex-1 text-[12.5px] leading-snug text-ink-soft">
-              We restored your earlier selection.
-            </p>
-            <button
-              type="button"
-              onClick={handleStartOver}
-              className="min-h-[44px] shrink-0 rounded-full border border-ink/15 px-3 text-[12px] font-semibold text-ink"
-            >
-              Start over
-            </button>
-          </div>
-        )}
-
-        <div ref={checklistRef} className="scroll-mt-4 pt-6 md:pt-10 md:text-center lg:text-left">
-          <h2 className="font-display text-[22px] font-extrabold leading-tight text-ink md:text-3xl">
-            Biolane Nesting Checklist
-          </h2>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-ink-soft md:text-[15px]">
-            Tick what you&rsquo;re taking home. Most moms unlock the bag with 3&ndash;4
-            essentials.
-          </p>
-          <p className="mt-2 rounded-lg bg-sky-soft px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft/85 md:inline-block md:text-xs">
-            This is a checklist, not a checkout &mdash; nothing is purchased or charged here.
-          </p>
-        </div>
-
-        {/*
-          Phones: products, then progress/reward stacked below.
-          Desktop (lg+): products on the left, a sticky status rail on the right.
-        */}
-        <div className="lg:mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-10">
-          <fieldset className="mt-5 flex flex-col gap-7 border-0 p-0 md:gap-9">
-            <legend className="sr-only">
-              Choose the Biolane essentials you are taking home
-            </legend>
-
-            {grouped.map((g, i) => (
-              <ProductSection
-                key={g.id}
-                groupId={g.id}
-                title={g.title}
-                caption={g.caption}
-                items={g.items}
-                selectedIds={selectedIds}
-                suggestedIds={suggestedIds}
-                onToggle={toggle}
-                priorityFirst={i === 0}
-              />
-            ))}
-          </fieldset>
-
-          {/*
-            Phones/iPad portrait: appears below the products once she starts,
-            capped to the same width as the form beneath it.
-            Desktop: always visible in the right rail (progress reads ₱0 before
-            she starts, so the column is never blank), sticky, and it scrolls
-            internally rather than sliding under the fixed basket bar.
-          */}
-          <aside
-            aria-label="Your basket status"
-            className={
-              started
-                ? 'mt-7 flex w-full flex-col gap-4 md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:mt-5 lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto'
-                : 'hidden lg:sticky lg:top-6 lg:mt-5 lg:flex lg:flex-col lg:gap-4'
-            }
-          >
-            <RewardProgress
-              total={basket.total}
-              remaining={basket.remaining}
-              unlocked={basket.unlocked}
-            />
-
-            {started && !basket.unlocked && basket.count > 0 && (
-              <Suggestions
-                items={suggestions}
-                remaining={basket.remaining}
-                onAdd={toggle}
-              />
-            )}
-
-            {started && basket.unlocked && (
-              <RewardUnlocked
-                personalizationName={personalizationName}
-                onChangeName={setPersonalizationName}
-              />
-            )}
-
-            {/* Values are retained verbatim if the basket drops back below. */}
-            {started && basket.unlocked && personalizationName === '' && (
-              <p className="sr-only">Enter a name to personalize your bag.</p>
-            )}
-          </aside>
-        </div>
-
-        <div ref={formRef} className="scroll-mt-4 md:mx-auto md:max-w-lg">
-          {showForm && (
-            <div className="mt-7 md:mt-10">
-              <CommunityForm
-                values={form}
-                onChange={setForm}
-                onSubmit={handleSubmit}
-                submitting={submitting}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="md:mx-auto md:max-w-lg">
-          {started && (
-            <button
-              type="button"
-              onClick={handleStartOver}
-              className="mt-8 min-h-[44px] w-full rounded-full border border-ink/10 px-4 text-[12.5px] font-semibold text-ink-soft/80 transition-colors hover:border-blue hover:text-blue"
-            >
-              Start over for the next mom
-            </button>
-          )}
-
-          <footer className="mt-6 text-center text-[11px] leading-relaxed text-ink-soft/60 md:text-xs">
-            <p>{campaign.promoDates}</p>
-            <p className="mt-1">{campaign.rewardDisclaimer}</p>
-          </footer>
-        </div>
-      </main>
-
-      <BasketBar
-        visible={started && !showForm}
-        count={basket.count}
-        total={basket.total}
-        remaining={basket.remaining}
-        unlocked={basket.unlocked}
-        onContinue={handleContinue}
-      />
-    </>
+    <JoinPage
+      values={form}
+      onChange={setForm}
+      onSubmit={handleJoin}
+      submitting={false}
+      returning={submissionId !== null}
+    />
   )
 }

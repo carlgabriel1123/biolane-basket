@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { campaign } from '@/data/campaign'
 
 interface Props {
@@ -17,17 +16,9 @@ export default function RewardUnlocked({
   onChangeName,
   maxLength = 15,
 }: Props) {
-  const headingRef = useRef<HTMLHeadingElement>(null)
-  const announced = useRef(false)
-
-  // Move focus to the heading once, on first unlock — never to the input,
-  // which would open the keyboard and hide the basket total.
-  useEffect(() => {
-    if (announced.current) return
-    announced.current = true
-    headingRef.current?.focus()
-  }, [])
-
+  // No focus move on unlock: she is usually mid-tap on a + button, and
+  // jumping the page would lose her place. The basket bar's live region
+  // announces "Gift unlocked" instead.
   const invalid = personalizationName !== '' && !ALLOWED.test(personalizationName)
 
   return (
@@ -47,9 +38,7 @@ export default function RewardUnlocked({
 
         <h2
           id="reward-unlocked-heading"
-          ref={headingRef}
-          tabIndex={-1}
-          className="mt-1 font-display text-2xl font-extrabold text-ink outline-none"
+          className="mt-1 font-display text-2xl font-extrabold text-ink"
         >
           You did it, Mommy!
         </h2>
