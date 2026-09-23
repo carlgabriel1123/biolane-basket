@@ -472,6 +472,7 @@ export default function Page() {
           onClose={closeBasket}
           onFinish={handleFinish}
           onGoToPersonalization={goToPersonalization}
+          stage={stage}
         />
       </>
     )

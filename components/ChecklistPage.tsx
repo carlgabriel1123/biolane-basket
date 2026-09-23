@@ -7,6 +7,8 @@ import { catalogById, productGroups, products, type CatalogItem, type Product } 
 import { stagePlans } from '@/data/stages'
 import type { BasketState, Quantities } from '@/lib/basket'
 import { asset } from '@/lib/asset'
+import { ChevronDownIcon, GiftIcon, HeartIcon, SparklesIcon, XIcon } from './icons'
+import { Button, ChoiceChip, STAGE_TONES, StepIndicator, stageTone } from './ui'
 import ProductSection from './ProductSection'
 import RewardProgress from './RewardProgress'
 import RewardUnlocked from './RewardUnlocked'
@@ -41,6 +43,8 @@ export default function ChecklistPage({
   onStartOver,
 }: Props) {
   const plan = stagePlans[stage]
+  const tone = stageTone(stage)
+  const StageIcon = tone.Icon
   const headingRef = useRef<HTMLHeadingElement>(null)
   const [seeAllOpen, setSeeAllOpen] = useState(false)
   const seeAllId = useId()
@@ -218,17 +222,16 @@ export default function ChecklistPage({
             priority
             className="h-auto w-[150px] md:w-[180px]"
           />
-          <button
-            type="button"
-            onClick={onStartOver}
-            className="min-h-[44px] rounded-full px-3 text-[12.5px] font-semibold text-ink-soft/80 hover:text-blue"
-          >
+          <Button variant="ghost" onClick={onStartOver}>
             Start over
-          </button>
+          </Button>
         </div>
 
-        <p className="mt-6 font-display text-[30px] font-extrabold leading-tight text-blue md:mt-8 md:text-5xl">
-          Hi {firstName} <span aria-hidden="true">💛</span>
+        <StepIndicator step={2} total={2} label="Your checklist" className="mt-4" />
+
+        <p className="mt-4 flex items-center gap-2 font-display text-[30px] font-extrabold leading-tight text-blue md:mt-6 md:text-5xl">
+          Hi {firstName}
+          <HeartIcon size={28} className="shrink-0 text-gold md:h-9 md:w-9" fill="currentColor" strokeWidth={0} />
         </p>
         <h1 ref={headingRef} tabIndex={-1} className="mt-2 outline-none">
           <span className="block font-display text-[22px] font-extrabold leading-tight text-ink md:text-3xl">
@@ -238,14 +241,12 @@ export default function ChecklistPage({
             {campaign.checklistSubheading}
           </span>
         </h1>
-        <p className="mt-3 text-[14px] leading-relaxed text-ink-soft md:text-base">
-          {campaign.checklistIntro} <span aria-hidden="true">💛</span>
-        </p>
+        <p className="mt-3 text-[14px] leading-relaxed text-ink-soft md:text-base">{campaign.checklistIntro}</p>
 
         {/* The reward, introduced here — right after she joins. */}
         <div className="mt-4 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft md:max-w-2xl">
-          <span aria-hidden="true" className="text-2xl">
-            🎁
+          <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-cream text-gold">
+            <GiftIcon size={22} />
           </span>
           <p className="text-[13.5px] leading-snug text-ink-soft md:text-[15px]">
             <span className="font-display text-[15px] font-extrabold text-ink md:text-base">
@@ -263,16 +264,20 @@ export default function ChecklistPage({
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-sky px-3 py-1.5 text-[12.5px] font-semibold text-ink">
+          <span
+            className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-pill ${tone.tint} px-3 py-1.5 text-[12.5px] font-semibold text-ink`}
+          >
+            <StageIcon size={16} className={tone.text} />
             {plan.label}
           </span>
+          {/* Plain button (not <Button>) so focus can return to it by ref. */}
           <button
             ref={changeButtonRef}
             type="button"
             onClick={() => (stagePickerOpen ? closeStagePicker() : setStagePickerOpen(true))}
             aria-expanded={stagePickerOpen}
             aria-controls={stagePickerId}
-            className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-blue underline underline-offset-4 hover:text-blue-deep"
+            className="press inline-flex min-h-[44px] items-center rounded-pill px-3 text-[13.5px] font-bold text-blue hover:bg-white hover:text-blue-deep"
           >
             {stagePickerOpen ? 'Cancel' : 'Change'}
           </button>
@@ -298,28 +303,25 @@ export default function ChecklistPage({
             <p className="mt-0.5 text-[12.5px] text-ink-soft">
               Your picks update right away. Your basket stays the same.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {babyStages.map(({ value }) => {
                 const current = value === stage
+                const t = STAGE_TONES[value]
+                const Icon = t.Icon
                 return (
-                  <button
+                  <ChoiceChip
                     key={value}
-                    type="button"
-                    onClick={() => pickStage(value)}
-                    aria-pressed={current}
-                    className={`min-h-[44px] rounded-full border-2 px-4 text-[13px] font-semibold transition-colors ${
-                      current
-                        ? 'border-blue bg-blue text-white'
-                        : 'border-ink/15 bg-white text-ink hover:border-blue hover:text-blue'
-                    }`}
-                  >
-                    {current && (
-                      <span aria-hidden="true" className="mr-1">
-                        ✓
-                      </span>
-                    )}
-                    {stagePlans[value].label}
-                  </button>
+                    name="checklist-stage"
+                    value={value}
+                    checked={current}
+                    // A new stage arrives as a change; re-picking the current
+                    // one only fires click, and just closes the picker.
+                    onChange={() => pickStage(value)}
+                    onClick={current ? () => pickStage(value) : undefined}
+                    tone={t}
+                    icon={<Icon size={18} />}
+                    label={stagePlans[value].label}
+                  />
                 )
               })}
             </div>
@@ -341,6 +343,7 @@ export default function ChecklistPage({
                 suggestedIds={suggestedIds}
                 onChange={changeQty}
                 priorityFirst
+                stage={stage}
               />
               {showRecs && (
                 <div
@@ -359,18 +362,28 @@ export default function ChecklistPage({
                     quantities={quantities}
                     suggestedIds={suggestedIds}
                     onChange={changeQty}
-                    tone="sky"
+                    tone="stage"
+                    stage={stage}
+                    icon={<SparklesIcon size={20} />}
                   />
                 </div>
               )}
             </>
           ) : (
             <div className="flex flex-col gap-3">
-              <div className="mb-1">
-                <h2 className="font-display text-[17px] font-extrabold leading-snug text-ink md:text-xl">
-                  {campaign.checklistSectionTitle}
-                </h2>
-                <p className="mt-1 text-[13px] leading-snug text-ink-soft">{plan.caption}</p>
+              <div className="mb-1 flex items-start gap-3">
+                <span
+                  aria-hidden="true"
+                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-pill ${tone.tint} ${tone.text}`}
+                >
+                  <StageIcon size={20} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-display text-[17px] font-extrabold leading-snug text-ink md:text-xl">
+                    {campaign.checklistSectionTitle}
+                  </h2>
+                  <p className="mt-1 text-[13px] leading-snug text-ink-soft">{plan.caption}</p>
+                </div>
               </div>
               {productGroups.map((g, i) => {
                 const items = products.filter((p) => p.group === g.id)
@@ -388,6 +401,7 @@ export default function ChecklistPage({
                     defaultOpen={i === 0}
                     tone={g.id === 'justincase' ? 'blush' : 'plain'}
                     priorityFirst={i === 0}
+                    stage={stage}
                   />
                 )
               })}
@@ -406,20 +420,16 @@ export default function ChecklistPage({
           <RewardProgress total={basket.total} remaining={basket.remaining} unlocked={basket.unlocked} />
 
           {!basket.unlocked && basket.count > 0 && (
-            <Suggestions items={suggestions} remaining={basket.remaining} onAdd={addSuggestion} />
+            <Suggestions items={suggestions} remaining={basket.remaining} onAdd={addSuggestion} stage={stage} />
           )}
 
           {basket.unlocked && (
             <RewardUnlocked personalizationName={personalizationName} onChangeName={onPersonalizationChange} />
           )}
 
-          <button
-            type="button"
-            onClick={onOpenBasket}
-            className="min-h-[48px] w-full rounded-full border-2 border-blue px-5 text-[14px] font-bold text-blue transition-colors hover:bg-blue hover:text-white"
-          >
+          <Button variant="secondary" full onClick={onOpenBasket}>
             Review basket and finish
-          </button>
+          </Button>
         </aside>
 
         {/* Everything else, folded */}
@@ -431,7 +441,7 @@ export default function ChecklistPage({
                 onClick={() => setSeeAllOpen((v) => !v)}
                 aria-expanded={seeAllOpen}
                 aria-controls={seeAllId}
-                className="flex min-h-[56px] w-full items-center gap-3 rounded-card border border-ink/10 bg-white px-4 py-3 text-left shadow-soft transition-colors hover:border-blue/40"
+                className="press press-lg flex min-h-[56px] w-full items-center gap-3 rounded-card border border-ink/10 bg-white px-4 py-3 text-left shadow-soft hover:border-blue/40"
               >
                 <span className="min-w-0 flex-1">
                   <span id={`${seeAllId}-label`} className="block font-display text-[16px] font-extrabold text-ink">
@@ -441,14 +451,10 @@ export default function ChecklistPage({
                     {otherCount} more, by category
                   </span>
                 </span>
-                <svg
-                  viewBox="0 0 20 20"
-                  className={`h-5 w-5 shrink-0 text-ink-soft transition-transform duration-200 ${seeAllOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <ChevronDownIcon
+                  size={20}
+                  className={`shrink-0 text-ink-soft transition-transform duration-200 ${seeAllOpen ? 'rotate-180' : ''}`}
+                />
               </button>
             </h2>
 
@@ -467,6 +473,7 @@ export default function ChecklistPage({
                     defaultOpen={false}
                     tone={g.id === 'justincase' ? 'blush' : 'plain'}
                     headingLevel={3}
+                    stage={stage}
                   />
                 ))}
               </div>
@@ -480,25 +487,25 @@ export default function ChecklistPage({
           className="animate-rise fixed inset-x-0 z-30 flex justify-center px-4"
           style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
         >
-          <div ref={pillRef} className="flex items-center gap-1 rounded-full bg-ink py-1 pl-1 pr-1 text-white shadow-lift">
+          <div ref={pillRef} className="flex items-center gap-1 rounded-pill bg-ink py-1 pl-1 pr-1 text-white shadow-lift">
             <button
               type="button"
               onClick={goToRecs}
-              className="flex min-h-[44px] items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold hover:bg-white/10"
+              className="press flex min-h-[44px] items-center gap-2 rounded-pill px-4 py-1.5 text-left text-[13.5px] font-semibold leading-snug hover:bg-white/10"
             >
-              <span aria-hidden="true">✨</span>
-              {campaign.recsTitle}: {recs.length} more
-              <span className="font-bold text-sky underline underline-offset-4">See them</span>
+              <SparklesIcon size={16} className="shrink-0 text-gold-soft" />
+              <span>
+                {campaign.recsTitle}: {recs.length} more{' '}
+                <span className="font-bold text-sky underline underline-offset-4">See them</span>
+              </span>
             </button>
             <button
               type="button"
               onClick={dismissNudge}
               aria-label="Dismiss"
-              className="grid h-11 w-11 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+              className="press grid h-11 w-11 place-items-center rounded-pill text-white/70 hover:bg-white/10 hover:text-white"
             >
-              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
-                <path d="M5.5 5.5l9 9m0-9-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
+              <XIcon size={16} />
             </button>
           </div>
         </div>
