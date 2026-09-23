@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 
-// Main host: Vercel (https://biolane-basket.vercel.app) — runs the sign-up
+// Main host: Vercel (https://biolane-basket-cgp8.vercel.app) — runs the sign-up
 // API route in app/api/submit that saves to Supabase.
 //
 // Fallback: with GITHUB_PAGES=true this builds a static copy for

@@ -144,7 +144,7 @@ is usually true once she is past ₱1,600.
 ## Deployment
 
 **Vercel** hosts the real site (it has a small server route that saves sign-ups):
-**https://biolane-basket.vercel.app** — every push to `main` deploys it
+**https://biolane-basket-cgp8.vercel.app** — every push to `main` deploys it
 automatically once the GitHub repo is connected to the Vercel project
 `biolane-basket`.
 

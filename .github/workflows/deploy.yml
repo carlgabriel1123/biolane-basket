@@ -25,7 +25,7 @@ concurrency:
 
 env:
   PAGES_MODE: static
-  SITE_URL: https://biolane-basket.vercel.app/
+  SITE_URL: https://biolane-basket-cgp8.vercel.app/
 
 jobs:
   build:
