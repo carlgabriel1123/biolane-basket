@@ -1,9 +1,22 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { babyStages, campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { track } from '@/lib/analytics'
 import { addDays, isPlausibleEmail, manilaToday, normalisePhMobile, tidy } from '@/lib/validate'
+import {
+  AlertIcon,
+  ArrowRightIcon,
+  CalendarIcon,
+  CheckIcon,
+  HeartIcon,
+  MailIcon,
+  PhoneIcon,
+  SparklesIcon,
+  UserIcon,
+  UsersIcon,
+} from './icons'
+import { Button, Card, ChoiceChip, STAGE_TONES, stageTone } from './ui'
 
 export interface CommunityValues {
   name: string
@@ -27,8 +40,54 @@ interface Props {
 
 type Errors = Partial<Record<keyof CommunityValues, string>>
 
+/** The icon on each "Are you…" chip. */
+const RELATIONSHIP_ICONS: Record<Relationship, typeof UserIcon> = {
+  dad: UserIcon,
+  mom: HeartIcon,
+  grandparent: UsersIcon,
+  others: SparklesIcon,
+}
+
+/** One line under each stage chip's label. */
+const STAGE_HINTS: Record<BabyStage, string> = {
+  expecting: 'Getting ready for baby',
+  baby: 'Newborn to first birthday',
+  toddler: 'Walking, talking, exploring',
+  others: 'Just browsing',
+}
+
+/** Fields are validated in this order, and the first problem gets focus. */
+const FIELD_ORDER: Array<keyof CommunityValues> = [
+  'name',
+  'relationship',
+  'relationshipOther',
+  'email',
+  'mobile',
+  'babyStage',
+  'dueDate',
+]
+
 const inputBase =
-  'mt-1.5 min-h-[50px] w-full rounded-xl border-2 bg-white px-4 text-[16px] text-ink placeholder:text-ink-soft/45 focus:outline-none'
+  'min-h-[52px] w-full rounded-2xl border-2 bg-white pl-12 pr-4 text-[16px] text-ink placeholder:text-ink-soft/45 transition-colors focus:outline-none focus:shadow-glow'
+
+const labelClass = 'text-[13.5px] font-semibold text-ink'
+
+/** An input with a decorative leading icon; the icon follows focus and error state. */
+function Field({ icon, invalid, children }: { icon: ReactNode; invalid: boolean; children: ReactNode }) {
+  return (
+    <div className="group relative mt-1.5">
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
+          invalid ? 'text-danger' : 'text-ink-soft/55 group-focus-within:text-blue'
+        }`}
+      >
+        {icon}
+      </span>
+      {children}
+    </div>
+  )
+}
 
 export default function CommunityForm({ values, onChange, onSubmit, submitting }: Props) {
   const [errors, setErrors] = useState<Errors>({})
@@ -59,41 +118,58 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
     setErrors((e) => ({ ...e, [key]: undefined }))
   }
 
+  /** The rule for ONE field — shared by blur and submit so the messages can never drift apart. */
+  const ruleFor = (key: keyof CommunityValues): string | undefined => {
+    switch (key) {
+      case 'name':
+        return tidy(values.name).length < 2 ? 'Please enter your name.' : undefined
+      case 'relationship':
+        return values.relationship ? undefined : 'Please choose one.'
+      case 'relationshipOther':
+        return values.relationship === 'others' && tidy(values.relationshipOther).length < 2
+          ? 'Please tell us who you are to the baby.'
+          : undefined
+      case 'email':
+        return isPlausibleEmail(values.email) ? undefined : 'Please check your email address.'
+      case 'mobile':
+        return normalisePhMobile(values.mobile) ? undefined : 'Please enter a mobile number like 0917 123 4567.'
+      case 'babyStage':
+        return values.babyStage ? undefined : 'Please choose one.'
+      case 'dueDate':
+        if (values.babyStage === 'expecting' && values.dueDate) {
+          if (values.dueDate < today) return 'Due date cannot be in the past.'
+          if (values.dueDate > maxDue) return 'Please check the year.'
+        }
+        return undefined
+      default:
+        return undefined
+    }
+  }
+
+  /** Blur: check just this field, leaving every other field's state alone. */
+  const validateField = (key: keyof CommunityValues) => {
+    const message = ruleFor(key)
+    setErrors((e) => (e[key] === message ? e : { ...e, [key]: message }))
+  }
+
+  /** Radio groups: only validate when focus leaves the whole group, not while moving between chips. */
+  const validateGroupOnBlur = (key: 'relationship' | 'babyStage') => (e: React.FocusEvent<HTMLFieldSetElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+    validateField(key)
+  }
+
   const validate = (): boolean => {
     const next: Errors = {}
-
-    if (tidy(values.name).length < 2) next.name = 'Please enter your name.'
-
-    if (!values.relationship) next.relationship = 'Please choose one.'
-    else if (values.relationship === 'others' && tidy(values.relationshipOther).length < 2)
-      next.relationshipOther = 'Please tell us who you are to the baby.'
-
-    if (!isPlausibleEmail(values.email)) next.email = 'Please check your email address.'
-
-    if (!normalisePhMobile(values.mobile))
-      next.mobile = 'Please enter a mobile number like 0917 123 4567.'
-
-    if (!values.babyStage) next.babyStage = 'Please choose one.'
-
-    if (values.babyStage === 'expecting' && values.dueDate) {
-      if (values.dueDate < today) next.dueDate = 'Due date cannot be in the past.'
-      else if (values.dueDate > maxDue) next.dueDate = 'Please check the year.'
+    for (const key of FIELD_ORDER) {
+      const message = ruleFor(key)
+      if (message) next[key] = message
     }
 
     setErrors(next)
 
     // Work out the first problem from `next`, not the DOM: React hasn't
     // re-rendered the error states yet at this point.
-    const order: Array<keyof CommunityValues> = [
-      'name',
-      'relationship',
-      'relationshipOther',
-      'email',
-      'mobile',
-      'babyStage',
-      'dueDate',
-    ]
-    const firstKey = order.find((k) => next[k])
+    const firstKey = FIELD_ORDER.find((k) => next[k])
     if (firstKey) {
       const el =
         firstKey === 'babyStage' || firstKey === 'relationship'
@@ -126,314 +202,274 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
 
   const err = (key: keyof CommunityValues) =>
     errors[key] ? (
-      <p id={key + '-error'} role="alert" className="mt-1 text-[12.5px] font-medium text-[#c0392b]">
-        {errors[key]}
+      <p id={key + '-error'} role="alert" className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium text-danger">
+        <AlertIcon size={16} className="mt-px shrink-0" />
+        <span>{errors[key]}</span>
       </p>
     ) : null
 
   const borderFor = (key: keyof CommunityValues) =>
-    errors[key] ? 'border-[#c0392b]' : 'border-ink/15 focus:border-blue'
+    errors[key] ? 'border-danger' : 'border-ink/10 hover:border-ink/25 focus:border-blue'
 
   return (
-    <section
-      aria-labelledby="community-heading"
-      className="rounded-card border border-ink/10 bg-white p-5 shadow-soft md:p-7"
-    >
-      {/* This form is the first screen, so its heading is the page's h1. */}
-      <h1
-        id="community-heading"
-        tabIndex={-1}
-        className="outline-none"
-      >
-        <span className="block font-display text-[26px] font-extrabold leading-tight text-ink md:text-3xl">
-          {campaign.communityHeading}
-        </span>
-        <span className="mt-1.5 block text-[15px] font-semibold leading-snug text-ink-soft md:text-base">
-          {campaign.communitySubheading}
-        </span>
-      </h1>
+    <section aria-labelledby="community-heading" className="animate-rise">
+      <Card className="p-5 md:p-7">
+        {/* This form is the first screen, so its heading is the page's h1. */}
+        <h1 id="community-heading" tabIndex={-1} className="outline-none">
+          <span className="block font-display text-[26px] font-extrabold leading-tight text-ink md:text-3xl">
+            {campaign.communityHeading}
+          </span>
+          <span className="mt-1.5 block text-[15px] font-semibold leading-snug text-ink-soft md:text-base">
+            {campaign.communitySubheading}
+          </span>
+        </h1>
 
-      <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
-        {/* Name */}
-        <div>
-          <label htmlFor="name" className="text-[13.5px] font-semibold text-ink">
-            Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={values.name}
-            onChange={(e) => set('name', e.target.value)}
-            autoComplete="name"
-            enterKeyHint="next"
-            onKeyDown={nextOnEnter('relationship')}
-            data-invalid={Boolean(errors.name)}
-            aria-describedby={errors.name ? 'name-error' : undefined}
-            aria-invalid={Boolean(errors.name)}
-            placeholder="Your name"
-            className={inputBase + ' ' + borderFor('name')}
-          />
-          {err('name')}
-        </div>
+        <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
+          {/* Name */}
+          <div>
+            <label htmlFor="name" className={labelClass}>
+              Name
+            </label>
+            <Field icon={<UserIcon size={20} />} invalid={Boolean(errors.name)}>
+              <input
+                id="name"
+                type="text"
+                value={values.name}
+                onChange={(e) => set('name', e.target.value)}
+                onBlur={() => validateField('name')}
+                autoComplete="name"
+                enterKeyHint="next"
+                onKeyDown={nextOnEnter('relationship')}
+                data-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? 'name-error' : undefined}
+                aria-invalid={Boolean(errors.name)}
+                placeholder="Your name"
+                className={inputBase + ' ' + borderFor('name')}
+              />
+            </Field>
+            {err('name')}
+          </div>
 
-        {/* Are you… — right after Name */}
-        <fieldset data-invalid={Boolean(errors.relationship)}>
-          <legend className="text-[13.5px] font-semibold text-ink">Are you…</legend>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {relationships.map((option) => {
-              const active = values.relationship === option.value
-              return (
-                <label
-                  key={option.value}
-                  className={
-                    'flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border-2 px-4 transition-colors has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue ' +
-                    (active ? 'border-blue bg-sky-soft' : 'border-ink/15 bg-white')
-                  }
-                >
-                  <input
-                    type="radio"
+          {/* Are you… — right after Name */}
+          <fieldset
+            data-invalid={Boolean(errors.relationship)}
+            aria-describedby={errors.relationship ? 'relationship-error' : undefined}
+            onBlur={validateGroupOnBlur('relationship')}
+          >
+            <legend className={labelClass}>Are you…</legend>
+            {/* One column on phones: "Grandparent" plus its icon and check needs the width. */}
+            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+              {relationships.map((option) => {
+                const active = values.relationship === option.value
+                const Icon = RELATIONSHIP_ICONS[option.value]
+                return (
+                  <ChoiceChip
+                    key={option.value}
                     name="relationship"
                     value={option.value}
                     checked={active}
                     onChange={() => set('relationship', option.value)}
-                    className="sr-only"
+                    label={option.label}
+                    icon={<Icon size={18} />}
+                    tone={STAGE_TONES.baby}
                   />
-                  <span
-                    aria-hidden="true"
-                    className={
-                      'grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ' +
-                      (active ? 'border-blue' : 'border-ink/30')
-                    }
-                  >
-                    <span
-                      className={
-                        'h-2.5 w-2.5 rounded-full bg-blue transition-opacity ' +
-                        (active ? 'opacity-100' : 'opacity-0')
-                      }
-                    />
-                  </span>
-                  <span className="text-[14px] text-ink">{option.label}</span>
-                </label>
-              )
-            })}
-          </div>
-          {err('relationship')}
-        </fieldset>
+                )
+              })}
+            </div>
+            {err('relationship')}
+          </fieldset>
 
-        {/* Others — specify */}
-        {values.relationship === 'others' && (
-          <div className="animate-rise -mt-1">
-            <label htmlFor="relationshipOther" className="text-[13.5px] font-semibold text-ink">
-              Please specify
-            </label>
-            <input
-              id="relationshipOther"
-              type="text"
-              value={values.relationshipOther}
-              onChange={(e) => set('relationshipOther', e.target.value)}
-              maxLength={40}
-              enterKeyHint="next"
-              onKeyDown={nextOnEnter('email')}
-              data-invalid={Boolean(errors.relationshipOther)}
-              aria-describedby={errors.relationshipOther ? 'relationshipOther-error' : undefined}
-              aria-invalid={Boolean(errors.relationshipOther)}
-              placeholder="Tita, ninang, family friend"
-              className={inputBase + ' ' + borderFor('relationshipOther')}
-            />
-            {err('relationshipOther')}
-          </div>
-        )}
-
-        {/* Email */}
-        <div>
-          <label htmlFor="email" className="text-[13.5px] font-semibold text-ink">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={values.email}
-            onChange={(e) => set('email', e.target.value)}
-            autoComplete="email"
-            inputMode="email"
-            enterKeyHint="next"
-            onKeyDown={nextOnEnter('mobile')}
-            data-invalid={Boolean(errors.email)}
-            aria-describedby={errors.email ? 'email-error' : undefined}
-            aria-invalid={Boolean(errors.email)}
-            placeholder="you@email.com"
-            className={inputBase + ' ' + borderFor('email')}
-          />
-          {err('email')}
-        </div>
-
-        {/* Mobile */}
-        <div>
-          <label htmlFor="mobile" className="text-[13.5px] font-semibold text-ink">
-            Mobile number
-          </label>
-          <input
-            id="mobile"
-            /* type="tel", never "number" — number strips the leading 0 of 09xx. */
-            type="tel"
-            value={values.mobile}
-            onChange={(e) => set('mobile', e.target.value)}
-            autoComplete="tel"
-            inputMode="numeric"
-            enterKeyHint="next"
-            onKeyDown={nextOnEnter('babyStage')}
-            data-invalid={Boolean(errors.mobile)}
-            aria-describedby={errors.mobile ? 'mobile-error' : 'mobile-help'}
-            aria-invalid={Boolean(errors.mobile)}
-            placeholder="0917 123 4567"
-            className={inputBase + ' ' + borderFor('mobile')}
-          />
-          {errors.mobile ? (
-            err('mobile')
-          ) : (
-            <p id="mobile-help" className="mt-1 text-[11.5px] text-ink-soft/70">
-              Philippine mobile number.
-            </p>
+          {/* Others — specify */}
+          {values.relationship === 'others' && (
+            <div className="animate-rise -mt-1">
+              <label htmlFor="relationshipOther" className={labelClass}>
+                Please specify
+              </label>
+              <Field icon={<SparklesIcon size={20} />} invalid={Boolean(errors.relationshipOther)}>
+                <input
+                  id="relationshipOther"
+                  type="text"
+                  value={values.relationshipOther}
+                  onChange={(e) => set('relationshipOther', e.target.value)}
+                  onBlur={() => validateField('relationshipOther')}
+                  maxLength={40}
+                  enterKeyHint="next"
+                  onKeyDown={nextOnEnter('email')}
+                  data-invalid={Boolean(errors.relationshipOther)}
+                  aria-describedby={errors.relationshipOther ? 'relationshipOther-error' : undefined}
+                  aria-invalid={Boolean(errors.relationshipOther)}
+                  placeholder="Tita, ninang, family friend"
+                  className={inputBase + ' ' + borderFor('relationshipOther')}
+                />
+              </Field>
+              {err('relationshipOther')}
+            </div>
           )}
-        </div>
 
-        {/* Baby stage */}
-        <fieldset data-invalid={Boolean(errors.babyStage)}>
-          <legend className="text-[13.5px] font-semibold text-ink">Baby stage</legend>
-          <div className="mt-2 grid grid-cols-1 gap-2">
-            {babyStages.map((stage) => {
-              const active = values.babyStage === stage.value
-              return (
-                <label
-                  key={stage.value}
-                  className={
-                    'flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border-2 px-4 transition-colors has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue ' +
-                    (active ? 'border-blue bg-sky-soft' : 'border-ink/15 bg-white')
-                  }
-                >
-                  <input
-                    type="radio"
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className={labelClass}>
+              Email address
+            </label>
+            <Field icon={<MailIcon size={20} />} invalid={Boolean(errors.email)}>
+              <input
+                id="email"
+                type="email"
+                value={values.email}
+                onChange={(e) => set('email', e.target.value)}
+                onBlur={() => validateField('email')}
+                autoComplete="email"
+                inputMode="email"
+                enterKeyHint="next"
+                onKeyDown={nextOnEnter('mobile')}
+                data-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'email-error' : undefined}
+                aria-invalid={Boolean(errors.email)}
+                placeholder="you@email.com"
+                className={inputBase + ' ' + borderFor('email')}
+              />
+            </Field>
+            {err('email')}
+          </div>
+
+          {/* Mobile */}
+          <div>
+            <label htmlFor="mobile" className={labelClass}>
+              Mobile number
+            </label>
+            <Field icon={<PhoneIcon size={20} />} invalid={Boolean(errors.mobile)}>
+              <input
+                id="mobile"
+                /* type="tel", never "number" — number strips the leading 0 of 09xx. */
+                type="tel"
+                value={values.mobile}
+                onChange={(e) => set('mobile', e.target.value)}
+                onBlur={() => validateField('mobile')}
+                autoComplete="tel"
+                inputMode="numeric"
+                enterKeyHint="next"
+                onKeyDown={nextOnEnter('babyStage')}
+                data-invalid={Boolean(errors.mobile)}
+                aria-describedby={errors.mobile ? 'mobile-error' : 'mobile-help'}
+                aria-invalid={Boolean(errors.mobile)}
+                placeholder="0917 123 4567"
+                className={inputBase + ' ' + borderFor('mobile')}
+              />
+            </Field>
+            {errors.mobile ? (
+              err('mobile')
+            ) : (
+              <p id="mobile-help" className="mt-1.5 text-[11.5px] text-ink-soft/70">
+                Philippine mobile number.
+              </p>
+            )}
+          </div>
+
+          {/* Baby stage */}
+          <fieldset
+            data-invalid={Boolean(errors.babyStage)}
+            aria-describedby={errors.babyStage ? 'babyStage-error' : undefined}
+            onBlur={validateGroupOnBlur('babyStage')}
+          >
+            <legend className={labelClass}>Baby stage</legend>
+            <div className="mt-2 grid grid-cols-1 gap-2">
+              {babyStages.map((stage) => {
+                const active = values.babyStage === stage.value
+                const tone = stageTone(stage.value)
+                const Icon = tone.Icon
+                return (
+                  <ChoiceChip
+                    key={stage.value}
                     name="babyStage"
                     value={stage.value}
                     checked={active}
                     onChange={() => set('babyStage', stage.value)}
-                    className="sr-only"
+                    label={stage.label}
+                    hint={STAGE_HINTS[stage.value]}
+                    icon={<Icon size={18} />}
+                    tone={tone}
                   />
-                  <span
-                    aria-hidden="true"
-                    className={
-                      'grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ' +
-                      (active ? 'border-blue' : 'border-ink/30')
-                    }
-                  >
-                    <span
-                      className={
-                        'h-2.5 w-2.5 rounded-full bg-blue transition-opacity ' +
-                        (active ? 'opacity-100' : 'opacity-0')
-                      }
-                    />
-                  </span>
-                  <span className="text-[14px] text-ink">{stage.label}</span>
-                </label>
-              )
-            })}
-          </div>
-          {err('babyStage')}
-        </fieldset>
+                )
+              })}
+            </div>
+            {err('babyStage')}
+          </fieldset>
 
-        {/* Due date — only shown for Expecting */}
-        {values.babyStage === 'expecting' && (
-          <div className="animate-rise">
-            <label htmlFor="dueDate" className="text-[13.5px] font-semibold text-ink">
-              Due date <span className="font-normal text-ink-soft/70">(optional)</span>
-            </label>
+          {/* Due date — only shown for Expecting */}
+          {values.babyStage === 'expecting' && (
+            <div className="animate-rise">
+              <label htmlFor="dueDate" className={labelClass}>
+                Due date <span className="font-normal text-ink-soft/70">(optional)</span>
+              </label>
+              <Field icon={<CalendarIcon size={20} />} invalid={Boolean(errors.dueDate)}>
+                <input
+                  id="dueDate"
+                  type="date"
+                  value={values.dueDate}
+                  onChange={(e) => set('dueDate', e.target.value)}
+                  onBlur={() => validateField('dueDate')}
+                  min={today}
+                  max={maxDue}
+                  data-invalid={Boolean(errors.dueDate)}
+                  aria-describedby={errors.dueDate ? 'dueDate-error' : undefined}
+                  aria-invalid={Boolean(errors.dueDate)}
+                  className={inputBase + ' ' + borderFor('dueDate')}
+                />
+              </Field>
+              {err('dueDate')}
+            </div>
+          )}
+
+          {/* Marketing consent — never pre-checked, never blocks submit. */}
+          <label className="press flex min-h-[52px] cursor-pointer items-start gap-3 rounded-2xl bg-sky-soft p-4 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue">
             <input
-              id="dueDate"
-              type="date"
-              value={values.dueDate}
-              onChange={(e) => set('dueDate', e.target.value)}
-              min={today}
-              max={maxDue}
-              data-invalid={Boolean(errors.dueDate)}
-              aria-describedby={errors.dueDate ? 'dueDate-error' : undefined}
-              aria-invalid={Boolean(errors.dueDate)}
-              className={inputBase + ' ' + borderFor('dueDate')}
+              type="checkbox"
+              checked={values.consent}
+              onChange={(e) => set('consent', e.target.checked)}
+              className="sr-only"
             />
-            {err('dueDate')}
-          </div>
-        )}
-
-        {/* Marketing consent — never pre-checked, never blocks submit. */}
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sky-soft p-3.5 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue">
-          <input
-            type="checkbox"
-            checked={values.consent}
-            onChange={(e) => set('consent', e.target.checked)}
-            className="sr-only"
-          />
-          <span className="grid h-6 w-6 shrink-0 place-items-center pt-px">
             <span
               aria-hidden="true"
               className={
-                'grid h-5 w-5 place-items-center rounded border-2 transition-colors ' +
-                (values.consent ? 'border-blue bg-blue' : 'border-ink/30 bg-white')
+                'mt-px grid h-6 w-6 shrink-0 place-items-center rounded-lg border-2 transition-colors ' +
+                (values.consent ? 'border-blue bg-blue text-white' : 'border-ink/25 bg-white text-transparent')
               }
             >
-              <svg
-                viewBox="0 0 16 16"
-                className={'h-3.5 w-3.5 text-white ' + (values.consent ? 'opacity-100' : 'opacity-0')}
-                fill="none"
-              >
-                <path
-                  d="M3.5 8.4l3 3 6-6.4"
-                  stroke="currentColor"
-                  strokeWidth="2.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <CheckIcon size={14} strokeWidth={3} />
             </span>
-          </span>
-          <span className="text-[12.5px] leading-relaxed text-ink-soft">
-            {campaign.consentLabel}
-          </span>
-        </label>
+            <span className="text-[12.5px] leading-relaxed text-ink-soft">{campaign.consentLabel}</span>
+          </label>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="min-h-[54px] w-full rounded-full bg-blue px-6 text-[15px] font-bold text-white shadow-lift transition-colors hover:bg-blue-deep disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {submitting ? 'Opening your checklist…' : campaign.joinCtaLabel}
-        </button>
-
-        {/* Policy links open in a new tab so she never loses a half-filled form. */}
-        <p className="text-center text-[11px] leading-relaxed text-ink-soft/70">
-          By joining you agree to our{' '}
-          {campaign.termsUrl && (
-            <>
-              <a
-                href={campaign.termsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-              >
-                Terms &amp; Conditions
-              </a>{' '}
-              and{' '}
-            </>
-          )}
-          <a
-            href={campaign.privacyPolicyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
+          <Button
+            type="submit"
+            size="lg"
+            full
+            loading={submitting}
+            disabled={submitting}
+            iconRight={<ArrowRightIcon size={20} />}
+            className="mt-1"
           >
-            Privacy Policy
-          </a>
-          .
-        </p>
-      </form>
+            {submitting ? 'Opening your checklist…' : campaign.joinCtaLabel}
+          </Button>
+
+          {/* Policy links open in a new tab so she never loses a half-filled form. */}
+          <p className="text-center text-[11px] leading-relaxed text-ink-soft/70">
+            By joining you agree to our{' '}
+            {campaign.termsUrl && (
+              <>
+                <a href={campaign.termsUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                  Terms &amp; Conditions
+                </a>{' '}
+                and{' '}
+              </>
+            )}
+            <a href={campaign.privacyPolicyUrl} target="_blank" rel="noopener noreferrer" className="underline">
+              Privacy Policy
+            </a>
+            .
+          </p>
+        </form>
+      </Card>
     </section>
   )
 }
