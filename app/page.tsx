@@ -138,14 +138,16 @@ export default function Page() {
 
   // "Almost there" looks in her Checklist first, then her stage's
   // "You might also like" list, before falling back to everything.
-  const stagePool = useMemo<Product[]>(() => {
+  const stagePools = useMemo(() => {
     const { picks, suggestions: extras } = stagePlans[stage]
-    return picks === 'all'
-      ? products
-      : [...picks, ...extras].map((id) => productById.get(id)).filter((p): p is Product => Boolean(p))
+    const resolve = (ids: string[]) => ids.map((id) => productById.get(id)).filter((p): p is Product => Boolean(p))
+    return picks === 'all' ? { first: products, then: [] } : { first: resolve(picks), then: resolve(extras) }
   }, [stage])
 
-  const suggestions = useMemo(() => suggestProducts(quantities, stagePool), [quantities, stagePool])
+  const suggestions = useMemo(
+    () => suggestProducts(quantities, stagePools.first, 3, stagePools.then),
+    [quantities, stagePools]
+  )
 
   /* ---------------- navigation ---------------- */
   const goTo = useCallback((next: Step) => {
@@ -330,11 +332,10 @@ export default function Page() {
   const changeStage = useCallback(
     (next: BabyStage) => {
       if (finishingRef.current || !submissionId || !writeKey || next === form.babyStage) return
-      const updated: CommunityValues = {
-        ...form,
-        babyStage: next,
-        dueDate: next === 'expecting' ? form.dueDate : '',
-      }
+      // Keep the due date even when she peeks at another stage: it is only
+      // sent while the stage is Expecting (see buildSubmission), and she
+      // shouldn't lose what she typed by switching back.
+      const updated: CommunityValues = { ...form, babyStage: next }
       setForm(updated)
       setDraft(updated)
       void sendSubmission(buildSubmission(submissionId, writeKey, 'signup', updated))

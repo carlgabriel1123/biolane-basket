@@ -1,4 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
+import type { AdminSubmission } from '@/lib/admin-db'
+import { sheetConfigured, syncToSheet } from '@/lib/sheets'
 
 /**
  * POST /api/submit — saves one sign-up / finished checklist to Supabase.
@@ -171,7 +173,20 @@ export async function POST(request: Request) {
     return reply(503, { ok: false, error: 'store-unreachable' })
   }
 
-  if (res.ok) return reply(200, { ok: true, submissionId: record.submissionId })
+  if (res.ok) {
+    // Mirror the stored row to the Google Sheet after the phone has its
+    // answer, so a slow sheet never slows the booth.
+    if (sheetConfigured()) {
+      let stored: AdminSubmission | undefined
+      try {
+        stored = ((await res.json()) as AdminSubmission[])[0]
+      } catch {
+        /* the save succeeded either way */
+      }
+      if (stored) after(() => syncToSheet([stored]).catch((err) => console.error('[submit] sheet sync', err)))
+    }
+    return reply(200, { ok: true, submissionId: record.submissionId })
+  }
 
   const detail = (await res.text()).slice(0, 300)
   if (res.status === 401 || res.status === 403 || detail.includes('42501')) {

@@ -112,12 +112,23 @@ export default function ChecklistPage({
       `You might also like ${recs.length} more for ${stageShortName(stage)}, listed under your checklist.`
     )
     const el = recsRef.current
-    const onScreen = el ? el.getBoundingClientRect().top < window.innerHeight - 140 : true
+    const box = el?.getBoundingClientRect()
+    // Off-screen below (a long checklist) or above (first add from "See all").
+    const onScreen = box ? box.top < window.innerHeight - 140 && box.bottom > 0 : true
     setNudge(!onScreen)
   }, [showRecs, stage, recs.length])
+  // No section (e.g. switched to Others) → no nudge.
+  useEffect(() => {
+    if (!showRecs) setNudge(false)
+  }, [showRecs])
+  const pillRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!nudge) return
-    const timer = setTimeout(() => setNudge(false), 8000)
+    const timer = setTimeout(() => {
+      // Never yank the pill away from a keyboard user who is on it.
+      if (pillRef.current?.contains(document.activeElement)) return
+      setNudge(false)
+    }, 8000)
     const el = recsRef.current
     const seen =
       el && 'IntersectionObserver' in window
@@ -130,7 +141,12 @@ export default function ChecklistPage({
       clearTimeout(timer)
       seen?.disconnect()
     }
-  }, [nudge])
+  }, [nudge, stage])
+  const dismissNudge = () => {
+    const hadFocus = pillRef.current?.contains(document.activeElement)
+    setNudge(false)
+    if (hadFocus) (recsRef.current ?? document.getElementById('basket-status'))?.focus({ preventScroll: true })
+  }
   const goToRecs = () => {
     setNudge(false)
     const el = recsRef.current
@@ -140,18 +156,33 @@ export default function ChecklistPage({
     el.focus({ preventScroll: true })
   }
 
-  // "See all" holds only what isn't in her Checklist or her suggestions, so
-  // nothing repeats (suggestions surface after her first add).
+  // "See all" holds everything not in her Checklist. Once the suggestions
+  // section is showing, its products leave "See all" so no card repeats;
+  // before that they stay findable there.
   const otherGroups = useMemo(
     () =>
       productGroups
         .map((g) => ({
           ...g,
-          items: products.filter((p) => p.group === g.id && !pickIds.has(p.id) && !recIds.has(p.id)),
+          items: products.filter((p) => p.group === g.id && !pickIds.has(p.id) && !(showRecs && recIds.has(p.id))),
         }))
         .filter((g) => g.items.length > 0),
-    [pickIds, recIds]
+    [pickIds, recIds, showRecs]
   )
+
+  // A suggestion product added from "See all" as her first add moves its
+  // card into the new section; follow it with focus so + keeps working.
+  const changeQty = (id: string, qty: number) => {
+    const moves = !showRecs && qty > 0 && recIds.has(id)
+    onChangeQty(id, qty)
+    if (moves) {
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          document.querySelector<HTMLElement>(`#product-${id} [aria-label^="One more"]`)?.focus({ preventScroll: true })
+        )
+      )
+    }
+  }
   const otherCount = otherGroups.reduce((s, g) => s + g.items.length, 0)
 
   // Ring the suggested cards only while the suggestions panel explains them.
@@ -307,13 +338,14 @@ export default function ChecklistPage({
                 items={picks}
                 quantities={quantities}
                 suggestedIds={suggestedIds}
-                onChange={onChangeQty}
+                onChange={changeQty}
                 priorityFirst
               />
               {showRecs && (
                 <div
                   ref={recsRef}
                   id="you-might-also-like"
+                  role="region"
                   tabIndex={-1}
                   aria-labelledby={recsHeadingId}
                   className="animate-rise mt-6 scroll-mt-6 outline-none"
@@ -325,7 +357,7 @@ export default function ChecklistPage({
                     items={recs}
                     quantities={quantities}
                     suggestedIds={suggestedIds}
-                    onChange={onChangeQty}
+                    onChange={changeQty}
                     tone="sky"
                   />
                 </div>
@@ -429,7 +461,7 @@ export default function ChecklistPage({
                     items={g.items}
                     quantities={quantities}
                     suggestedIds={suggestedIds}
-                    onChange={onChangeQty}
+                    onChange={changeQty}
                     collapsible
                     defaultOpen={false}
                     tone={g.id === 'justincase' ? 'blush' : 'plain'}
@@ -442,12 +474,12 @@ export default function ChecklistPage({
         )}
       </div>
 
-      {nudge && (
+      {nudge && showRecs && (
         <div
           className="animate-rise fixed inset-x-0 z-30 flex justify-center px-4"
           style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
         >
-          <div className="flex items-center gap-1 rounded-full bg-ink py-1 pl-1 pr-1 text-white shadow-lift">
+          <div ref={pillRef} className="flex items-center gap-1 rounded-full bg-ink py-1 pl-1 pr-1 text-white shadow-lift">
             <button
               type="button"
               onClick={goToRecs}
@@ -459,7 +491,7 @@ export default function ChecklistPage({
             </button>
             <button
               type="button"
-              onClick={() => setNudge(false)}
+              onClick={dismissNudge}
               aria-label="Dismiss"
               className="grid h-11 w-11 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white"
             >

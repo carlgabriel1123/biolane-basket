@@ -8,12 +8,13 @@
     "start": "next start -p 3100",
     "lint": "next lint",
     "verify": "node scripts/verify-basket.mjs",
-    "test": "node scripts/test-validate.mjs && node scripts/test-basket.mjs && node scripts/verify-basket.mjs"
+    "test": "node scripts/test-validate.mjs && node scripts/test-basket.mjs && node scripts/verify-basket.mjs && node --conditions=react-server scripts/test-admin.mjs"
   },
   "dependencies": {
     "next": "15.5.26",
     "react": "19.1.9",
-    "react-dom": "19.1.9"
+    "react-dom": "19.1.9",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.13",

@@ -100,11 +100,11 @@ function bestClosingSet(pool: Product[], remaining: number, max: number): Produc
 
 /**
  * Suggest up to `max` products she hasn't added yet that close the gap with
- * the SMALLEST overshoot. `preferred` (her stage's picks) is searched first;
- * the whole catalogue is the fallback. Deterministic: same basket in →
- * identical list out.
+ * the SMALLEST overshoot. `preferred` (her stage's Checklist) is searched
+ * first, then `preferred` + `secondary` (her "You might also like" list),
+ * then the whole catalogue. Deterministic: same basket in → identical list out.
  */
-export function suggestProducts(q: Quantities, preferred: Product[], max = 3): Product[] {
+export function suggestProducts(q: Quantities, preferred: Product[], max = 3, secondary: Product[] = []): Product[] {
   const { unlocked, remaining } = computeBasket(q)
   if (unlocked || remaining <= 0) return []
 
@@ -112,6 +112,11 @@ export function suggestProducts(q: Quantities, preferred: Product[], max = 3): P
 
   const fromPicks = bestClosingSet(preferred.filter(notChosen), remaining, max)
   if (fromPicks) return fromPicks
+
+  if (secondary.length > 0) {
+    const fromStage = bestClosingSet([...preferred, ...secondary].filter(notChosen), remaining, max)
+    if (fromStage) return fromStage
+  }
 
   const everything = products.filter(notChosen)
   const fromAll = bestClosingSet(everything, remaining, max)

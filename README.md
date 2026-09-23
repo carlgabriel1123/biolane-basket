@@ -187,6 +187,59 @@ The same three go in `.env.local` (git-ignored) for local runs.
 - `static` — a copy of the site **without saving** (sign-ups stay on the
   phone). Only for emergencies if Vercel is down.
 
+## Admin dashboard — https://biolane.vercel.app/admin
+
+For the Biolane team at the booth. Not linked from the public site and
+hidden from search engines.
+
+- **First visit ever:** a one-time page asks you to create the admin
+  username and password (10+ characters). Keep it safe: it's the only login.
+- **Log in** lasts 12 hours per device. Five wrong tries in 15 minutes lock
+  that device and username for 15 minutes.
+- **What you see:** every sign-up, newest first, with date and time (Manila),
+  claim code, name, Dad/Mom/Grandparent/Others, mobile (tap to call), email,
+  baby stage, due date, consent, Signed up / Finished, basket total, gift
+  unlocked, bag name, and the products. Search by claim code, name, mobile or
+  email; filter by Unpaid, Paid, Gift unlocked, Finished, Signed up only or
+  stage. Counts on top. Refreshes itself every 30 s.
+- **Mark paid:** one tap when the purchase is verified; it records the time.
+  Tap again (with a confirmation) to undo.
+- **Download CSV:** everything, ready for Excel or Google Sheets.
+- **Change password** and **Log out** are in the top right. Changing the
+  password logs every other device out.
+
+### Google Sheets (live copy of the sign-ups)
+
+Once, about three minutes:
+
+1. Create a Google Sheet. Open **Extensions → Apps Script**.
+2. Delete what's there, paste **`docs/google-sheets/Code.gs`**, and set
+   `SECRET` to the value of `SHEETS_WEBHOOK_SECRET`.
+3. **Deploy → New deployment → Web app**, Execute as **Me**, Who has access
+   **Anyone**. Approve the permissions. Copy the Web app URL (ends in `/exec`).
+4. Put that URL in Vercel as `SHEETS_WEBHOOK_URL` and redeploy.
+
+From then on every sign-up, finished checklist and Paid change appears in a
+**Sign-ups** tab within seconds, one row per claim code (a finished checklist
+updates its sign-up's row). If Google is briefly unreachable, the row still
+saves here and is re-sent by the dashboard's **Sync sheet** button, whenever
+staff have the dashboard open, and by the daily health cron. Never reorder
+the sheet's columns; the script writes them by position.
+
+### Admin environment variables (Vercel + `.env.local`)
+
+| Name | What |
+|---|---|
+| `ADMIN_TOKEN` | server ↔ database token for the `admin_*` functions (hash stored in `private.write_tokens`, scope `admin`) |
+| `SESSION_SECRET` | signs the login cookie; changing it logs everyone out |
+| `SHEETS_WEBHOOK_URL` | the Apps Script web app URL (`…/exec`) |
+| `SHEETS_WEBHOOK_SECRET` | must equal `SECRET` inside `Code.gs` |
+| `CRON_SECRET` | Vercel sends it with the daily cron so `/api/health` may retry sheet syncs |
+
+To reset the admin login entirely (forgotten password): in the SQL Editor
+run `delete from private.admin_users;` — the next visit to `/admin` shows
+the setup page again.
+
 ## Where sign-ups are saved
 
 Supabase project **biolane-nesting-checklist** (Singapore), table
