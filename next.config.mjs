@@ -1,32 +1,20 @@
 /** @type {import('next').NextConfig} */
 
-// Served from https://carlgabriel1123.github.io/<repo>/
-// In CI the repo name comes from GitHub itself, so renaming the repo needs
-// no code change. The fallback is only for local GITHUB_PAGES=true builds.
-const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'biolane-basket'
-const isGitHubPages = process.env.GITHUB_PAGES === 'true'
-
+// Hosted on Vercel (https://biolane-basket.vercel.app), which runs Next.js
+// natively: the sign-up API route in app/api/submit runs on its server.
 const nextConfig = {
   reactStrictMode: true,
 
-  // Static HTML export — no Node server needed, hosts on GitHub Pages.
-  output: 'export',
-  trailingSlash: true,
-
-  // GitHub Pages serves project sites from a sub-path.
-  basePath: isGitHubPages ? `/${repoName}` : '',
-  assetPrefix: isGitHubPages ? `/${repoName}/` : '',
-
   images: {
-    // Image optimisation needs a server; the packshots are already resized
-    // to 600px at the source, so we serve them as-is.
-    unoptimized: true,
+    // Vercel resizes the packshots and serves them as AVIF/WebP — much
+    // lighter on booth wifi than the original PNGs.
+    formats: ['image/avif', 'image/webp'],
   },
 
-  // Unoptimised <Image> does NOT prepend basePath itself, so lib/asset.ts
-  // reads this and does it for every static file we reference.
   env: {
-    NEXT_PUBLIC_BASE_PATH: isGitHubPages ? `/${repoName}` : '',
+    // Served from the domain root. lib/asset.ts prefixes static paths with
+    // this, so hosting under a sub-path later only needs this one value.
+    NEXT_PUBLIC_BASE_PATH: '',
   },
 }
 

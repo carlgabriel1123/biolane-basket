@@ -49,27 +49,12 @@ interface StoredSubmission extends Submission {
 const STORAGE_KEY = 'biolane-nesting-submissions'
 
 /**
- * ┌──────────────────────────────────────────────────────────────────┐
- * │ TO CONNECT A REAL BACKEND                                        │
- * │                                                                  │
- * │ This site is a static export on GitHub Pages, so there is no     │
- * │ server of its own. Point it at a webhook that accepts JSON:      │
- * │   • Google Sheets  — an Apps Script "web app" URL                │
- * │   • n8n / Make / Zapier — a webhook trigger                      │
- * │   • Airtable / Supabase — via one of the above, or an edge fn    │
- * │ Upsert on submissionId, keeping the record with the highest seq. │
- * │                                                                  │
- * │ For the live site: add a repository secret named                 │
- * │   NEXT_PUBLIC_SUBMIT_WEBHOOK_URL                                 │
- * │ (Settings → Secrets and variables → Actions). deploy.yml already │
- * │ passes it to the build. For local runs put the same line in      │
- * │ .env.local.                                                      │
- * │                                                                  │
- * │ Every record is also kept in localStorage on the phone, and any  │
- * │ that failed to send are re-sent when the connection returns.     │
- * └──────────────────────────────────────────────────────────────────┘
+ * Records go to this site's own server route (app/api/submit/route.ts),
+ * which saves them to the Supabase table `submissions`. Every record is
+ * also kept in localStorage on the phone, and any that failed to send are
+ * re-sent on the next load and when the connection comes back.
  */
-const WEBHOOK_URL = process.env.NEXT_PUBLIC_SUBMIT_WEBHOOK_URL ?? ''
+const SUBMIT_ENDPOINT = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/api/submit`
 
 let seqCounter = 0
 /** Next sequence number, unique within this phone even across reloads. */
@@ -122,15 +107,12 @@ function markSynced(id: string, seq: number): void {
 }
 
 async function post(submission: Submission): Promise<boolean> {
-  if (!WEBHOOK_URL) return false
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000)
-    const res = await fetch(WEBHOOK_URL, {
+    const timeout = setTimeout(() => controller.abort(), 10000)
+    const res = await fetch(SUBMIT_ENDPOINT, {
       method: 'POST',
-      // text/plain avoids a CORS preflight, which Apps Script web apps
-      // cannot answer. The body is still JSON.
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(submission),
       signal: controller.signal,
     })
@@ -147,7 +129,7 @@ async function post(submission: Submission): Promise<boolean> {
 // finished checklist for the same mom.
 let queue: Promise<unknown> = Promise.resolve()
 
-/** Saves locally, then POSTs. Resolves true only if the webhook accepted it. */
+/** Saves locally, then POSTs. Resolves true only if the database accepted it. */
 export function sendSubmission(submission: Submission): Promise<boolean> {
   stashLocally(submission)
   const job = queue.then(() => post(submission))
@@ -155,9 +137,8 @@ export function sendSubmission(submission: Submission): Promise<boolean> {
   return job
 }
 
-/** Re-send every record the webhook has not accepted yet. */
+/** Re-send every record the database has not accepted yet. */
 export function flushPending(): void {
-  if (!WEBHOOK_URL) return
   for (const rec of readStore().filter((s) => !s.synced)) {
     const { synced: _synced, ...submission } = rec
     queue = queue.then(() => post(submission)).catch(() => undefined)

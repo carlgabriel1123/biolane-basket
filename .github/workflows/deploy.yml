@@ -1,4 +1,10 @@
-name: Deploy to GitHub Pages
+name: Test, and keep the old GitHub Pages link redirecting
+
+# The site itself is hosted on Vercel. This workflow:
+#   1. runs the tests and a production build on every push, and
+#   2. publishes a tiny redirect page to GitHub Pages, so any QR code or
+#      link that still points at carlgabriel1123.github.io/biolane-basket/
+#      lands on the Vercel site.
 
 on:
   push:
@@ -10,13 +16,16 @@ permissions:
   pages: write
   id-token: write
 
-# Let an in-flight deploy finish; the next push just queues behind it.
 concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  # Change this if the Vercel production domain changes.
+  SITE_URL: https://biolane-basket.vercel.app/
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,22 +40,40 @@ jobs:
       - run: npm test
 
       - run: npm run build
-        env:
-          GITHUB_PAGES: 'true'
-          # Optional. Add it under Settings → Secrets and variables → Actions
-          # to send leads to a webhook. Unset = leads stay on the phone.
-          NEXT_PUBLIC_SUBMIT_WEBHOOK_URL: ${{ secrets.NEXT_PUBLIC_SUBMIT_WEBHOOK_URL }}
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
-
-  deploy:
-    needs: build
+  redirect:
+    needs: test
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Build redirect page
+        run: |
+          mkdir -p redirect
+          cat > redirect/index.html <<HTML
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>Biolane Nesting Checklist</title>
+            <meta name="robots" content="noindex">
+            <meta http-equiv="refresh" content="0; url=${SITE_URL}">
+            <link rel="canonical" href="${SITE_URL}">
+            <script>location.replace("${SITE_URL}")</script>
+          </head>
+          <body style="font-family:system-ui,sans-serif;text-align:center;padding:3rem 1rem">
+            <p>The Biolane Nesting Checklist has moved.</p>
+            <p><a href="${SITE_URL}">Open the checklist</a></p>
+          </body>
+          </html>
+          HTML
+          cp redirect/index.html redirect/404.html
+          touch redirect/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./redirect
+
       - id: deployment
         uses: actions/deploy-pages@v4
