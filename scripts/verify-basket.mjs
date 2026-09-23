@@ -143,7 +143,7 @@ for (const { value } of babyStages) {
   const sorted = plan.picks.map((id) => priceOf.get(id) ?? 0).sort((a, b) => b - a)
   let a = 0, k = 0
   for (const v of sorted) { a += v; k++; if (a >= T) break }
-  stageFacts.push(`  ${value.padEnd(10)}: ${plan.picks.length} picks, unlock with ${k} of them at minimum`)
+  stageFacts.push(`  ${value.padEnd(10)}: ${plan.picks.length} picks, unlock with ${k} different ones (one of each)`)
 }
 // Sun and mosquito products must never be picked below 6 months (biolane.ph guidance).
 const sixMonthsPlus = ['sunstick', 'suncream', 'sunspray', 'mosquito-stick']
@@ -156,7 +156,8 @@ for (const young of ['expecting', 'newborn']) {
 /* ---------- facts ---------- */
 console.log('\nFacts for the BA script:')
 stageFacts.forEach((l) => console.log(l))
-console.log(`  minimum products to unlock      : ${minItems}`)
+console.log(`  minimum products (one of each)  : ${minItems}`)
+console.log(`  with quantities, fewest units   : ${Math.ceil(T / Math.max(...P.map((p) => p.price)))} (of the priciest product)`)
 console.log(`  cheapest qualifying basket      : PHP ${minQual}`)
 console.log(`  highest possible LOCKED total   : PHP ${maxSub}`)
 console.log(

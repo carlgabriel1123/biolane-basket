@@ -50,6 +50,14 @@ export function isPlausibleEmail(value: string): boolean {
   return local.length > 0 && domain.includes('.') && !domain.startsWith('.') && !domain.endsWith('.')
 }
 
+/** Letters (any language, incl. ñ and accents), spaces, apostrophes, hyphens. */
+const BAG_NAME_ALLOWED = /^[\p{L}\p{M}\s'\-]*$/u
+
+/** True if the bag vendor can print this name. Empty counts as printable. */
+export function isPrintableBagName(value: string): boolean {
+  return BAG_NAME_ALLOWED.test(value)
+}
+
 /** Collapse whitespace and trim — used before storing any typed name. */
 export function tidy(value: string): string {
   return value.trim().replace(/\s+/g, ' ')

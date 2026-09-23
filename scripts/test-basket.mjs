@@ -69,7 +69,12 @@ const tinyPool = [productById.get('rich-soap-150')]
 const s3 = suggestProducts({}, tinyPool)
 eq('falls back to the whole catalogue when her picks cannot close the gap', s3.length > 0 && s3.reduce((a, p) => a + p.price, 0) >= T, true)
 const everythingOnce = Object.fromEntries(products.map((p) => [p.id, 1]))
-eq('all products chosen → nothing left to suggest', suggestProducts(everythingOnce, newbornPicks).length, 0)
+eq('unlocked basket → no suggestions', suggestProducts(everythingOnce, newbornPicks).length, 0)
+// Locked, and no single unchosen product closes the gap (max = 1):
+// falls back to the priciest unchosen product instead of an empty box.
+const soapOnly = { 'rich-soap-150': 1 } // PHP 330, gap 1969, dearest product is 1630
+const priciest = [...products].filter((p) => p.id !== 'rich-soap-150').sort((a, b) => b.price - a.price)[0]
+eq('no closing set → priciest unchosen instead of nothing', suggestProducts(soapOnly, [], 1).map((p) => p.id), [priciest.id])
 
 console.log('\nRestoring a saved basket:')
 eq('drops unknown ids and bad values', sanitiseQuantities({ 'pure-h2o-750': 2, ghost: 3, 'nursing-balm-40': 'x', 'rich-soap-150': 99 }), { 'pure-h2o-750': 2, 'rich-soap-150': MAX })

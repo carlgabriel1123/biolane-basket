@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useEffect } from 'react'
 import { campaign } from '@/data/campaign'
 import { asset } from '@/lib/asset'
 import CommunityForm, { type CommunityValues } from './CommunityForm'
@@ -16,6 +17,13 @@ interface Props {
 
 /** Screen 1: logo, the reward, and the Biolane Mom Community sign-up. */
 export default function JoinPage({ values, onChange, onSubmit, submitting, returning }: Props) {
+  // Coming back via Change or Back: the control she used is gone, so land
+  // keyboard and screen-reader focus on the heading instead of <body>.
+  useEffect(() => {
+    if (returning) document.getElementById('community-heading')?.focus({ preventScroll: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <main className="relative overflow-hidden px-4 pb-16 pt-7 md:pt-12">
       <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-sky/60 blur-3xl" />

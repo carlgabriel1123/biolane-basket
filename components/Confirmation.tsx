@@ -19,7 +19,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
 
   useEffect(() => {
     headingRef.current?.focus()
-    window.scrollTo({ top: 0, behavior: 'auto' })
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
 
   const stamp = new Date(submission.timestamp).toLocaleString('en-PH', {

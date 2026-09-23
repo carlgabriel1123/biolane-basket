@@ -29,6 +29,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   // Moms and BAs must be able to zoom. Never lock this down.
   maximumScale: 5,
+  // Lets env(safe-area-inset-bottom) keep the basket bar above the iPhone home indicator.
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

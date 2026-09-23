@@ -6,6 +6,7 @@ import { campaign } from '@/data/campaign'
 import type { BasketState } from '@/lib/basket'
 import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
+import { isPrintableBagName } from '@/lib/validate'
 import QtyStepper from './QtyStepper'
 
 interface Props {
@@ -83,6 +84,9 @@ export default function BasketSheet({
   if (!open) return null
 
   const pct = Math.min(100, Math.round((basket.total / campaign.rewardThreshold) * 100))
+  // A name the vendor can't print counts as no name yet.
+  const bagName = personalizationName.trim()
+  const hasValidBagName = bagName !== '' && isPrintableBagName(bagName)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
@@ -152,7 +156,7 @@ export default function BasketSheet({
                     </span>
                   </span>
                   <QtyStepper
-                    name={product.name}
+                    name={product.size ? `${product.name} ${product.size}` : product.name}
                     qty={qty}
                     size="sm"
                     onChange={(n) => onChange(product.id, n)}
@@ -177,10 +181,10 @@ export default function BasketSheet({
           </div>
           <p className="mt-2 text-[12.5px] text-ink-soft">
             {basket.unlocked ? (
-              personalizationName.trim() ? (
+              hasValidBagName ? (
                 <>
                   <span className="font-semibold text-gold">Gift unlocked</span> · bag
-                  personalized with &ldquo;{personalizationName.trim()}&rdquo;
+                  personalized with &ldquo;{bagName}&rdquo;
                 </>
               ) : (
                 <>
@@ -188,9 +192,9 @@ export default function BasketSheet({
                   <button
                     type="button"
                     onClick={onGoToPersonalization}
-                    className="font-semibold text-blue underline underline-offset-2"
+                    className="inline-flex min-h-[44px] items-center font-semibold text-blue underline underline-offset-2"
                   >
-                    Add a name for your bag
+                    {bagName ? 'Fix the name on your bag' : 'Add a name for your bag'}
                   </button>
                 </>
               )

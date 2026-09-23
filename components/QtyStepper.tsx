@@ -18,7 +18,8 @@ interface Props {
  */
 export default function QtyStepper({ name, qty, onChange, size = 'md', plusRef }: Props) {
   const atMax = qty >= campaign.maxQtyPerItem
-  const box = size === 'md' ? 'h-11 w-11' : 'h-10 w-10'
+  // Both sizes keep the 44px target; `sm` only tightens the surrounding row.
+  const box = size === 'md' ? 'h-11 w-11' : 'h-11 w-11'
 
   return (
     <div
@@ -49,8 +50,9 @@ export default function QtyStepper({ name, qty, onChange, size = 'md', plusRef }
         )}
       </button>
 
+      {/* Not a live region: the basket bar is the single announcer. */}
       <output
-        aria-live="polite"
+        aria-live="off"
         aria-label={`${qty} in basket`}
         className="min-w-7 text-center font-display text-[16px] font-extrabold tabular-nums text-ink"
       >

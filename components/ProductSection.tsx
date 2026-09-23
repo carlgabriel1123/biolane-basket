@@ -17,6 +17,8 @@ interface Props {
   defaultOpen?: boolean
   tone?: 'plain' | 'blush'
   priorityFirst?: boolean
+  /** Heading level for this section's title; product names go one below. */
+  headingLevel?: 2 | 3
 }
 
 export default function ProductSection({
@@ -30,7 +32,10 @@ export default function ProductSection({
   defaultOpen = true,
   tone = 'plain',
   priorityFirst = false,
+  headingLevel = 2,
 }: Props) {
+  const Heading = headingLevel === 3 ? 'h3' : 'h2'
+  const cardLevel = headingLevel === 3 ? 4 : 3
   const [open, setOpen] = useState(defaultOpen)
   const panelId = useId()
   const headingId = useId()
@@ -54,6 +59,7 @@ export default function ProductSection({
           suggested={suggestedIds.has(product.id)}
           onChange={onChange}
           priority={priorityFirst && i < 2}
+          headingLevel={cardLevel}
         />
       ))}
     </div>
@@ -69,7 +75,7 @@ export default function ProductSection({
   return (
     <section aria-labelledby={headingId} className={shell}>
       {collapsible ? (
-        <h3 id={headingId} className="m-0">
+        <Heading id={headingId} className="m-0">
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -99,12 +105,12 @@ export default function ProductSection({
               <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-        </h3>
+        </Heading>
       ) : (
         <div className="mb-3">
-          <h3 id={headingId} className="font-display text-[17px] font-extrabold leading-snug text-ink md:text-xl">
+          <Heading id={headingId} className="font-display text-[17px] font-extrabold leading-snug text-ink md:text-xl">
             {title}
-          </h3>
+          </Heading>
           {caption && <p className="mt-1 text-[13px] leading-snug text-ink-soft">{caption}</p>}
         </div>
       )}

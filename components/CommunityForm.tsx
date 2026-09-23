@@ -68,13 +68,32 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
 
     setErrors(next)
 
-    if (Object.keys(next).length > 0) {
-      const first = document.querySelector<HTMLElement>('[data-invalid="true"]')
-      first?.focus()
-      first?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    // Work out the first problem from `next`, not the DOM: React hasn't
+    // re-rendered the error states yet at this point.
+    const order: Array<keyof CommunityValues> = ['name', 'email', 'mobile', 'babyStage', 'dueDate']
+    const firstKey = order.find((k) => next[k])
+    if (firstKey) {
+      const el =
+        firstKey === 'babyStage'
+          ? document.querySelector<HTMLElement>('input[name="babyStage"]')
+          : document.getElementById(firstKey)
+      el?.focus({ preventScroll: true })
+      ;(el?.closest('label, div') ?? el)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
       return false
     }
     return true
+  }
+
+  /** The keyboard's "Next" key moves to the next field instead of submitting. */
+  const nextOnEnter = (nextId: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    const el =
+      nextId === 'babyStage'
+        ? document.querySelector<HTMLElement>('input[name="babyStage"]:checked') ??
+          document.querySelector<HTMLElement>('input[name="babyStage"]')
+        : document.getElementById(nextId)
+    el?.focus()
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -126,6 +145,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             onChange={(e) => set('name', e.target.value)}
             autoComplete="name"
             enterKeyHint="next"
+            onKeyDown={nextOnEnter('email')}
             data-invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? 'name-error' : undefined}
             aria-invalid={Boolean(errors.name)}
@@ -148,6 +168,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             autoComplete="email"
             inputMode="email"
             enterKeyHint="next"
+            onKeyDown={nextOnEnter('mobile')}
             data-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? 'email-error' : undefined}
             aria-invalid={Boolean(errors.email)}
@@ -171,6 +192,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             autoComplete="tel"
             inputMode="numeric"
             enterKeyHint="next"
+            onKeyDown={nextOnEnter('babyStage')}
             data-invalid={Boolean(errors.mobile)}
             aria-describedby={errors.mobile ? 'mobile-error' : 'mobile-help'}
             aria-invalid={Boolean(errors.mobile)}
@@ -196,7 +218,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
                 <label
                   key={stage.value}
                   className={
-                    'flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border-2 px-4 transition-colors ' +
+                    'flex min-h-[48px] cursor-pointer items-center gap-3 rounded-xl border-2 px-4 transition-colors has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue ' +
                     (active ? 'border-blue bg-sky-soft' : 'border-ink/15 bg-white')
                   }
                 >
@@ -253,7 +275,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
         )}
 
         {/* Marketing consent — never pre-checked, never blocks submit. */}
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sky-soft p-3.5">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sky-soft p-3.5 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue">
           <input
             type="checkbox"
             checked={values.consent}

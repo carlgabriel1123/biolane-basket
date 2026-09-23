@@ -14,6 +14,8 @@ interface Props {
   /** Highlight ring used by the "almost there" suggestions. */
   suggested?: boolean
   priority?: boolean
+  /** Level of the product name heading (one below its section's heading). */
+  headingLevel?: 3 | 4
 }
 
 export default function ProductCard({
@@ -22,10 +24,15 @@ export default function ProductCard({
   onChange,
   suggested = false,
   priority = false,
+  headingLevel = 3,
 }: Props) {
   const [showWhy, setShowWhy] = useState(false)
   const whyId = useId()
   const inBasket = qty > 0
+  const Heading = headingLevel === 4 ? 'h4' : 'h3'
+  // Two products share a name in different sizes (Pure H2O 350 / 750), so
+  // every control's label includes the size.
+  const fullName = product.size ? `${product.name} ${product.size}` : product.name
 
   // Add and the stepper replace each other, so the button she just used
   // disappears. Hand focus to its replacement instead of dropping it.
@@ -68,7 +75,7 @@ export default function ProductCard({
         onClick={() => setShowWhy((v) => !v)}
         aria-expanded={showWhy}
         aria-controls={whyId}
-        aria-label={`Why choose ${product.name}?`}
+        aria-label={`Why choose ${fullName}?`}
         className="absolute right-1.5 top-1.5 z-10 grid h-11 w-11 place-items-center rounded-full text-ink-soft/70 transition-colors hover:bg-sky-soft hover:text-blue active:bg-sky"
       >
         <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -88,7 +95,7 @@ export default function ProductCard({
           <div className="relative h-full w-full overflow-hidden rounded-xl bg-sky-soft">
             <Image
               src={asset(product.image)}
-              alt={`${product.name}${product.size ? ' ' + product.size : ''}`}
+              alt={fullName}
               fill
               sizes="80px"
               className="object-contain p-1.5"
@@ -115,9 +122,9 @@ export default function ProductCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="pr-9 font-display text-[15px] font-bold leading-snug text-ink sm:text-base">
+          <Heading className="pr-9 font-display text-[15px] font-bold leading-snug text-ink sm:text-base">
             {product.name}
-          </h3>
+          </Heading>
           {product.size && (
             <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-ink-soft/70">
               {product.size}
@@ -139,13 +146,13 @@ export default function ProductCard({
             </p>
 
             {inBasket ? (
-              <QtyStepper name={product.name} qty={qty} onChange={step} plusRef={plusRef} />
+              <QtyStepper name={fullName} qty={qty} onChange={step} plusRef={plusRef} />
             ) : (
               <button
                 ref={addRef}
                 type="button"
                 onClick={add}
-                aria-label={`Add ${product.name}${product.size ? ' ' + product.size : ''}`}
+                aria-label={`Add ${fullName}`}
                 className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border-2 border-blue px-5 text-[14px] font-bold text-blue transition-colors hover:bg-blue hover:text-white active:bg-blue-deep active:text-white"
               >
                 <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">

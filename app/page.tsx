@@ -18,20 +18,32 @@ import {
   type Quantities,
 } from '@/lib/basket'
 import { makeProgressTracker, track } from '@/lib/analytics'
-import { newSubmissionId, sendSubmission, type Submission } from '@/lib/submission'
-import { normalisePhMobile, tidy } from '@/lib/validate'
+import {
+  flushPending,
+  newSubmissionId,
+  nextSeq,
+  sendSubmission,
+  type Submission,
+} from '@/lib/submission'
+import { isPrintableBagName, normalisePhMobile, tidy } from '@/lib/validate'
 
 /**
  * Three screens in one page:
  *   join      → the Biolane Mom Community sign-up (saves the lead)
  *   checklist → her stage's picks, quantities, reward
  *   done      → confirmation to show at the booth
- * The browser Back button walks back through them. The live session sits in
- * sessionStorage (this tab only) so a refresh keeps her place; finishing or
- * Start over wipes it, so the next mom never sees the last one's details.
+ *
+ * History: every entry we write SPREADS the existing history.state, because
+ * the Next.js router keeps its own keys there — dropping them makes every
+ * Back press a full page reload. The basket sheet gets its own entry so the
+ * phone's Back button closes it.
+ *
+ * The live session sits in sessionStorage (this tab only) so a refresh keeps
+ * her place, including the confirmation. Start over wipes it.
  */
 
 type Step = 'join' | 'checklist' | 'done'
+type Result = { submission: Submission; storedRemotely: boolean }
 
 const SESSION_KEY = 'biolane-nesting-session'
 
@@ -46,32 +58,67 @@ const EMPTY_FORM: CommunityValues = {
 
 interface SavedSession {
   step: Step
+  /** Details she submitted — drives her stage and the record. */
   form: CommunityValues
+  /** What is typed on the sign-up screen right now (may be unsubmitted). */
+  draft: CommunityValues
   quantities: Quantities
   personalizationName: string
   submissionId: string | null
+  result: Result | null
 }
 
+const isStage = (v: unknown): v is BabyStage =>
+  typeof v === 'string' && Object.prototype.hasOwnProperty.call(stagePlans, v)
+
+function cleanForm(raw: unknown): CommunityValues {
+  if (!raw || typeof raw !== 'object') return EMPTY_FORM
+  const f = raw as Partial<Record<keyof CommunityValues, unknown>>
+  const str = (v: unknown) => (typeof v === 'string' ? v : '')
+  return {
+    name: str(f.name),
+    email: str(f.email),
+    mobile: str(f.mobile),
+    babyStage: isStage(f.babyStage) ? f.babyStage : '',
+    dueDate: str(f.dueDate),
+    consent: f.consent === true,
+  }
+}
+
+function writeHistory(mode: 'push' | 'replace', step: Step, sheet = false): void {
+  const state = { ...(window.history.state ?? {}), step, sheet }
+  if (mode === 'push') window.history.pushState(state, '')
+  else window.history.replaceState(state, '')
+}
+
+const scrollTop = () => window.scrollTo({ top: 0, behavior: 'instant' })
+
 export default function Page() {
+  const [hydrated, setHydrated] = useState(false)
   const [step, setStep] = useState<Step>('join')
   const [form, setForm] = useState<CommunityValues>(EMPTY_FORM)
+  const [draft, setDraft] = useState<CommunityValues>(EMPTY_FORM)
   const [quantities, setQuantities] = useState<Quantities>({})
   const [personalizationName, setPersonalizationName] = useState('')
   const [submissionId, setSubmissionId] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [finishing, setFinishing] = useState(false)
-  const [result, setResult] = useState<{ submission: Submission; storedRemotely: boolean } | null>(null)
+  const [result, setResult] = useState<Result | null>(null)
 
-  const hydrated = useRef(false)
   const stepRef = useRef<Step>('join')
+  const formRef = useRef<CommunityValues>(EMPTY_FORM)
   const joinedRef = useRef(false)
+  const sheetOpenRef = useRef(false)
+  const finishingRef = useRef(false)
   const progressTracker = useRef(makeProgressTracker())
   const unlockAnnounced = useRef(false)
 
   stepRef.current = step
+  formRef.current = form
   joinedRef.current = submissionId !== null
+  sheetOpenRef.current = sheetOpen
 
-  const stage = (form.babyStage || 'others') as BabyStage
+  const stage: BabyStage = form.babyStage || 'others'
   const basket = useMemo(() => computeBasket(quantities), [quantities])
 
   const stagePool = useMemo<Product[]>(() => {
@@ -85,9 +132,9 @@ export default function Page() {
 
   /* ---------------- navigation ---------------- */
   const goTo = useCallback((next: Step) => {
-    window.history.pushState({ step: next }, '')
+    writeHistory('push', next)
     setStep(next)
-    window.scrollTo({ top: 0, behavior: 'auto' })
+    scrollTop()
   }, [])
 
   /* ---------------- restore + Back button ---------------- */
@@ -97,10 +144,16 @@ export default function Page() {
       const raw = window.sessionStorage.getItem(SESSION_KEY)
       if (raw) {
         const saved = JSON.parse(raw) as Partial<SavedSession>
-        if (saved.form) setForm({ ...EMPTY_FORM, ...saved.form })
+        const savedForm = cleanForm(saved.form)
+        setForm(savedForm)
+        setDraft(saved.draft ? cleanForm(saved.draft) : savedForm)
         setQuantities(sanitiseQuantities(saved.quantities))
         if (typeof saved.personalizationName === 'string') setPersonalizationName(saved.personalizationName)
-        if (typeof saved.submissionId === 'string') {
+        if (saved.step === 'done' && saved.result?.submission) {
+          setResult(saved.result)
+          setSubmissionId(saved.result.submission.submissionId)
+          initial = 'done'
+        } else if (typeof saved.submissionId === 'string' && savedForm.babyStage) {
           setSubmissionId(saved.submissionId)
           joinedRef.current = true
           if (saved.step === 'checklist') initial = 'checklist'
@@ -110,34 +163,65 @@ export default function Page() {
       // Blocked storage — start clean.
     }
     setStep(initial)
-    window.history.replaceState({ step: initial }, '')
-    hydrated.current = true
+    writeHistory('replace', initial)
+    setHydrated(true)
+
+    // Anything that failed to send earlier goes now, and again when the
+    // connection comes back.
+    flushPending()
+    window.addEventListener('online', flushPending)
 
     const onPop = (e: PopStateEvent) => {
-      // The confirmation is a terminal, read-only state: Back stays on it.
+      const state = (e.state ?? {}) as { step?: Step; sheet?: boolean }
+
+      // The confirmation is terminal and read-only: Back stays on it.
       if (stepRef.current === 'done') {
-        window.history.pushState({ step: 'done' }, '')
+        writeHistory('push', 'done')
         return
       }
-      const target = ((e.state as { step?: Step } | null)?.step ?? 'join') as Step
+      // Never navigate away mid-finish.
+      if (finishingRef.current) {
+        writeHistory('push', stepRef.current, sheetOpenRef.current)
+        return
+      }
+      // Back while the basket sheet is open just closes the sheet.
+      if (sheetOpenRef.current && !state.sheet) {
+        setSheetOpen(false)
+        return
+      }
+
+      const target = state.step ?? 'join'
       const allowed: Step = target === 'checklist' && joinedRef.current ? 'checklist' : 'join'
-      setSheetOpen(false)
+      // Leaving the sign-up without submitting discards the unsaved edits.
+      setDraft(formRef.current)
+      setSheetOpen(allowed === 'checklist' && state.sheet === true)
       setStep(allowed)
-      window.scrollTo({ top: 0, behavior: 'auto' })
+      scrollTop()
     }
     window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      window.removeEventListener('online', flushPending)
+    }
   }, [])
 
   useEffect(() => {
-    if (!hydrated.current || step === 'done') return
+    if (!hydrated) return
     try {
-      const session: SavedSession = { step, form, quantities, personalizationName, submissionId }
+      const session: SavedSession = {
+        step,
+        form,
+        draft,
+        quantities,
+        personalizationName,
+        submissionId,
+        result: step === 'done' ? result : null,
+      }
       window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
     } catch {
       /* storage unavailable — everything still works in memory */
     }
-  }, [step, form, quantities, personalizationName, submissionId])
+  }, [hydrated, step, form, draft, quantities, personalizationName, submissionId, result])
 
   /* ---------------- analytics ---------------- */
   useEffect(() => {
@@ -152,52 +236,66 @@ export default function Page() {
 
   /* ---------------- building the record ---------------- */
   const buildSubmission = useCallback(
-    (id: string, event: Submission['event']): Submission => ({
-      submissionId: id,
-      timestamp: new Date().toISOString(),
-      event,
-      name: tidy(form.name),
-      email: form.email.trim(),
-      mobile: normalisePhMobile(form.mobile) ?? form.mobile.trim(),
-      babyStage: stage,
-      ...(form.babyStage === 'expecting' && form.dueDate ? { dueDate: form.dueDate } : {}),
-      marketingConsent: form.consent,
-      selectedProducts: basket.lines.map(({ product, qty, lineTotal }) => ({
-        id: product.id,
-        name: product.name,
-        size: product.size,
-        gbfSku: product.gbfSku,
-        price: product.price,
-        qty,
-        lineTotal,
-      })),
-      basketTotal: basket.total,
-      rewardUnlocked: basket.unlocked,
-      ...(basket.unlocked && personalizationName.trim()
-        ? { personalizationName: tidy(personalizationName) }
-        : {}),
-    }),
-    [form, stage, basket, personalizationName]
+    (id: string, event: Submission['event'], values: CommunityValues): Submission => {
+      const bagName = tidy(personalizationName)
+      return {
+        submissionId: id,
+        timestamp: new Date().toISOString(),
+        seq: nextSeq(),
+        event,
+        name: tidy(values.name),
+        email: values.email.trim(),
+        mobile: normalisePhMobile(values.mobile) ?? values.mobile.trim(),
+        babyStage: values.babyStage || 'others',
+        ...(values.babyStage === 'expecting' && values.dueDate ? { dueDate: values.dueDate } : {}),
+        marketingConsent: values.consent,
+        selectedProducts: basket.lines.map(({ product, qty, lineTotal }) => ({
+          id: product.id,
+          name: product.name,
+          size: product.size,
+          gbfSku: product.gbfSku,
+          price: product.price,
+          qty,
+          lineTotal,
+        })),
+        basketTotal: basket.total,
+        rewardUnlocked: basket.unlocked,
+        ...(basket.unlocked && bagName && isPrintableBagName(bagName)
+          ? { personalizationName: bagName }
+          : {}),
+      }
+    },
+    [basket, personalizationName]
   )
 
   /* ---------------- actions ---------------- */
+  // Called only after CommunityForm's validation passes.
   const handleJoin = useCallback(() => {
+    if (finishingRef.current) return
+    const committed = draft
     const id = submissionId ?? newSubmissionId()
     const firstTime = submissionId === null
+    setForm(committed)
     setSubmissionId(id)
     joinedRef.current = true
     // Save the lead now, so a mom who stops here is still captured. Not
     // awaited: slow booth wifi must never hold her on the form.
-    void sendSubmission(buildSubmission(id, 'signup'))
+    void sendSubmission(buildSubmission(id, 'signup', committed))
     if (firstTime) {
-      track('community_signup_completed', { stage })
-      track('nesting_started', { stage })
+      track('community_signup_completed', { stage: committed.babyStage })
+      track('nesting_started', { stage: committed.babyStage })
     }
     goTo('checklist')
-  }, [submissionId, buildSubmission, stage, goTo])
+  }, [draft, submissionId, buildSubmission, goTo])
+
+  const changeStage = useCallback(() => {
+    setDraft(form)
+    goTo('join')
+  }, [form, goTo])
 
   const changeQty = useCallback(
     (id: string, qty: number) => {
+      if (finishingRef.current) return
       const before = quantities[id] ?? 0
       const next = setQty(quantities, id, qty)
       const after = next[id] ?? 0
@@ -211,40 +309,50 @@ export default function Page() {
   )
 
   const openBasket = useCallback(() => {
+    if (sheetOpenRef.current) return
+    writeHistory('push', 'checklist', true)
     setSheetOpen(true)
     track('basket_opened', { units: basket.units, total: basket.total })
   }, [basket.units, basket.total])
 
-  const closeBasket = useCallback(() => setSheetOpen(false), [])
+  const closeBasket = useCallback(() => {
+    if (finishingRef.current) return
+    // Pop the sheet's own history entry; the popstate handler closes it.
+    if ((window.history.state as { sheet?: boolean } | null)?.sheet) window.history.back()
+    else setSheetOpen(false)
+  }, [])
 
   const goToPersonalization = useCallback(() => {
-    setSheetOpen(false)
+    closeBasket()
     // Wait for the sheet to unmount and the scroll lock to lift.
     window.setTimeout(() => {
       const input = document.getElementById('personalization')
       input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       input?.focus({ preventScroll: true })
-    }, 60)
-  }, [])
+    }, 150)
+  }, [closeBasket])
 
   const handleFinish = useCallback(async () => {
-    if (finishing || basket.count === 0 || !submissionId) return
-    setFinishing(true) // synchronous — blocks the double-tap
-    const submission = buildSubmission(submissionId, 'checklist_completed')
+    if (finishingRef.current || basket.count === 0 || !submissionId) return
+    // A bag name the vendor can't print: send her back to fix it first.
+    if (basket.unlocked && personalizationName.trim() && !isPrintableBagName(personalizationName)) {
+      goToPersonalization()
+      return
+    }
+    finishingRef.current = true // synchronous — blocks the double-tap
+    setFinishing(true)
+    const submission = buildSubmission(submissionId, 'checklist_completed', form)
     const storedRemotely = await sendSubmission(submission)
     track('form_submitted', { total: basket.total, units: basket.units, unlocked: basket.unlocked })
+    finishingRef.current = false
+    setFinishing(false)
     setResult({ submission, storedRemotely })
     setSheetOpen(false)
-    setFinishing(false)
-    try {
-      window.sessionStorage.removeItem(SESSION_KEY)
-    } catch {
-      /* ignore */
-    }
     goTo('done')
-  }, [finishing, basket, submissionId, buildSubmission, goTo])
+  }, [basket, submissionId, personalizationName, buildSubmission, form, goTo, goToPersonalization])
 
   const handleStartOver = useCallback(() => {
+    if (finishingRef.current) return
     if (stepRef.current !== 'done' && !window.confirm('Clear this session? The next mom starts fresh.')) {
       return
     }
@@ -254,6 +362,7 @@ export default function Page() {
       /* ignore */
     }
     setForm(EMPTY_FORM)
+    setDraft(EMPTY_FORM)
     setQuantities({})
     setPersonalizationName('')
     setSubmissionId(null)
@@ -262,9 +371,9 @@ export default function Page() {
     setResult(null)
     unlockAnnounced.current = false
     progressTracker.current = makeProgressTracker()
-    window.history.replaceState({ step: 'join' }, '')
+    writeHistory('replace', 'join')
     setStep('join')
-    window.scrollTo({ top: 0, behavior: 'auto' })
+    scrollTop()
   }, [])
 
   /* ---------------- screens ---------------- */
@@ -290,7 +399,7 @@ export default function Page() {
           personalizationName={personalizationName}
           onPersonalizationChange={setPersonalizationName}
           onChangeQty={changeQty}
-          onChangeStage={() => goTo('join')}
+          onChangeStage={changeStage}
           onOpenBasket={openBasket}
           onStartOver={handleStartOver}
         />
@@ -318,8 +427,8 @@ export default function Page() {
 
   return (
     <JoinPage
-      values={form}
-      onChange={setForm}
+      values={draft}
+      onChange={setDraft}
       onSubmit={handleJoin}
       submitting={false}
       returning={submissionId !== null}

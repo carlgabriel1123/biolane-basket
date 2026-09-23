@@ -76,9 +76,15 @@ export default function ChecklistPage({
     [suggestions, basket.count, basket.unlocked]
   )
 
-  // A suggestion inside a closed "See all" group still has to be findable.
+  // Tapping a suggestion removes it from the list, so hand focus to that
+  // product's + button (or the progress card if the product is folded away).
   const addSuggestion = (id: string) => {
     onChangeQty(id, (quantities[id] ?? 0) + 1)
+    requestAnimationFrame(() => {
+      const plus = document.querySelector<HTMLElement>(`#product-${id} [aria-label^="One more"]`)
+      const fallback = document.getElementById('basket-status')
+      ;(plus ?? fallback)?.focus({ preventScroll: true })
+    })
   }
 
   return (
@@ -175,8 +181,10 @@ export default function ChecklistPage({
         {/* Progress, suggestions and the reward: below her picks on phones,
             a sticky rail beside them on desktop. */}
         <aside
+          id="basket-status"
+          tabIndex={-1}
           aria-label="Your basket status"
-          className="mt-7 flex flex-col gap-4 md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-8rem)] lg:w-full lg:self-start lg:overflow-y-auto"
+          className="mt-7 flex flex-col gap-4 outline-none md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-8rem)] lg:w-full lg:self-start lg:overflow-y-auto lg:p-1.5"
         >
           <RewardProgress total={basket.total} remaining={basket.remaining} unlocked={basket.unlocked} />
 
@@ -241,6 +249,7 @@ export default function ChecklistPage({
                     collapsible
                     defaultOpen={false}
                     tone={g.id === 'justincase' ? 'blush' : 'plain'}
+                    headingLevel={3}
                   />
                 ))}
               </div>

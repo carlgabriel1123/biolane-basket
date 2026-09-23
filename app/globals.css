@@ -66,7 +66,6 @@ h1, h2, h3, .font-display {
 :where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: 3px solid var(--color-blue);
   outline-offset: 2px;
-  border-radius: 0.5rem;
 }
 
 /* ---------------------------------------------------------------

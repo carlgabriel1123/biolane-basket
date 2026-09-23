@@ -1,6 +1,7 @@
 'use client'
 
 import { campaign } from '@/data/campaign'
+import { isPrintableBagName } from '@/lib/validate'
 
 interface Props {
   personalizationName: string
@@ -9,7 +10,6 @@ interface Props {
   maxLength?: number
 }
 
-const ALLOWED = /^[\p{L}\p{M}\s'\-]*$/u
 
 export default function RewardUnlocked({
   personalizationName,
@@ -19,7 +19,7 @@ export default function RewardUnlocked({
   // No focus move on unlock: she is usually mid-tap on a + button, and
   // jumping the page would lose her place. The basket bar's live region
   // announces "Gift unlocked" instead.
-  const invalid = personalizationName !== '' && !ALLOWED.test(personalizationName)
+  const invalid = personalizationName !== '' && !isPrintableBagName(personalizationName)
 
   return (
     <section
