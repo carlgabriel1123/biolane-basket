@@ -27,18 +27,9 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
   }, [])
 
   return (
-    <main className="relative overflow-hidden px-4 pb-16 pt-7 md:pt-12">
-      {/* Two pastel blobs drift slowly behind the card; out of phase so they never move in lockstep. */}
-      <div
-        aria-hidden="true"
-        className="animate-drift pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-sky/60 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="animate-drift pointer-events-none absolute -right-20 top-40 h-52 w-52 rounded-full bg-blush/40 blur-3xl"
-        style={{ animationDelay: '-4.5s' }}
-      />
-
+    <main className="relative px-4 pb-16 pt-16 md:pt-20">
+      {/* The pastel wallpaper lives in <NurseryBackdrop/> (app/page.tsx); it
+          takes the colour of the baby stage she picks below. */}
       <div className="relative mx-auto max-w-md md:max-w-xl">
         <Image
           src={asset('/images/brand/biolane-logo.png')}

@@ -35,7 +35,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
   })
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-4 pb-16 pt-8 md:max-w-lg md:pt-12">
+    <main className="mx-auto min-h-dvh max-w-md px-4 pb-16 pt-16 md:max-w-lg md:pt-20">
       <div className="text-center">
         <Image
           src={asset('/images/brand/biolane-logo.png')}

@@ -159,6 +159,35 @@ button, a, input, label, select, [role='button'] {
 }
 .animate-drift { animation: drift 9s ease-in-out infinite; }
 
+/* ---------------------------------------------------------------
+   Nursery backdrop (components/NurseryBackdrop.tsx)
+   --------------------------------------------------------------- */
+/* Gentle bob for the little motifs. */
+@keyframes float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50%      { transform: translate3d(0, -8px, 0) rotate(4deg); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+/* Crib-mobile sway, pivoting from the top of the string. */
+@keyframes sway {
+  0%, 100% { transform: rotate(-5deg); }
+  50%      { transform: rotate(5deg); }
+}
+.animate-sway { animation: sway 4.5s ease-in-out infinite; transform-origin: top center; }
+
+/* Nursery-wallpaper polka dots that fade out toward the middle, where the
+   content sits, so they never compete with text. */
+.nursery-dots {
+  background-image:
+    radial-gradient(circle, rgb(31 121 179 / 0.10) 1.6px, transparent 1.9px),
+    radial-gradient(circle, rgb(224 139 115 / 0.10) 1.6px, transparent 1.9px);
+  background-size: 34px 34px, 34px 34px;
+  background-position: 0 0, 17px 17px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 42%, transparent 25%, #000 95%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 42%, transparent 25%, #000 95%);
+}
+
 /* Loading skeleton (admin list while it fetches). */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }

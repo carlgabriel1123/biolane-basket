@@ -6,6 +6,7 @@ import ChecklistPage from '@/components/ChecklistPage'
 import Confirmation from '@/components/Confirmation'
 import BasketBar from '@/components/BasketBar'
 import BasketSheet from '@/components/BasketSheet'
+import NurseryBackdrop from '@/components/NurseryBackdrop'
 import type { CommunityValues } from '@/components/CommunityForm'
 import { campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { productById, products, type Product } from '@/data/products'
@@ -431,17 +432,22 @@ export default function Page() {
   /* ---------------- screens ---------------- */
   if (step === 'done' && result) {
     return (
-      <Confirmation
-        submission={result.submission}
-        storedRemotely={result.storedRemotely}
-        onStartOver={handleStartOver}
-      />
+      <>
+        <NurseryBackdrop stage={result.submission.babyStage} />
+        <Confirmation
+          submission={result.submission}
+          storedRemotely={result.storedRemotely}
+          onStartOver={handleStartOver}
+        />
+      </>
     )
   }
 
   if (step === 'checklist' && submissionId) {
     return (
       <>
+        {/* The room takes the colour of her baby stage and crossfades on Change. */}
+        <NurseryBackdrop stage={stage} />
         <ChecklistPage
           firstName={capitalize(tidy(form.name).split(' ')[0]) || 'there'}
           stage={stage}
@@ -479,12 +485,16 @@ export default function Page() {
   }
 
   return (
-    <JoinPage
-      values={draft}
-      onChange={setDraft}
-      onSubmit={handleJoin}
-      submitting={false}
-      returning={submissionId !== null}
-    />
+    <>
+      {/* Neutral pastels until she picks a baby stage, then that stage's colours. */}
+      <NurseryBackdrop stage={draft.babyStage} />
+      <JoinPage
+        values={draft}
+        onChange={setDraft}
+        onSubmit={handleJoin}
+        submitting={false}
+        returning={submissionId !== null}
+      />
+    </>
   )
 }

@@ -212,7 +212,7 @@ export default function ChecklistPage({
       className="mx-auto max-w-md px-4 md:max-w-3xl lg:max-w-6xl lg:px-8"
       style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}
     >
-      <header className="pt-5 md:pt-8">
+      <header className="pt-14 md:pt-16">
         <div className="flex items-center justify-between gap-3">
           <Image
             src={asset('/images/brand/biolane-logo.png')}
