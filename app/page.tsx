@@ -288,10 +288,23 @@ export default function Page() {
     goTo('checklist')
   }, [draft, submissionId, buildSubmission, goTo])
 
-  const changeStage = useCallback(() => {
-    setDraft(form)
-    goTo('join')
-  }, [form, goTo])
+  // Switch stage in place from the checklist. Her basket is untouched; the
+  // lead record is re-sent (same id) so it carries the new stage.
+  const changeStage = useCallback(
+    (next: BabyStage) => {
+      if (finishingRef.current || !submissionId || next === form.babyStage) return
+      const updated: CommunityValues = {
+        ...form,
+        babyStage: next,
+        dueDate: next === 'expecting' ? form.dueDate : '',
+      }
+      setForm(updated)
+      setDraft(updated)
+      void sendSubmission(buildSubmission(submissionId, 'signup', updated))
+      track('stage_changed', { from: form.babyStage, to: next })
+    },
+    [form, submissionId, buildSubmission]
+  )
 
   const changeQty = useCallback(
     (id: string, qty: number) => {

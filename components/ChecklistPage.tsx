@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { campaign, type BabyStage } from '@/data/campaign'
+import { babyStages, campaign, type BabyStage } from '@/data/campaign'
 import { productById, productGroups, products, type Product } from '@/data/products'
 import { stagePlans } from '@/data/stages'
 import type { BasketState, Quantities } from '@/lib/basket'
@@ -21,7 +21,7 @@ interface Props {
   personalizationName: string
   onPersonalizationChange: (value: string) => void
   onChangeQty: (id: string, qty: number) => void
-  onChangeStage: () => void
+  onChangeStage: (stage: BabyStage) => void
   onOpenBasket: () => void
   onStartOver: () => void
 }
@@ -44,6 +44,24 @@ export default function ChecklistPage({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const [seeAllOpen, setSeeAllOpen] = useState(false)
   const seeAllId = useId()
+  const [stagePickerOpen, setStagePickerOpen] = useState(false)
+  const stagePickerId = useId()
+  const changeButtonRef = useRef<HTMLButtonElement>(null)
+
+  const closeStagePicker = () => {
+    setStagePickerOpen(false)
+    changeButtonRef.current?.focus({ preventScroll: true })
+  }
+
+  const pickStage = (next: BabyStage) => {
+    setStagePickerOpen(false)
+    if (next === stage) {
+      changeButtonRef.current?.focus({ preventScroll: true })
+      return
+    }
+    // The new heading takes focus (effect below) so the change is announced.
+    onChangeStage(next)
+  }
 
   // Land on the heading when the screen opens, for keyboard and screen readers.
   useEffect(() => {
@@ -127,13 +145,64 @@ export default function ChecklistPage({
             {plan.label}
           </span>
           <button
+            ref={changeButtonRef}
             type="button"
-            onClick={onChangeStage}
+            onClick={() => (stagePickerOpen ? closeStagePicker() : setStagePickerOpen(true))}
+            aria-expanded={stagePickerOpen}
+            aria-controls={stagePickerId}
             className="min-h-[44px] rounded-full px-3 text-[13px] font-semibold text-blue underline underline-offset-4 hover:text-blue-deep"
           >
-            Change
+            {stagePickerOpen ? 'Cancel' : 'Change'}
           </button>
         </div>
+
+        {/* Change the stage right here — no trip back to the sign-up page. */}
+        {stagePickerOpen && (
+          <div
+            id={stagePickerId}
+            role="group"
+            aria-labelledby={`${stagePickerId}-label`}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.stopPropagation()
+                closeStagePicker()
+              }
+            }}
+            className="animate-rise mt-2 rounded-card border border-ink/10 bg-white p-3 shadow-soft sm:p-4"
+          >
+            <p id={`${stagePickerId}-label`} className="font-display text-[15px] font-extrabold text-ink">
+              Change baby stage
+            </p>
+            <p className="mt-0.5 text-[12.5px] text-ink-soft">
+              Your picks update right away. Your basket stays the same.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {babyStages.map(({ value }) => {
+                const current = value === stage
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => pickStage(value)}
+                    aria-pressed={current}
+                    className={`min-h-[44px] rounded-full border-2 px-4 text-[13px] font-semibold transition-colors ${
+                      current
+                        ? 'border-blue bg-blue text-white'
+                        : 'border-ink/15 bg-white text-ink hover:border-blue hover:text-blue'
+                    }`}
+                  >
+                    {current && (
+                      <span aria-hidden="true" className="mr-1">
+                        ✓
+                      </span>
+                    )}
+                    {stagePlans[value].label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <p className="mt-2 text-[12px] leading-relaxed text-ink-soft/80">
           This is a checklist, not a checkout — nothing is charged here. Tap Add, then use − and + for

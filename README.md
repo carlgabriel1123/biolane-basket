@@ -189,8 +189,10 @@ Uncomment the Meta Pixel / GA4 lines to connect. The site runs fine without them
 - A refresh keeps her place, details and basket — but only in that browser
   tab (`sessionStorage`). Finishing or Start over clears it, so the next mom
   never sees the last one's details.
-- **Change** next to her stage goes back to the sign-up with every field
-  filled in. Her basket is kept. The phone's Back button walks back the same way.
+- **Change** next to her stage opens the five stage options right on the
+  checklist. Tapping one swaps her picks instantly and keeps her basket; her
+  lead record is re-sent with the new stage. The phone's Back button still
+  returns to the sign-up with every field filled in.
 - One record per mom: it is saved on sign-up and updated on finish with the
   same **claim code** (`BIO-XXXXXXXX`). Changing the basket afterwards
   cannot change what staff see.

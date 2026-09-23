@@ -16,6 +16,7 @@ export type AnalyticsEvent =
   | 'community_signup_started'
   | 'community_signup_completed'
   | 'basket_opened'
+  | 'stage_changed'
   | 'form_submitted'
 
 type Payload = Record<string, string | number | boolean | undefined>
