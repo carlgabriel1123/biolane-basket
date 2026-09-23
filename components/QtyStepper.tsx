@@ -55,7 +55,7 @@ export default function QtyStepper({ name, qty, onChange, size = 'md', plusRef }
         onClick={() => onChange(qty + 1)}
         disabled={atMax}
         aria-label={atMax ? `Limit of ${campaign.maxQtyPerItem} reached` : `One more ${name}`}
-        className={`${box} press grid shrink-0 place-items-center rounded-pill bg-blue text-white hover:bg-blue-deep disabled:cursor-not-allowed disabled:bg-sky disabled:text-ink-soft/50`}
+        className={`${box} press grid shrink-0 place-items-center rounded-pill bg-blue text-white hover:bg-blue-deep disabled:cursor-not-allowed disabled:bg-sky disabled:text-ink-soft/85`}
       >
         <PlusIcon size={18} />
       </button>

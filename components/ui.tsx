@@ -39,9 +39,9 @@ type Size = 'md' | 'lg' | 'sm'
 const VARIANT: Record<Variant, string> = {
   primary: 'bg-blue text-white shadow-lift hover:bg-blue-deep',
   secondary: 'border-2 border-blue bg-white text-blue hover:bg-blue hover:text-white',
-  ghost: 'text-blue hover:bg-white',
-  gold: 'bg-gold text-white shadow-lift hover:bg-[#ad7b14]',
-  success: 'bg-success text-white hover:bg-[#256628]',
+  ghost: 'text-blue-deep hover:bg-white hover:text-blue',
+  gold: 'bg-gold text-white shadow-lift hover:bg-gold-deep',
+  success: 'bg-success text-white hover:bg-success-deep',
   'danger-ghost': 'text-danger hover:bg-blush-soft',
 }
 const SIZE: Record<Size, string> = {
@@ -154,6 +154,47 @@ export function ChoiceChip({ label, hint, icon, tone, kind = 'radio', compact = 
   )
 }
 
+/**
+ * Looks like ChoiceChip but is a plain <button aria-pressed>: for pickers
+ * that act on tap (e.g. the checklist's stage picker), where radio arrow
+ * keys would commit a choice while she is only moving through the options.
+ */
+export function ChoiceButton({
+  label,
+  icon,
+  tone,
+  pressed,
+  className = '',
+  ...rest
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { label: ReactNode; icon?: ReactNode; tone?: StageTone; pressed: boolean }) {
+  const t = tone ?? STAGE_TONES.baby
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      className={`press flex min-h-[52px] w-full items-center gap-3 rounded-2xl border-2 px-4 py-2.5 text-left transition-colors ${
+        pressed ? `${t.accent} ${t.bg} shadow-soft` : 'border-ink/10 bg-white hover:border-ink/25'
+      } ${className}`}
+      {...rest}
+    >
+      {icon && (
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${pressed ? `${t.tint} ${t.text}` : 'bg-sky-soft text-ink-soft'}`}>
+          {icon}
+        </span>
+      )}
+      <span className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-ink">{label}</span>
+      <span
+        aria-hidden="true"
+        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${
+          pressed ? 'border-ink bg-ink text-white' : 'border-ink/25 bg-white text-transparent'
+        }`}
+      >
+        <CheckIcon size={14} strokeWidth={3} />
+      </span>
+    </button>
+  )
+}
+
 /* ---------------- surfaces & badges ---------------- */
 
 export function Card({ className = '', children }: { className?: string; children: ReactNode }) {
@@ -165,7 +206,7 @@ const BADGE: Record<BadgeTone, string> = {
   ink: 'bg-ink text-white',
   blue: 'bg-blue text-white',
   gold: 'bg-cream text-gold',
-  success: 'bg-[#e6f4ea] text-success',
+  success: 'bg-success-soft text-success',
   danger: 'bg-blush-soft text-danger',
   soft: 'bg-sky-soft text-ink-soft',
 }
@@ -182,13 +223,13 @@ export function Badge({ tone = 'soft', icon, children, className = '' }: { tone?
 /** "Step 1 of 2 · About you" — the two-screen flow made visible. */
 export function StepIndicator({ step, total, label, className = '' }: { step: number; total: number; label: string; className?: string }) {
   return (
-    <p className={`flex items-center gap-2 text-[12px] font-semibold text-ink-soft ${className}`} aria-label={`Step ${step} of ${total}: ${label}`}>
+    <p className={`flex items-center gap-2 text-[12px] font-semibold text-ink-soft ${className}`}>
       <span className="flex items-center gap-1" aria-hidden="true">
         {Array.from({ length: total }, (_, i) => (
           <span key={i} className={`h-1.5 rounded-pill transition-all ${i < step ? 'w-6 bg-blue' : 'w-3 bg-ink/15'}`} />
         ))}
       </span>
-      <span aria-hidden="true">
+      <span>
         Step {step} of {total} · {label}
       </span>
     </p>
@@ -208,8 +249,9 @@ export function Skeleton({ className = '' }: { className?: string }) {
  */
 export function BottleMeter({ pct, unlocked, className = '' }: { pct: number; unlocked: boolean; className?: string }) {
   const level = Math.max(0, Math.min(100, pct))
-  // Liquid area spans y=34..86 inside the bottle body.
-  const top = 86 - (52 * level) / 100
+  // Liquid area spans y=34..86 inside the bottle body; it scales up from
+  // the floor (y=86), so the fill animation never leaves a gap.
+  const scale = level / 100
   const fill = unlocked ? '#c8901b' : '#1f79b3'
   const fillSoft = unlocked ? '#f2d456' : '#7cb8de'
   return (
@@ -230,8 +272,27 @@ export function BottleMeter({ pct, unlocked, className = '' }: { pct: number; un
       {/* body */}
       <path d="M12 30h24a4 4 0 0 1 4 4v50a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6V34a4 4 0 0 1 4-4z" fill="#ffffff" stroke="#003b61" strokeOpacity="0.18" strokeWidth="1.5" />
       <g clipPath="url(#bottle-body)">
-        <rect className="meter-fill" x="8" y={top} width="32" height={96 - top} fill="url(#bottle-liquid)" />
-        {level > 0 && level < 100 && <rect x="8" y={top} width="32" height="2" fill="#ffffff" fillOpacity="0.55" />}
+        <rect
+          className="meter-fill"
+          x="8"
+          y="34"
+          width="32"
+          height="56"
+          fill="url(#bottle-liquid)"
+          style={{ transform: `scaleY(${scale})`, transformOrigin: '24px 90px' }}
+        />
+        {level > 0 && level < 100 && (
+          <rect
+            className="meter-fill"
+            x="8"
+            y="88"
+            width="32"
+            height="2"
+            fill="#ffffff"
+            fillOpacity="0.55"
+            style={{ transform: `translateY(${-52 * scale}px)` }}
+          />
+        )}
       </g>
       {/* measure marks */}
       {[46, 58, 70, 82].map((y) => (

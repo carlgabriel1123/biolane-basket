@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { babyStages, campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { track } from '@/lib/analytics'
 import { addDays, isPlausibleEmail, manilaToday, normalisePhMobile, tidy } from '@/lib/validate'
@@ -79,7 +79,7 @@ function Field({ icon, invalid, children }: { icon: ReactNode; invalid: boolean;
       <span
         aria-hidden="true"
         className={`pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
-          invalid ? 'text-danger' : 'text-ink-soft/55 group-focus-within:text-blue'
+          invalid ? 'text-danger' : 'text-ink-soft/80 group-focus-within:text-blue'
         }`}
       >
         {icon}
@@ -146,10 +146,52 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
     }
   }
 
-  /** Blur: check just this field, leaving every other field's state alone. */
+  /* Blur: check just this field, leaving every other field's state alone. */
+  // Latest rule + values for checks that run after the current tap ends.
+  const ruleRef = useRef(ruleFor)
+  ruleRef.current = ruleFor
+  const valuesRef = useRef(values)
+  valuesRef.current = values
+
+  const runFieldCheck = (key: keyof CommunityValues) => {
+    const v = valuesRef.current[key]
+    const empty = typeof v === 'string' ? v.trim() === '' : !v
+    const message = ruleRef.current(key)
+    setErrors((e) => {
+      // Leaving a field empty isn't an error yet — Join will say so.
+      if (empty && !e[key]) return e
+      return e[key] === message ? e : { ...e, [key]: message }
+    })
+  }
+
+  const pointerDown = useRef(false)
+  const pendingChecks = useRef(new Set<keyof CommunityValues>())
+  useEffect(() => {
+    const down = () => {
+      pointerDown.current = true
+    }
+    const up = () => {
+      pointerDown.current = false
+      if (pendingChecks.current.size === 0) return
+      const keys = [...pendingChecks.current]
+      pendingChecks.current.clear()
+      // After the click has landed on whatever she tapped.
+      window.setTimeout(() => keys.forEach(runFieldCheck), 0)
+    }
+    document.addEventListener('pointerdown', down, true)
+    document.addEventListener('pointerup', up, true)
+    document.addEventListener('pointercancel', up, true)
+    return () => {
+      document.removeEventListener('pointerdown', down, true)
+      document.removeEventListener('pointerup', up, true)
+      document.removeEventListener('pointercancel', up, true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const validateField = (key: keyof CommunityValues) => {
-    const message = ruleFor(key)
-    setErrors((e) => (e[key] === message ? e : { ...e, [key]: message }))
+    if (pointerDown.current) pendingChecks.current.add(key)
+    else runFieldCheck(key)
   }
 
   /** Radio groups: only validate when focus leaves the whole group, not while moving between chips. */
@@ -360,7 +402,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             {errors.mobile ? (
               err('mobile')
             ) : (
-              <p id="mobile-help" className="mt-1.5 text-[11.5px] text-ink-soft/70">
+              <p id="mobile-help" className="mt-1.5 text-[11.5px] text-ink-soft/90">
                 Philippine mobile number.
               </p>
             )}
@@ -400,7 +442,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
           {values.babyStage === 'expecting' && (
             <div className="animate-rise">
               <label htmlFor="dueDate" className={labelClass}>
-                Due date <span className="font-normal text-ink-soft/70">(optional)</span>
+                Due date <span className="font-normal text-ink-soft/90">(optional)</span>
               </label>
               <Field icon={<CalendarIcon size={20} />} invalid={Boolean(errors.dueDate)}>
                 <input
@@ -454,7 +496,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
           </Button>
 
           {/* Policy links open in a new tab so she never loses a half-filled form. */}
-          <p className="text-center text-[11px] leading-relaxed text-ink-soft/70">
+          <p className="text-center text-[11px] leading-relaxed text-ink-soft/90">
             By joining you agree to our{' '}
             {campaign.termsUrl && (
               <>

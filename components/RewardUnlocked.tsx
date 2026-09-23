@@ -84,20 +84,20 @@ export default function RewardUnlocked({
             <p
               id="personalization-help"
               role={invalid ? 'alert' : undefined}
-              className={`text-[11.5px] ${invalid ? 'font-semibold text-danger' : 'text-ink-soft/75'}`}
+              className={`text-[11.5px] ${invalid ? 'font-semibold text-danger' : 'text-ink-soft/90'}`}
             >
               {invalid
                 ? 'We can only print letters, spaces, hyphens and apostrophes.'
                 : 'Letters and spaces only.'}
             </p>
-            <span className="shrink-0 text-[11.5px] tabular-nums text-ink-soft/60">
+            <span className="shrink-0 text-[11.5px] tabular-nums text-ink-soft/85">
               {personalizationName.length}/{maxLength}
             </span>
           </div>
 
           {personalizationName.trim() !== '' && !invalid && (
             <p className="mt-3 rounded-xl bg-cream-soft px-3 py-2 text-center">
-              <span className="block text-[10.5px] uppercase tracking-wide text-ink-soft/70">
+              <span className="block text-[10.5px] uppercase tracking-wide text-ink-soft/90">
                 Preview on bag
               </span>
               <span className="mt-0.5 block break-words font-display text-lg font-extrabold text-ink">
@@ -107,7 +107,7 @@ export default function RewardUnlocked({
           )}
         </div>
 
-        <p className="mt-3 text-[11px] leading-relaxed text-ink-soft/70">
+        <p className="mt-3 text-[11px] leading-relaxed text-ink-soft/90">
           {campaign.rewardDisclaimer}
         </p>
       </div>

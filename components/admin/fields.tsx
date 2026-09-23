@@ -15,7 +15,7 @@ const INPUT =
 const LABEL = 'block text-[13px] font-semibold text-ink'
 
 const LEAD_ICON =
-  'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft/60 transition-colors peer-focus:text-blue'
+  'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft/85 transition-colors peer-focus:text-blue'
 
 export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: ReactNode

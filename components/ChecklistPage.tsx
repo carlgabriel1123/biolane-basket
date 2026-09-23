@@ -8,7 +8,7 @@ import { stagePlans } from '@/data/stages'
 import type { BasketState, Quantities } from '@/lib/basket'
 import { asset } from '@/lib/asset'
 import { ChevronDownIcon, GiftIcon, HeartIcon, SparklesIcon, XIcon } from './icons'
-import { Button, ChoiceChip, STAGE_TONES, StepIndicator, stageTone } from './ui'
+import { Button, ChoiceButton, STAGE_TONES, StepIndicator, stageTone } from './ui'
 import ProductSection from './ProductSection'
 import RewardProgress from './RewardProgress'
 import RewardUnlocked from './RewardUnlocked'
@@ -277,7 +277,7 @@ export default function ChecklistPage({
             onClick={() => (stagePickerOpen ? closeStagePicker() : setStagePickerOpen(true))}
             aria-expanded={stagePickerOpen}
             aria-controls={stagePickerId}
-            className="press inline-flex min-h-[44px] items-center rounded-pill px-3 text-[13.5px] font-bold text-blue hover:bg-white hover:text-blue-deep"
+            className="press inline-flex min-h-[44px] items-center rounded-pill px-3 text-[13.5px] font-bold text-blue-deep underline decoration-blue-deep/30 underline-offset-4 hover:bg-white hover:text-blue"
           >
             {stagePickerOpen ? 'Cancel' : 'Change'}
           </button>
@@ -309,15 +309,10 @@ export default function ChecklistPage({
                 const t = STAGE_TONES[value]
                 const Icon = t.Icon
                 return (
-                  <ChoiceChip
+                  <ChoiceButton
                     key={value}
-                    name="checklist-stage"
-                    value={value}
-                    checked={current}
-                    // A new stage arrives as a change; re-picking the current
-                    // one only fires click, and just closes the picker.
-                    onChange={() => pickStage(value)}
-                    onClick={current ? () => pickStage(value) : undefined}
+                    pressed={current}
+                    onClick={() => pickStage(value)}
                     tone={t}
                     icon={<Icon size={18} />}
                     label={stagePlans[value].label}
@@ -503,7 +498,7 @@ export default function ChecklistPage({
               type="button"
               onClick={dismissNudge}
               aria-label="Dismiss"
-              className="press grid h-11 w-11 place-items-center rounded-pill text-white/70 hover:bg-white/10 hover:text-white"
+              className="press grid h-11 w-11 shrink-0 place-items-center rounded-pill text-white/70 hover:bg-white/10 hover:text-white"
             >
               <XIcon size={16} />
             </button>
@@ -511,7 +506,7 @@ export default function ChecklistPage({
         </div>
       )}
 
-      <footer className="mt-10 text-center text-[11px] leading-relaxed text-ink-soft/60 md:text-xs">
+      <footer className="mt-10 text-center text-[11px] leading-relaxed text-ink-soft/85 md:text-xs">
         <p>{campaign.promoDates}</p>
         <p className="mt-1">{campaign.rewardDisclaimer}</p>
       </footer>

@@ -36,7 +36,7 @@ export default function BasketBar({ count, units, total, remaining, unlocked, on
           <div className="min-w-0 flex-1">
             <p
               className={`flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide ${
-                unlocked ? 'text-gold' : 'text-ink-soft/75'
+                unlocked ? 'text-gold' : 'text-ink-soft/90'
               }`}
             >
               {unlocked ? <GiftIcon size={14} /> : <BagIcon size={14} />}

@@ -27,6 +27,9 @@
   --color-lilac-soft: #f5f1fc;
   --color-lilac-deep: #8b6fc4;
   --color-success: #2e7d32;    /* paid / saved — AA on white           */
+  --color-success-deep: #256628;
+  --color-success-soft: #e6f4ea;
+  --color-gold-deep: #ad7b14;  /* gold button hover                    */
   --color-danger: #b3261e;     /* errors — AA on white                 */
 
   --font-display: var(--font-nunito), ui-rounded, 'Segoe UI', system-ui, sans-serif;
@@ -79,6 +82,8 @@ button, a, input, label, select, [role='button'] {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Staggered lists appear at once instead of one by one. */
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
   }
 }
@@ -150,7 +155,7 @@ button, a, input, label, select, [role='button'] {
 
 /* Reward progress fills. */
 .progress-fill { transition: width 0.55s var(--ease-soft); }
-.meter-fill { transition: height 0.7s var(--ease-soft); }
+.meter-fill { transition: transform 0.7s var(--ease-soft); }
 
 /* Slow float for the pastel blobs behind the sign-up card. */
 @keyframes drift {

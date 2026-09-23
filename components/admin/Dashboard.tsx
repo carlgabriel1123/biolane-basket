@@ -267,7 +267,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
                 <Icon size={18} />
               </span>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft/75">{label}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft/90">{label}</p>
                 <p className="font-display text-[24px] font-extrabold leading-tight tabular-nums text-ink">
                   <span key={n} className="animate-bump inline-block">
                     {n}
@@ -289,7 +289,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
               aria-label="Search sign-ups"
               className="peer block min-h-[48px] w-full rounded-2xl border-2 border-ink/10 bg-white pl-11 pr-4 text-[16px] text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-ink-soft/50 focus:border-blue focus:shadow-glow"
             />
-            <SearchIcon size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft/60 transition-colors peer-focus:text-blue" />
+            <SearchIcon size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft/85 transition-colors peer-focus:text-blue" />
           </div>
           <div className="order-3 flex w-full gap-2 md:order-2 md:w-auto">
             <a

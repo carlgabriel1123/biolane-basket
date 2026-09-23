@@ -54,7 +54,7 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
           <CommunityForm values={values} onChange={onChange} onSubmit={onSubmit} submitting={submitting} />
         </div>
 
-        <p className="mt-5 text-center text-[11px] leading-relaxed text-ink-soft/70">
+        <p className="mt-5 text-center text-[11px] leading-relaxed text-ink-soft/90">
           {campaign.promoDates}
           <br />
           {campaign.rewardDisclaimer}

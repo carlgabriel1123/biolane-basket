@@ -32,8 +32,13 @@ function useWideScreen(): boolean {
     const mq = window.matchMedia('(min-width: 768px)')
     const update = () => setWide(mq.matches)
     update()
-    mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
+    // Safari before 14 only has the old addListener API.
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', update)
+      return () => mq.removeEventListener('change', update)
+    }
+    mq.addListener(update)
+    return () => mq.removeListener(update)
   }, [])
   return wide
 }
@@ -236,7 +241,7 @@ export default function BasketSheet({
 
           <div className="mt-3 flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft/70">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft/90">
                 Total
               </p>
               <p className="font-display text-[24px] font-extrabold leading-none tabular-nums text-ink">

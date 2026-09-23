@@ -71,13 +71,13 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
         <span aria-hidden="true" className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-sky-soft" />
         <span aria-hidden="true" className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-sky-soft" />
 
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft/70">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-soft/90">
           Claim code
         </p>
         <p className="mt-1 font-display text-[30px] font-extrabold tracking-wider tabular-nums text-ink">
           {submission.submissionId}
         </p>
-        <p className="mt-1 text-[11.5px] text-ink-soft/70">{stamp}</p>
+        <p className="mt-1 text-[11.5px] text-ink-soft/90">{stamp}</p>
 
         <p className="mt-3">
           {storedRemotely ? (
@@ -106,7 +106,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
           </p>
           {submission.personalizationName && (
             <>
-              <p className="mt-3 text-[11px] uppercase tracking-wide text-ink-soft/70">
+              <p className="mt-3 text-[11px] uppercase tracking-wide text-ink-soft/90">
                 To be personalized with
               </p>
               <p className="mt-0.5 break-words font-display text-2xl font-extrabold text-ink">
@@ -134,7 +134,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
                   <span className="block text-[13.5px] font-semibold leading-snug text-ink">
                     {p.name} <span className="font-display font-extrabold tabular-nums text-blue">× {p.qty}</span>
                   </span>
-                  <span className="text-[11.5px] text-ink-soft/70">
+                  <span className="text-[11.5px] text-ink-soft/90">
                     {p.size ? `${p.size} · ` : ''}SKU {p.gbfSku}
                     {p.qty > 1 ? ` · ${peso(p.price)} each` : ''}
                   </span>
@@ -164,7 +164,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
           We&rsquo;ll reach {submission.name} at {submission.mobile}.
         </p>
         {!submission.marketingConsent && (
-          <p className="mt-1.5 text-[11px] text-ink-soft/70">
+          <p className="mt-1.5 text-[11px] text-ink-soft/90">
             You opted out of marketing emails — we&rsquo;ll only contact you about your reward.
           </p>
         )}
@@ -180,7 +180,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
         </p>
       </div>
 
-      <p className="mt-4 text-center text-[11px] leading-relaxed text-ink-soft/70">
+      <p className="mt-4 text-center text-[11px] leading-relaxed text-ink-soft/90">
         {campaign.confirmationDisclaimer}
         <br />
         No purchase was made on this page.

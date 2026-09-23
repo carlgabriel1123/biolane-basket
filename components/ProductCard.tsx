@@ -132,7 +132,7 @@ export default function ProductCard({
                   {peso(priced.price)}
                 </span>
                 {priced.origPrice > priced.price && (
-                  <span className="text-xs tabular-nums text-ink-soft/55 line-through">
+                  <span className="text-xs tabular-nums text-ink-soft/80 line-through">
                     {peso(priced.origPrice)}
                   </span>
                 )}

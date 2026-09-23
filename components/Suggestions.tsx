@@ -59,7 +59,7 @@ export default function Suggestions({ items, remaining, onAdd, stage }: Props) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13.5px] font-semibold text-ink">{p.name}</span>
-                {p.size && <span className="text-xs text-ink-soft/75">{p.size}</span>}
+                {p.size && <span className="text-xs text-ink-soft/90">{p.size}</span>}
               </span>
               <span className="shrink-0 font-display text-[15px] font-extrabold tabular-nums text-blue">{peso(p.price)}</span>
               <span
@@ -74,7 +74,7 @@ export default function Suggestions({ items, remaining, onAdd, stage }: Props) {
         ))}
       </ul>
 
-      {!single && <p className="mt-2.5 text-[11.5px] text-ink-soft/70">Together they add {peso(addsTo)}.</p>}
+      {!single && <p className="mt-2.5 text-[11.5px] text-ink-soft/90">Together they add {peso(addsTo)}.</p>}
     </section>
   )
 }
