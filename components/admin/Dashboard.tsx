@@ -120,7 +120,8 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const digits = q.replace(/\D/g, '')
+    // Mobiles are stored as +639XXXXXXXXX; let staff type 0917…, 917… or 63917….
+    const digits = q.replace(/\D/g, '').replace(/^(0|63)?(9\d*)$/, '$2')
     return all.filter((r) => {
       if (filter === 'unpaid' && r.paid_at) return false
       if (filter === 'paid' && !r.paid_at) return false
@@ -144,19 +145,28 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
     window.setTimeout(() => setNotice(''), 4000)
   }
 
+  // Replace a row outright (the server's answer always wins over an
+  // optimistic guess, whatever the phone's clock says).
+  const setRow = useCallback((row: AdminSubmission) => {
+    setRows((prev) => new Map(prev).set(row.submission_id, row))
+  }, [])
+
   const togglePaid = async (r: AdminSubmission) => {
     const paid = !r.paid_at
     if (!paid && !window.confirm(`Mark ${r.submission_id} (${r.name}) as NOT paid?`)) return
     setBusyId(r.submission_id)
     // Optimistic: flip now, put it back if the server says no.
-    merge([{ ...r, paid_at: paid ? new Date().toISOString() : null, updated_at: new Date().toISOString() }])
+    setRow({ ...r, paid_at: paid ? new Date().toISOString() : null })
     try {
       const data = await adminPost<{ row: AdminSubmission; sheet: string | null }>('/api/admin/paid', { id: r.submission_id, paid })
-      merge([data.row])
+      setRow(data.row)
       if (sheetConfigured && data.sheet) flash('Saved here. The Google Sheet did not update — use "Sync sheet" later.')
     } catch (err) {
-      merge([{ ...r, updated_at: new Date(Date.now() + 1).toISOString() }])
+      // Put the row back, then ask the server what it really has: a slow
+      // request may have timed out here after the database applied it.
+      setRow(r)
       flash(describeError(err))
+      void load()
     } finally {
       setBusyId(null)
     }
