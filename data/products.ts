@@ -37,6 +37,29 @@ export interface Product {
   whyThis: string
 }
 
+/**
+ * A product the Biolane team wants on a stage's list but that is NOT on the
+ * fair price list (LIST OF OFFERS), so it has no price yet. It is shown in
+ * its place with "Price at the booth" and cannot be added to the basket.
+ * Once a fair price is confirmed, move it into `products` above with a
+ * `price`, `origPrice`, `gbfSku` and `sheetRow`.
+ */
+export interface UnpricedProduct {
+  id: string
+  name: string
+  size: string
+  image: string
+  imageIsPlaceholder?: boolean
+  blurb: string
+  whyThis: string
+  /** For the team: why there is no price yet. */
+  note: string
+}
+
+export type CatalogItem = Product | UnpricedProduct
+
+export const isPriced = (p: CatalogItem): p is Product => 'price' in p
+
 export const productGroups: Array<{
   id: ProductGroupId
   title: string
@@ -492,3 +515,72 @@ export const products: Product[] = [
 ]
 
 export const productById = new Map(products.map((p) => [p.id, p]))
+
+/** Requested by the team (September 2026) but not on the fair price list. */
+export const unpricedProducts: UnpricedProduct[] = [
+  {
+    id: 'diaper-change-cream-50',
+    name: 'Diaper Change Cream',
+    size: '50ml',
+    image: '/images/products/diaper-change-cream-100.png',
+    imageIsPlaceholder: true, // 100ml art; the 50ml is not on biolane.ph
+    blurb: 'The changing-bag size of the diaper-area cream.',
+    whyThis: 'Same zinc-oxide protection as the 100ml, in a size that fits the bag.',
+    note: 'LIST OF OFFERS has the 50ml only inside bundle sets.',
+  },
+  {
+    id: 'intimate-hygiene-gel',
+    name: 'Soothing Intimate Hygiene Gel',
+    size: '',
+    image: '/images/products/intimate-hygiene-gel.svg',
+    imageIsPlaceholder: true,
+    blurb: 'Gentle daily wash for mom, during pregnancy and after.',
+    whyThis: 'Soothing and gynecologically tested — made for the months when skin is extra sensitive.',
+    note: 'Sold on biolane.ph as "Feminine Wash"; LIST OF OFFERS has it only in two PHP 1,000 bundles.',
+  },
+  {
+    id: 'pure-h2o-wipes-72',
+    name: 'Pure H2O Wipes',
+    size: '72 wipes',
+    image: '/images/products/pure-h2o-wipes-72.svg',
+    imageIsPlaceholder: true,
+    blurb: 'Thick no-rinse wipes soaked in Pure H2O.',
+    whyThis: 'For the diaper area, hands and face when there is no water nearby.',
+    note: 'Not on LIST OF OFFERS or biolane.ph (official name: Lingettes épaisses H2O x72).',
+  },
+  {
+    id: 'cleansing-milk-wipes-72',
+    name: 'Cleansing Milk Wipes',
+    size: '72 wipes',
+    image: '/images/products/cleansing-milk-wipes-72.svg',
+    imageIsPlaceholder: true,
+    blurb: 'Milk-based wipes that clean and moisturise at each change.',
+    whyThis: 'Newborn-gentle for changes on the go and messy little hands.',
+    note: 'On biolane.ph (PHP 493) but not on LIST OF OFFERS.',
+  },
+  {
+    id: 'first-teeth-toothpaste',
+    name: 'First Teeth Toothpaste',
+    size: '50ml',
+    image: '/images/products/first-teeth-toothpaste.svg',
+    imageIsPlaceholder: true,
+    blurb: "Gentle toothpaste for baby's very first teeth.",
+    whyThis: 'A pea-sized amount twice a day, with a grown-up watching, from the first tooth.',
+    note: 'Not on LIST OF OFFERS or biolane.ph.',
+  },
+  {
+    id: 'baby-powder-75',
+    name: 'Baby Powder',
+    size: '75g',
+    image: '/images/products/baby-powder-75.svg',
+    imageIsPlaceholder: true,
+    blurb: 'Soft natural powder for the bath and the skin folds.',
+    whyThis: 'Rice, corn and oat powder — a different product from the Liquid Powder.',
+    note: 'Not on LIST OF OFFERS or biolane.ph (official name: Poudre de bain adoucissante 75g).',
+  },
+]
+
+/** Everything a stage list may point at: priced products and unpriced ones. */
+export const catalogById = new Map<string, CatalogItem>(
+  [...products, ...unpricedProducts].map((p) => [p.id, p] as [string, CatalogItem])
+)

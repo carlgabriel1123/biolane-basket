@@ -2,13 +2,13 @@
 
 import Image from 'next/image'
 import { useEffect, useId, useRef, useState } from 'react'
-import type { Product } from '@/data/products'
+import { isPriced, type CatalogItem } from '@/data/products'
 import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
 import QtyStepper from './QtyStepper'
 
 interface Props {
-  product: Product
+  product: CatalogItem
   qty: number
   onChange: (id: string, qty: number) => void
   /** Highlight ring used by the "almost there" suggestions. */
@@ -28,6 +28,8 @@ export default function ProductCard({
 }: Props) {
   const [showWhy, setShowWhy] = useState(false)
   const whyId = useId()
+  // Not on the fair price list yet: shown in place, but can't be added.
+  const priced = isPriced(product) ? product : null
   const inBasket = qty > 0
   const Heading = headingLevel === 4 ? 'h4' : 'h3'
   // Two products share a name in different sizes (Pure H2O 350 / 750), so
@@ -134,18 +136,26 @@ export default function ProductCard({
 
           {/* Price on the left, Add / stepper on the right; wraps on narrow cards. */}
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-            <p className="flex items-baseline gap-1.5">
-              <span className="font-display text-lg font-extrabold text-blue">
-                {peso(product.price)}
-              </span>
-              {product.origPrice > product.price && (
-                <span className="text-xs text-ink-soft/55 line-through">
-                  {peso(product.origPrice)}
+            {priced ? (
+              <p className="flex items-baseline gap-1.5">
+                <span className="font-display text-lg font-extrabold text-blue">
+                  {peso(priced.price)}
                 </span>
-              )}
-            </p>
+                {priced.origPrice > priced.price && (
+                  <span className="text-xs text-ink-soft/55 line-through">
+                    {peso(priced.origPrice)}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className="font-display text-[14px] font-bold text-ink-soft">Price at the booth</p>
+            )}
 
-            {inBasket ? (
+            {!priced ? (
+              <span className="inline-flex min-h-[44px] items-center rounded-full border-2 border-dashed border-ink/20 px-4 text-[13px] font-semibold text-ink-soft">
+                Ask our team
+              </span>
+            ) : inBasket ? (
               <QtyStepper name={fullName} qty={qty} onChange={step} plusRef={plusRef} />
             ) : (
               <button

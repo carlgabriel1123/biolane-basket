@@ -9,13 +9,14 @@ import type { BabyStage } from './campaign.ts'
  * Everything else goes into the folded "See all Biolane products" section.
  * Use picks: 'all' to skip the lists and show the whole catalogue by category.
  *
- * Both lists are product ids from data/products.ts. The lists themselves
- * come from the Biolane team (September 2026).
+ * Ids come from data/products.ts: either a priced product (`products`) or
+ * one of the `unpricedProducts` the team listed that is not on the fair
+ * price list yet. Unpriced ones show in place with "Price at the booth" and
+ * can't be added to the basket until a price is confirmed.
  *
- * `awaitingPrice` names products the team asked for that are NOT on the fair
- * price list (LIST OF OFFERS), so they can't be sold on this page yet. They
- * are not shown. Once a fair price is confirmed, add the product to
- * data/products.ts and move its id into `picks` / `suggestions` here.
+ * The lists themselves come from the Biolane team (September 2026).
+ * "Soothing Repair Balm" on their list is the Nursing Balm 40ml (biolane.ph
+ * sells it as "Soothing Repairing Balm"), which is priced.
  *
  * Age guidance follows biolane.ph: the mosquito stick is "from 6 months",
  * and the sun products say to keep babies under 6 months in the shade.
@@ -34,8 +35,6 @@ export interface StagePlan {
   picks: string[] | 'all'
   /** "You might also like" — shown once she adds a product. */
   suggestions: string[]
-  /** Requested by the team, not on the fair price list yet. Not shown. */
-  awaitingPrice?: { picks: string[]; suggestions: string[] }
 }
 
 export const stagePlans: Record<BabyStage, StagePlan> = {
@@ -48,15 +47,20 @@ export const stagePlans: Record<BabyStage, StagePlan> = {
       'cleanser-2in1-350',
       'cleanser-2in1-200',
       'diaper-change-cream-100',
+      'diaper-change-cream-50',
       'nourishing-cream-100',
       'liquid-powder-100',
       'stretch-marks-cream-200',
+      'intimate-hygiene-gel',
     ],
-    suggestions: ['almond-oil-spray-75', 'rich-soap-150', 'cleansing-milk-750'],
-    awaitingPrice: {
-      picks: ['Diaper Change Cream 50ml', 'Soothing Intimate Hygiene Gel'],
-      suggestions: ['Soothing Repair Balm', 'Pure H2O Wipes x72', 'Cleansing Wipes x72'],
-    },
+    suggestions: [
+      'nursing-balm-40',
+      'pure-h2o-wipes-72',
+      'cleansing-milk-wipes-72',
+      'almond-oil-spray-75',
+      'rich-soap-150',
+      'cleansing-milk-750',
+    ],
   },
   baby: {
     label: 'Baby · 0 to 12 months',
@@ -73,11 +77,16 @@ export const stagePlans: Record<BabyStage, StagePlan> = {
       'body-milk-350',
       'gentle-shampoo-350',
     ],
-    suggestions: ['cradle-cap-shampoo-150', 'cicabebe-3in1-40', 'almond-oil-spray-75', 'rich-soap-150'],
-    awaitingPrice: {
-      picks: [],
-      suggestions: ['First Teeth Toothpaste', 'Pure H2O Wipes x72', 'Cleansing Milk Wipes x72', 'Baby Powder'],
-    },
+    suggestions: [
+      'cradle-cap-shampoo-150',
+      'cicabebe-3in1-40',
+      'almond-oil-spray-75',
+      'rich-soap-150',
+      'first-teeth-toothpaste',
+      'pure-h2o-wipes-72',
+      'cleansing-milk-wipes-72',
+      'baby-powder-75',
+    ],
   },
   toddler: {
     label: 'Toddler · 1 to 4 years old',
@@ -94,11 +103,14 @@ export const stagePlans: Record<BabyStage, StagePlan> = {
       'arnica-gel-20',
       'cicabebe-3in1-40',
     ],
-    suggestions: ['pure-h2o-750', 'cleansing-milk-750', 'sunstick', 'nourishing-cream-100'],
-    awaitingPrice: {
-      picks: [],
-      suggestions: ['Pure H2O Wipes x72', 'Cleansing Milk Wipes x72'],
-    },
+    suggestions: [
+      'pure-h2o-750',
+      'cleansing-milk-750',
+      'sunstick',
+      'pure-h2o-wipes-72',
+      'cleansing-milk-wipes-72',
+      'nourishing-cream-100',
+    ],
   },
   others: {
     label: 'Others',

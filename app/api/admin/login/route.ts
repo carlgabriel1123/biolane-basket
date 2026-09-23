@@ -4,9 +4,22 @@ import { clientIp, forgetPasswordVersion, issueSessionCookie, json, readJson, se
 
 /**
  * POST /api/admin/login — {username, password} → session cookie.
- * Five wrong tries in 15 minutes lock that IP and that username for
- * 15 minutes; the counter lives in the database, so it holds everywhere.
+ *
+ * Throttling (counted atomically in the database, so it holds across
+ * server instances and parallel bursts):
+ *   - 5 failures in 15 min from one device (IP + username) lock that
+ *     device for 15 min. A stranger on the venue wifi therefore only locks
+ *     the username for their own IP… which at a booth is the shared wifi
+ *     address, so the limit is per IP *and* username, not per IP alone.
+ *   - 30 failures in 15 min against the username from anywhere lock it for
+ *     15 min: the brake against a distributed guess, high enough that a
+ *     prankster can't switch the booth off with a handful of tries.
+ * Every attempt is counted before the password is checked; a success
+ * clears both counters.
  */
+
+const DEVICE_LIMIT = 5
+const USERNAME_LIMIT = 30
 
 // A hash to check against when the username doesn't exist, so a wrong
 // username takes as long as a wrong password.
@@ -22,31 +35,27 @@ export async function POST(request: Request) {
   const password = typeof body?.password === 'string' ? body.password.slice(0, 200) : ''
   if (!username || !password) return json(422, { ok: false, error: 'missing' })
 
-  const keys = [`ip:${clientIp(request)}`, `user:${username.toLowerCase()}`]
+  const user = username.toLowerCase()
+  const keys: Array<[string, number]> = [
+    [`dev:${clientIp(request)}:${user}`, DEVICE_LIMIT],
+    [`user:${user}`, USERNAME_LIMIT],
+  ]
   try {
-    for (const key of keys) {
-      const { allowed, locked_until } = await adminDb.throttle(key, 'check')
+    for (const [key, limit] of keys) {
+      const { allowed, locked_until } = await adminDb.throttle(key, 'attempt', limit)
       if (!allowed) return json(429, { ok: false, error: 'locked', lockedUntil: locked_until })
     }
 
-    const user = await adminDb.getUser(username)
-    const good = user ? await verifyPassword(password, user.password_hash) : (await verifyPassword(password, await decoy()), false)
+    const account = await adminDb.getUser(username)
+    const good = account ? await verifyPassword(password, account.password_hash) : (await verifyPassword(password, await decoy()), false)
+    if (!good || !account) return json(401, { ok: false, error: 'bad-login' })
 
-    if (!good || !user) {
-      let lockedUntil: string | null = null
-      for (const key of keys) {
-        const r = await adminDb.throttle(key, 'fail')
-        if (!r.allowed) lockedUntil = r.locked_until
-      }
-      return json(401, { ok: false, error: 'bad-login', lockedUntil })
-    }
-
-    await Promise.all(keys.map((k) => adminDb.throttle(k, 'reset')))
-    forgetPasswordVersion(user.username)
+    await Promise.all(keys.map(([k]) => adminDb.throttle(k, 'reset')))
+    forgetPasswordVersion(account.username)
     return json(
       200,
-      { ok: true, username: user.username },
-      { 'Set-Cookie': issueSessionCookie(request, user.username, user.password_changed_at) }
+      { ok: true, username: account.username },
+      { 'Set-Cookie': issueSessionCookie(request, account.username, account.password_changed_at) }
     )
   } catch (err) {
     console.error('[admin/login]', err)

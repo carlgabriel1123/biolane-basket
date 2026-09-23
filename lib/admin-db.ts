@@ -86,10 +86,15 @@ export const adminDb = {
   setPassword: (username: string, hash: string) =>
     rpc<string>('admin_set_password', { p_username: username, p_hash: hash }),
 
-  throttle: async (key: string, action: 'check' | 'fail' | 'reset') => {
+  /**
+   * 'attempt' counts one try atomically and says whether it may proceed
+   * (`limit` failures in 15 min → 15-minute lock); 'reset' clears the key.
+   */
+  throttle: async (key: string, action: 'attempt' | 'check' | 'fail' | 'reset', limit = 5) => {
     const rows = await rpc<Array<{ allowed: boolean; locked_until: string | null }>>('admin_throttle', {
       p_key: key,
       p_action: action,
+      p_limit: limit,
     })
     return rows[0] ?? { allowed: true, locked_until: null }
   },

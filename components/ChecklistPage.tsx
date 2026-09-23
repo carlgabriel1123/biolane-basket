@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { babyStages, campaign, type BabyStage } from '@/data/campaign'
-import { productById, productGroups, products, type Product } from '@/data/products'
+import { catalogById, productGroups, products, type CatalogItem, type Product } from '@/data/products'
 import { stagePlans } from '@/data/stages'
 import type { BasketState, Quantities } from '@/lib/basket'
 import { asset } from '@/lib/asset'
@@ -68,11 +68,12 @@ export default function ChecklistPage({
     headingRef.current?.focus({ preventScroll: true })
   }, [])
 
+  // Priced products and the team's not-yet-priced ones, in the team's order.
   const picks = useMemo(
     () =>
       plan.picks === 'all'
         ? null
-        : plan.picks.map((id) => productById.get(id)).filter((p): p is Product => Boolean(p)),
+        : plan.picks.map((id) => catalogById.get(id)).filter((p): p is CatalogItem => Boolean(p)),
     [plan]
   )
 
@@ -85,8 +86,8 @@ export default function ChecklistPage({
     () =>
       picks
         ? plan.suggestions
-            .map((id) => productById.get(id))
-            .filter((p): p is Product => Boolean(p) && !pickIds.has(p!.id))
+            .map((id) => catalogById.get(id))
+            .filter((p): p is CatalogItem => Boolean(p) && !pickIds.has(p!.id))
         : [],
     [plan, picks, pickIds]
   )

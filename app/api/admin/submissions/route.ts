@@ -1,3 +1,4 @@
+import { after } from 'next/server'
 import { adminDb } from '@/lib/admin-db'
 import { guardAdminGet, json } from '@/lib/admin-guard'
 import { retryUnsynced, sheetConfigured } from '@/lib/sheets'
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
     const rows = await adminDb.listSubmissions(since)
     if (sheetConfigured() && Date.now() - lastRetry > RETRY_EVERY_MS) {
       lastRetry = Date.now()
-      retryUnsynced(50).catch((err) => console.error('[admin/submissions] retry', err))
+      after(() => retryUnsynced(50).catch((err) => console.error('[admin/submissions] retry', err)))
     }
     return json(200, { ok: true, rows, serverTime: new Date().toISOString(), sheet: sheetConfigured() })
   } catch (err) {

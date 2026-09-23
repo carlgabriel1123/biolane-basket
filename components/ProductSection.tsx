@@ -1,14 +1,14 @@
 'use client'
 
 import { useId, useState } from 'react'
-import type { Product } from '@/data/products'
+import type { CatalogItem } from '@/data/products'
 import type { Quantities } from '@/lib/basket'
 import ProductCard from './ProductCard'
 
 interface Props {
   title: string
   caption?: string
-  items: Product[]
+  items: CatalogItem[]
   quantities: Quantities
   suggestedIds: Set<string>
   onChange: (id: string, qty: number) => void

@@ -10,7 +10,7 @@ import {
   sessionCookieHeader,
   isSameOriginPost,
 } from '../lib/admin-auth.ts'
-import { toSheetRow, toCsv, formatManila, SHEET_COLUMNS } from '../lib/sheet-row.ts'
+import { toSheetRow, toCsv, formatManila, formulaSafe, localMobile, SHEET_COLUMNS } from '../lib/sheet-row.ts'
 
 let failures = 0
 const eq = (label, got, want) => {
@@ -67,6 +67,11 @@ eq('are you + specify', [row.areYou, row.othersSpecify], ['Others', 'Tita'])
 eq('stage label', row.babyStage, 'Baby (0–12 months)')
 eq('products one per line', row.products, 'Pure H2O 750ml ×2 = ₱1920\nBaby Sunstick SPF 50+ ×1 = ₱845')
 eq('paid columns', [row.paid, row.paidAt], ['Yes', '2026-10-08 15:00'])
+eq('mobile shown the local way, never as a number', row.mobile, '0917 123 4567')
+eq('updated stamp carried for the sheet', row.updatedIso, '2026-10-08T06:20:00.000Z')
+eq('formula-looking text is neutralised', [formulaSafe('=1+1'), formulaSafe('+63'), formulaSafe('-x'), formulaSafe('@x'), formulaSafe('\tx'), formulaSafe('Maria')], ["'=1+1", "'+63", "'-x", "'@x", "'\tx", 'Maria'])
+eq('hostile name cannot become a formula in the sheet or CSV', toSheetRow({ ...sub, name: '=HYPERLINK("https://evil.example";"Maria")' }).name.startsWith("'="), true)
+eq('odd mobile falls back safely', localMobile('12345'), '12345')
 eq('unpaid columns', [toSheetRow({ ...sub, paid_at: null }).paid, toSheetRow({ ...sub, paid_at: null }).paidAt], ['No', ''])
 eq('null due date is blank', row.dueDate, '')
 

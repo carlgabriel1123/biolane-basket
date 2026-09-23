@@ -15,11 +15,14 @@ export const dynamic = 'force-dynamic'
  */
 export default async function AdminPage() {
   if (!adminDbConfigured() || !sessionSecret()) {
+    console.error(
+      '[admin] not configured — missing:',
+      ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'ADMIN_TOKEN', 'SESSION_SECRET'].filter((k) => !process.env[k]).join(', ')
+    )
     return (
       <AdminShell>
         <p className="rounded-card border border-blush bg-blush-soft p-4 text-[14px] text-ink">
-          The dashboard is not set up on this server yet: ADMIN_TOKEN, SESSION_SECRET, SUPABASE_URL and
-          SUPABASE_PUBLISHABLE_KEY must all be set.
+          The dashboard is not available yet.
         </p>
       </AdminShell>
     )

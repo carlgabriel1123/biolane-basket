@@ -52,7 +52,13 @@ export async function getAdminSessionFromCookie(cookieHeader: string | null): Pr
   if (!secret) return null
   const session = readSessionToken(cookieValue(SESSION_COOKIE, cookieHeader), secret)
   if (!session) return null
-  const pv = await currentPasswordVersion(session.u)
+  let pv = await currentPasswordVersion(session.u)
+  if (pv !== null && pv !== session.pv) {
+    // The cache may be stale (password just changed on another instance):
+    // ask the database once more before rejecting.
+    forgetPasswordVersion(session.u)
+    pv = await currentPasswordVersion(session.u)
+  }
   if (pv === null || pv !== session.pv) return null
   return session
 }

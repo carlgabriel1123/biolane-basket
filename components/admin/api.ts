@@ -44,6 +44,8 @@ export function describeError(err: unknown): string {
       return 'This request was blocked. Reload the page and try again.'
     case 'setup-done':
       return 'The admin account already exists. Please log in.'
+    case 'bad-setup-code':
+      return 'That setup code is wrong.'
     case 'bad-username':
       return 'Username: 3 to 40 letters, numbers, dots, dashes or underscores.'
     case 'short-password':

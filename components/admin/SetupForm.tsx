@@ -10,6 +10,7 @@ const field =
 /** Shown once: creates the single admin account. */
 export default function SetupForm() {
   const router = useRouter()
+  const [setupCode, setSetupCode] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -22,7 +23,7 @@ export default function SetupForm() {
     if (password !== confirm) return setError('The two passwords do not match.')
     setBusy(true)
     try {
-      await adminPost('/api/admin/setup', { username, password })
+      await adminPost('/api/admin/setup', { setupCode, username, password })
       router.refresh()
     } catch (err) {
       setError(describeError(err))
@@ -38,6 +39,18 @@ export default function SetupForm() {
       </p>
 
       <label className="mt-5 block text-[13px] font-semibold text-ink">
+        Setup code <span className="font-normal text-ink-soft">(from the site owner)</span>
+        <input
+          className={field}
+          value={setupCode}
+          onChange={(e) => setSetupCode(e.target.value)}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+        />
+      </label>
+      <label className="mt-4 block text-[13px] font-semibold text-ink">
         Username
         <input
           className={field}

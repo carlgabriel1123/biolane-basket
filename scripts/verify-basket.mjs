@@ -13,7 +13,7 @@
  *     node scripts/verify-basket.mjs
  */
 
-import { products } from '../data/products.ts'
+import { products, unpricedProducts } from '../data/products.ts'
 import { campaign, babyStages } from '../data/campaign.ts'
 import { stagePlans } from '../data/stages.ts'
 
@@ -123,7 +123,8 @@ check(
 
 /* ---------- stage picks (data/stages.ts) ---------- */
 console.log('\nStage picks:')
-const ids = new Set(P.map((p) => p.id))
+const unpricedIds = new Set(unpricedProducts.map((p) => p.id))
+const ids = new Set([...P.map((p) => p.id), ...unpricedIds])
 const priceOf = new Map(P.map((p) => [p.id, p.price]))
 const stageFacts = []
 const awaiting = []
@@ -155,7 +156,7 @@ for (const { value } of babyStages) {
   check(`"${value}" suggestions have no repeats`, recDupes.length === 0, recDupes.join(', '))
   check(`"${value}" suggestions don't repeat a Checklist item`, overlap.length === 0, overlap.join(', '))
   stageFacts[stageFacts.length - 1] += `, ${recs.length} suggestions`
-  const waiting = [...(plan.awaitingPrice?.picks ?? []), ...(plan.awaitingPrice?.suggestions ?? [])]
+  const waiting = [...plan.picks, ...recs].filter((id) => unpricedIds.has(id))
   if (waiting.length) awaiting.push(`  ${value.padEnd(10)}: ${waiting.join(', ')}`)
 }
 if (stagePlans.others?.picks === 'all') {
@@ -186,7 +187,7 @@ console.log(`  all products together           : PHP ${sumAll}`)
 console.log(`  all prices multiples of 5       : ${P.every((p) => p.price % 5 === 0)}`)
 
 if (awaiting.length) {
-  console.log('\nRequested but not on the fair price list (not shown until priced):')
+  console.log('\nShown WITHOUT a price ("Price at the booth") — not on the fair price list:')
   awaiting.forEach((l) => console.log(l))
 }
 

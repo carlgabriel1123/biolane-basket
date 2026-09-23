@@ -61,22 +61,22 @@ first, in this order. **You might also like** appears under it as soon as
 the visitor adds their first product (a small "See them" nudge points to it
 if it's off-screen). Everything else stays under "See all".
 
+Items marked † are not on the fair price list: they show in place with
+"Price at the booth" and can't be added until a price is confirmed.
+
 | Stage | Checklist (in order) | You might also like |
 |---|---|---|
-| Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream | Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
-| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap |
-| Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Nourishing Cream 100ml |
-| Others | All 31 products, by category | — |
+| Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Diaper Change Cream 50ml †, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream, Soothing Intimate Hygiene Gel † | Nursing Balm ("Soothing Repair Balm"), Pure H2O Wipes †, Cleansing Milk Wipes †, Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
+| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap, First Teeth Toothpaste †, Pure H2O Wipes †, Cleansing Milk Wipes †, Baby Powder † |
+| Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Pure H2O Wipes †, Cleansing Milk Wipes †, Nourishing Cream 100ml |
+| Others | All 31 priced products, by category | — |
 
-**Waiting for a fair price** — the team's lists also name these, but they are
-not on the fair price list (LIST OF OFFERS has them only inside bundle sets,
-or not at all), so the site can't show a price for them yet. They are
-recorded in `data/stages.ts` → `awaitingPrice`, and `npm run verify` prints them:
-
-- Expecting checklist: Diaper Change Cream 50ml, Soothing Intimate Hygiene Gel
-- Expecting suggestions: Soothing Repair Balm, Pure H2O Wipes x72, Cleansing Wipes x72
-- Baby suggestions: First Teeth Toothpaste, Pure H2O Wipes x72, Cleansing Milk Wipes x72, Baby Powder
-- Toddler suggestions: Pure H2O Wipes x72, Cleansing Milk Wipes x72
+**† Unpriced products** live in `data/products.ts` → `unpricedProducts`
+(LIST OF OFFERS has the 50ml diaper cream and the intimate gel only inside
+bundle sets; the wipes, toothpaste and dry baby powder not at all). To put
+one on sale: move it into `products` with its `price`, `origPrice`, `gbfSku`
+and `sheetRow`, and swap its placeholder art in `public/images/products/`.
+`npm run verify` lists which unpriced items each stage shows.
 
 Sun and mosquito products are never listed for Expecting or Baby:
 biolane.ph says the mosquito stick is "from 6 months" and to keep babies
@@ -192,10 +192,15 @@ The same three go in `.env.local` (git-ignored) for local runs.
 For the Biolane team at the booth. Not linked from the public site and
 hidden from search engines.
 
-- **First visit ever:** a one-time page asks you to create the admin
-  username and password (10+ characters). Keep it safe: it's the only login.
+- **First visit ever:** a one-time page asks for the **setup code** (the
+  `SETUP_SECRET` env var, or `ADMIN_TOKEN` when that isn't set — only the
+  site owner has it) and lets you create the admin username and password
+  (10+ characters). Keep it safe: it's the only login. Nobody without the
+  setup code can create the account, and the database allows exactly one.
 - **Log in** lasts 12 hours per device. Five wrong tries in 15 minutes lock
-  that device and username for 15 minutes.
+  that device (its IP + the username) for 15 minutes; thirty wrong tries
+  against the username from anywhere lock it for 15 minutes. Both are
+  counted in the database, so they hold everywhere and can't be raced.
 - **What you see:** every sign-up, newest first, with date and time (Manila),
   claim code, name, Dad/Mom/Grandparent/Others, mobile (tap to call), email,
   baby stage, due date, consent, Signed up / Finished, basket total, gift
@@ -216,15 +221,30 @@ Once, about three minutes:
 2. Delete what's there, paste **`docs/google-sheets/Code.gs`**, and set
    `SECRET` to the value of `SHEETS_WEBHOOK_SECRET`.
 3. **Deploy → New deployment → Web app**, Execute as **Me**, Who has access
-   **Anyone**. Approve the permissions. Copy the Web app URL (ends in `/exec`).
-4. Put that URL in Vercel as `SHEETS_WEBHOOK_URL` and redeploy.
+   **Anyone** (not "Anyone with Google account"). Approve the permissions
+   (Advanced → Go to … if Google warns it's unverified — it's your own
+   script). Copy the Web app URL (ends in `/exec`).
+4. Open that URL in a browser: `{"ok":true,…}` means it's live. A Google
+   sign-in page means step 3's access setting is wrong.
+5. Put the URL in Vercel as `SHEETS_WEBHOOK_URL` and redeploy. Then press
+   **Sync sheet** on the dashboard once: it sends every existing sign-up.
 
 From then on every sign-up, finished checklist and Paid change appears in a
 **Sign-ups** tab within seconds, one row per claim code (a finished checklist
-updates its sign-up's row). If Google is briefly unreachable, the row still
-saves here and is re-sent by the dashboard's **Sync sheet** button, whenever
-staff have the dashboard open, and by the daily health cron. Never reorder
-the sheet's columns; the script writes them by position.
+updates its sign-up's row; a stale retry never overwrites a fresher row). If
+Google is briefly unreachable, the row still saves here and is re-sent by the
+dashboard's **Sync sheet** button, whenever staff have the dashboard open,
+and by the daily health cron. Never reorder the sheet's columns; the script
+writes them by position. Visitor-typed text is stored as plain text, so
+nothing typed on the site can run as a formula in the sheet or the CSV.
+
+**Keep the copies private.** The sheet and any downloaded CSV hold names,
+mobiles, emails and due dates. Use a company Google account rather than a
+personal one, share the sheet view-only with as few people as possible
+(anyone who can edit the script can read the secret), delete downloaded
+CSVs from booth phones after the fair, and delete the sheet when the
+database is cleared. If the script was shared with editors, rotate
+`SHEETS_WEBHOOK_SECRET` (new value in Vercel and in `Code.gs`, redeploy both).
 
 ### Admin environment variables (Vercel + `.env.local`)
 
@@ -232,13 +252,16 @@ the sheet's columns; the script writes them by position.
 |---|---|
 | `ADMIN_TOKEN` | server ↔ database token for the `admin_*` functions (hash stored in `private.write_tokens`, scope `admin`) |
 | `SESSION_SECRET` | signs the login cookie; changing it logs everyone out |
+| `SETUP_SECRET` | optional: the setup code typed on the one-time setup page (defaults to `ADMIN_TOKEN`) |
 | `SHEETS_WEBHOOK_URL` | the Apps Script web app URL (`…/exec`) |
 | `SHEETS_WEBHOOK_SECRET` | must equal `SECRET` inside `Code.gs` |
 | `CRON_SECRET` | Vercel sends it with the daily cron so `/api/health` may retry sheet syncs |
 
 To reset the admin login entirely (forgotten password): in the SQL Editor
 run `delete from private.admin_users;` — the next visit to `/admin` shows
-the setup page again.
+the setup page again, and it needs the setup code, so only the owner can
+create the new account. Do it right away; nobody else can, but the
+dashboard is unusable until it's done.
 
 ## Where sign-ups are saved
 

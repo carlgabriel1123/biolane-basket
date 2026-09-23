@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- PLACEHOLDER: the fair price list has no First Teeth Toothpaste. Replace with the official packshot once confirmed. -->
+  <rect width="400" height="400" rx="32" fill="#fff4f1"/>
+  <path d="M110 150 h180 a18 18 0 0 1 18 18 v110 a18 18 0 0 1 -18 18 h-180 l-30 -20 v-106 z" fill="#ffe4db" stroke="#1f79b3" stroke-width="3"/>
+  <rect x="304" y="176" width="36" height="52" rx="8" fill="#1f79b3"/>
+  <rect x="130" y="180" width="130" height="60" rx="10" fill="#ffffff" stroke="#1f79b3" stroke-width="2"/>
+  <text x="195" y="219" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="800" fill="#1f79b3">1st teeth</text>
+  <text x="200" y="352" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#003b61">First Teeth Toothpaste</text>
+  <text x="200" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="17" fill="#3c4770">50ml</text>
+</svg>

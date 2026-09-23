@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- PLACEHOLDER: the fair price list has no standalone Soothing Intimate Hygiene Gel. Replace with the official packshot once confirmed. -->
+  <rect width="400" height="400" rx="32" fill="#fff4f1"/>
+  <path d="M150 120 h100 a16 16 0 0 1 16 16 v170 a24 24 0 0 1 -24 24 h-84 a24 24 0 0 1 -24 -24 v-170 a16 16 0 0 1 16 -16 z" fill="#ffe4db" stroke="#1f79b3" stroke-width="3"/>
+  <rect x="176" y="62" width="48" height="60" rx="10" fill="#1f79b3"/>
+  <rect x="160" y="170" width="80" height="70" rx="10" fill="#ffffff" stroke="#1f79b3" stroke-width="2"/>
+  <text x="200" y="352" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#003b61">Intimate Hygiene Gel</text>
+  <text x="200" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="17" fill="#3c4770">for mom</text>
+</svg>
