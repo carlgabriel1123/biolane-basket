@@ -26,6 +26,8 @@ export const campaign = {
   /** Checklist page, under "Hi {name}" */
   checklistHeading: 'Welcome to Biolane Community!',
   checklistSubheading: 'Let’s build your baby’s essentials together.',
+  /** Heading above the products she is shown, for every stage. */
+  checklistSectionTitle: 'Checklist',
   checklistIntro: 'We’re here to help you discover what’s best for your little one.',
 
   /** Reward banner on the checklist: "{amount} and get a FREE {rewardName}!" */

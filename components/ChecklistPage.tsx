@@ -60,7 +60,7 @@ export default function ChecklistPage({
     changeButtonRef.current?.focus({ preventScroll: true })
     if (next === stage) return
     onChangeStage(next)
-    setStageAnnouncement(`Showing ${stagePlans[next].title.toLowerCase()}.`)
+    setStageAnnouncement(`Showing the checklist for ${stagePlans[next].label}.`)
   }
 
   // Land on the heading when the screen opens, for keyboard and screen readers.
@@ -232,7 +232,7 @@ export default function ChecklistPage({
         <div className="lg:col-start-1 lg:row-start-1">
           {picks ? (
             <ProductSection
-              title={plan.title}
+              title={campaign.checklistSectionTitle}
               caption={plan.caption}
               items={picks}
               quantities={quantities}
@@ -244,7 +244,7 @@ export default function ChecklistPage({
             <div className="flex flex-col gap-3">
               <div className="mb-1">
                 <h2 className="font-display text-[17px] font-extrabold leading-snug text-ink md:text-xl">
-                  {plan.title}
+                  {campaign.checklistSectionTitle}
                 </h2>
                 <p className="mt-1 text-[13px] leading-snug text-ink-soft">{plan.caption}</p>
               </div>

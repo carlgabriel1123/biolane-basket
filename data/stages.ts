@@ -20,8 +20,6 @@ import type { BabyStage } from './campaign.ts'
 export interface StagePlan {
   /** Short name shown in the stage chip. */
   label: string
-  /** Heading above her picks. */
-  title: string
   /** One line under the heading. */
   caption: string
   picks: string[] | 'all'
@@ -30,7 +28,6 @@ export interface StagePlan {
 export const stagePlans: Record<BabyStage, StagePlan> = {
   expecting: {
     label: 'Expecting',
-    title: 'Picked for your nesting',
     caption: 'For you now, and for the first weeks at home.',
     picks: [
       'stretch-marks-cream-200',
@@ -47,7 +44,6 @@ export const stagePlans: Record<BabyStage, StagePlan> = {
   },
   baby: {
     label: 'Baby · 0 to 12 months',
-    title: 'Picked for your baby',
     caption: 'Gentle everyday care from birth to their first birthday.',
     picks: [
       'pure-h2o-750',
@@ -68,7 +64,6 @@ export const stagePlans: Record<BabyStage, StagePlan> = {
   },
   toddler: {
     label: 'Toddler · 1 to 4 years old',
-    title: 'Picked for your toddler',
     caption: 'Busy days, longer hair, and lots of time outside.',
     picks: [
       'cleanser-2in1-750',
@@ -87,7 +82,6 @@ export const stagePlans: Record<BabyStage, StagePlan> = {
   },
   others: {
     label: 'Others',
-    title: 'All Biolane essentials',
     caption: 'Every product at the fair, by category.',
     picks: 'all',
   },

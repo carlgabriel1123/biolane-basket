@@ -31,7 +31,8 @@ Everything tweakable lives in three data files. No component needs touching.
 | Want to change | File | Field |
 |---|---|---|
 | Which products each baby stage sees first, and their order | `data/stages.ts` | `picks` |
-| Stage headings on the checklist | `data/stages.ts` | `title`, `caption` |
+| Line under the Checklist heading, per stage | `data/stages.ts` | `caption` |
+| "Checklist" heading | `data/campaign.ts` | `checklistSectionTitle` |
 | Baby stage options on the form | `data/campaign.ts` | `babyStages` |
 | "Are you…" options on the form | `data/campaign.ts` | `relationships` |
 | Reward threshold | `data/campaign.ts` | `rewardThreshold` |
