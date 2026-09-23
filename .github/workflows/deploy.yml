@@ -24,8 +24,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PAGES_MODE: static
-  SITE_URL: https://biolane-basket-cgp8.vercel.app/
+  PAGES_MODE: redirect
+  SITE_URL: https://biolane.vercel.app/
 
 jobs:
   build:

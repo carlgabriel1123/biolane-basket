@@ -144,9 +144,11 @@ is usually true once she is past ₱1,600.
 ## Deployment
 
 **Vercel** hosts the real site (it has a small server route that saves sign-ups):
-**https://biolane-basket-cgp8.vercel.app** — every push to `main` deploys it
-automatically once the GitHub repo is connected to the Vercel project
-`biolane-basket`.
+**https://biolane.vercel.app** — use this address for the QR code. Every
+push to `main` deploys it automatically (the GitHub repo is connected to the
+Vercel project `biolane-basket`). `biolane-basket.vercel.app` serves the same
+site. The `…-cgp8.vercel.app` addresses are Vercel's internal ones and ask
+for a Vercel login, so never share those.
 
 Vercel → Project → Settings → Environment Variables must have:
 
@@ -162,10 +164,10 @@ The same three go in `.env.local` (git-ignored) for local runs.
 `.github/workflows/deploy.yml`, which always runs the tests first. Its
 `PAGES_MODE` setting decides what Pages serves:
 
+- `redirect` (current) — sends every visitor to https://biolane.vercel.app,
+  so an old QR code or link still lands on the working site.
 - `static` — a copy of the site **without saving** (sign-ups stay on the
-  phone). Only for previewing.
-- `redirect` — sends every visitor to the Vercel site. Use this once Vercel
-  is live, so an old QR code or link still lands on the working site.
+  phone). Only for emergencies if Vercel is down.
 
 ## Where sign-ups are saved
 
