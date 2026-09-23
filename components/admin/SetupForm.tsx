@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { KeyIcon, UserIcon } from '@/components/icons'
+import { Button, Card } from '@/components/ui'
 import { adminPost, describeError } from './api'
-
-const field =
-  'mt-1 block w-full rounded-xl border-2 border-ink/15 bg-white px-3.5 py-3 text-[15px] text-ink outline-none focus:border-blue'
+import { FormError, PasswordField, TextField } from './fields'
 
 /** Shown once: creates the single admin account. */
 export default function SetupForm() {
@@ -32,16 +32,21 @@ export default function SetupForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-card border border-ink/10 bg-white p-5 shadow-soft">
-      <h1 className="font-display text-[22px] font-extrabold text-ink">Create the admin login</h1>
-      <p className="mt-1 text-[13.5px] leading-snug text-ink-soft">
-        One shared login for the Biolane team. This page appears only once; keep the password somewhere safe.
-      </p>
+    <Card className="p-5">
+      <form onSubmit={submit}>
+        <h1 className="font-display text-[22px] font-extrabold text-ink">Create the admin login</h1>
+        <p className="mt-1 text-[13.5px] leading-snug text-ink-soft">
+          One shared login for the Biolane team. This page appears only once; keep the password somewhere safe.
+        </p>
 
-      <label className="mt-5 block text-[13px] font-semibold text-ink">
-        Setup code <span className="font-normal text-ink-soft">(from the site owner)</span>
-        <input
-          className={field}
+        <TextField
+          className="mt-5"
+          label={
+            <>
+              Setup code <span className="font-normal text-ink-soft">(from the site owner)</span>
+            </>
+          }
+          icon={<KeyIcon size={18} />}
           value={setupCode}
           onChange={(e) => setSetupCode(e.target.value)}
           autoComplete="off"
@@ -49,11 +54,10 @@ export default function SetupForm() {
           spellCheck={false}
           required
         />
-      </label>
-      <label className="mt-4 block text-[13px] font-semibold text-ink">
-        Username
-        <input
-          className={field}
+        <TextField
+          className="mt-4"
+          label="Username"
+          icon={<UserIcon size={18} />}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
@@ -63,45 +67,35 @@ export default function SetupForm() {
           minLength={3}
           maxLength={40}
         />
-      </label>
-      <label className="mt-4 block text-[13px] font-semibold text-ink">
-        Password <span className="font-normal text-ink-soft">(at least 10 characters)</span>
-        <input
-          className={field}
-          type="password"
+        <PasswordField
+          className="mt-4"
+          label={
+            <>
+              Password <span className="font-normal text-ink-soft">(at least 10 characters)</span>
+            </>
+          }
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
           required
           minLength={10}
         />
-      </label>
-      <label className="mt-4 block text-[13px] font-semibold text-ink">
-        Repeat password
-        <input
-          className={field}
-          type="password"
+        <PasswordField
+          className="mt-4"
+          label="Repeat password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           autoComplete="new-password"
           required
           minLength={10}
         />
-      </label>
 
-      {error && (
-        <p role="alert" className="mt-3 text-[13px] font-semibold text-[#b3261e]">
-          {error}
-        </p>
-      )}
+        {error && <FormError className="mt-3">{error}</FormError>}
 
-      <button
-        type="submit"
-        disabled={busy}
-        className="mt-5 min-h-[48px] w-full rounded-full bg-blue px-6 text-[15px] font-bold text-white transition-colors hover:bg-blue-deep disabled:opacity-60"
-      >
-        {busy ? 'Creating…' : 'Create login'}
-      </button>
-    </form>
+        <Button type="submit" size="lg" full loading={busy} className="mt-5">
+          {busy ? 'Creating…' : 'Create login'}
+        </Button>
+      </form>
+    </Card>
   )
 }

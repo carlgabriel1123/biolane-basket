@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { UserIcon } from '@/components/icons'
+import { Button, Card } from '@/components/ui'
 import { adminPost, describeError } from './api'
-
-const field =
-  'mt-1 block w-full rounded-xl border-2 border-ink/15 bg-white px-3.5 py-3 text-[15px] text-ink outline-none focus:border-blue'
+import { FormError, PasswordField, TextField } from './fields'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -28,13 +28,14 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-card border border-ink/10 bg-white p-5 shadow-soft">
-      <h1 className="font-display text-[22px] font-extrabold text-ink">Log in</h1>
+    <Card className="p-5">
+      <form onSubmit={submit}>
+        <h1 className="font-display text-[22px] font-extrabold text-ink">Log in</h1>
 
-      <label className="mt-5 block text-[13px] font-semibold text-ink">
-        Username
-        <input
-          className={field}
+        <TextField
+          className="mt-5"
+          label="Username"
+          icon={<UserIcon size={18} />}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
@@ -42,32 +43,21 @@ export default function LoginForm() {
           spellCheck={false}
           required
         />
-      </label>
-      <label className="mt-4 block text-[13px] font-semibold text-ink">
-        Password
-        <input
-          className={field}
-          type="password"
+        <PasswordField
+          className="mt-4"
+          label="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
           required
         />
-      </label>
 
-      {error && (
-        <p role="alert" className="mt-3 text-[13px] font-semibold text-[#b3261e]">
-          {error}
-        </p>
-      )}
+        {error && <FormError className="mt-3">{error}</FormError>}
 
-      <button
-        type="submit"
-        disabled={busy}
-        className="mt-5 min-h-[48px] w-full rounded-full bg-blue px-6 text-[15px] font-bold text-white transition-colors hover:bg-blue-deep disabled:opacity-60"
-      >
-        {busy ? 'Logging in…' : 'Log in'}
-      </button>
-    </form>
+        <Button type="submit" size="lg" full loading={busy} className="mt-5">
+          {busy ? 'Logging in…' : 'Log in'}
+        </Button>
+      </form>
+    </Card>
   )
 }

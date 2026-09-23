@@ -1,5 +1,7 @@
 import Image from 'next/image'
 import { asset } from '@/lib/asset'
+import { LockIcon } from '@/components/icons'
+import { Badge } from '@/components/ui'
 
 /** Centered card layout for the setup and login screens. */
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -14,9 +16,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           priority
           className="mx-auto h-auto w-[150px]"
         />
-        <p className="mt-2 text-[12px] font-semibold uppercase tracking-wide text-ink-soft/70">Booth dashboard</p>
+        <Badge tone="ink" icon={<LockIcon size={13} />} className="mt-3 uppercase tracking-wide">
+          Booth dashboard
+        </Badge>
       </div>
-      {children}
+      <div className="animate-rise">{children}</div>
     </main>
   )
 }

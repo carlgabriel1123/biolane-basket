@@ -2,12 +2,23 @@ import { headers } from 'next/headers'
 import { adminDb, adminDbConfigured } from '@/lib/admin-db'
 import { getAdminSessionFromCookie, sessionSecret } from '@/lib/admin-guard'
 import { sheetConfigured } from '@/lib/sheets'
+import { AlertIcon } from '@/components/icons'
 import AdminShell from '@/components/admin/AdminShell'
 import Dashboard from '@/components/admin/Dashboard'
 import LoginForm from '@/components/admin/LoginForm'
 import SetupForm from '@/components/admin/SetupForm'
 
 export const dynamic = 'force-dynamic'
+
+/** Soft peach notice card for the two "cannot show the dashboard" states. */
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 rounded-card border border-blush bg-blush-soft p-4 text-[14px] text-ink shadow-soft">
+      <AlertIcon size={20} className="mt-0.5 shrink-0 text-blush-deep" />
+      <p>{children}</p>
+    </div>
+  )
+}
 
 /**
  * /admin — booth staff's view of every sign-up.
@@ -21,9 +32,7 @@ export default async function AdminPage() {
     )
     return (
       <AdminShell>
-        <p className="rounded-card border border-blush bg-blush-soft p-4 text-[14px] text-ink">
-          The dashboard is not available yet.
-        </p>
+        <Notice>The dashboard is not available yet.</Notice>
       </AdminShell>
     )
   }
@@ -35,9 +44,7 @@ export default async function AdminPage() {
     console.error('[admin] userCount', err)
     return (
       <AdminShell>
-        <p className="rounded-card border border-blush bg-blush-soft p-4 text-[14px] text-ink">
-          Could not reach the database. Try again in a moment.
-        </p>
+        <Notice>Could not reach the database. Try again in a moment.</Notice>
       </AdminShell>
     )
   }
