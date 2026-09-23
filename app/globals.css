@@ -1,8 +1,10 @@
 @import 'tailwindcss';
 
 /* ---------------------------------------------------------------
-   Biolane brand tokens.
-   Sourced from the live biolane.ph theme (Shopify colour schemes).
+   Biolane brand tokens — "Nursery Soft".
+   Colours come from the live biolane.ph theme; the stage tints are the
+   site's own: peach for Expecting, sky for Baby, mint for Toddler,
+   lilac for Others. Text always uses ink / ink-soft (AA on every tint).
    --------------------------------------------------------------- */
 @theme {
   --color-ink: #003b61;        /* deep navy — headings, primary text   */
@@ -13,20 +15,37 @@
   --color-sky-soft: #eef5fb;   /* lightest blue wash                   */
   --color-cream: #fbf2cc;      /* warm cream — reward surfaces         */
   --color-cream-soft: #fefaeb;
-  --color-blush: #ffe4db;      /* soft peach — just-in-case section    */
+  --color-blush: #ffe4db;      /* soft peach                           */
   --color-blush-soft: #fff4f1;
+  --color-blush-deep: #e08b73; /* peach accent for borders / icons     */
   --color-gold: #c8901b;       /* reward accent, AA on cream           */
   --color-gold-soft: #f2d456;
   --color-mint: #cfece7;
+  --color-mint-soft: #edf8f5;
+  --color-mint-deep: #3f9c8a;
+  --color-lilac: #e8e0f7;
+  --color-lilac-soft: #f5f1fc;
+  --color-lilac-deep: #8b6fc4;
+  --color-success: #2e7d32;    /* paid / saved — AA on white           */
+  --color-danger: #b3261e;     /* errors — AA on white                 */
 
   --font-display: var(--font-nunito), ui-rounded, 'Segoe UI', system-ui, sans-serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --radius-card: 1.25rem;
+  --radius-pill: 999px;
 
   --shadow-soft: 0 1px 2px rgb(0 59 97 / 0.04), 0 8px 24px -12px rgb(0 59 97 / 0.16);
   --shadow-lift: 0 2px 4px rgb(0 59 97 / 0.06), 0 16px 32px -16px rgb(0 59 97 / 0.28);
   --shadow-bar: 0 -2px 16px -4px rgb(0 59 97 / 0.18);
+  --shadow-glow: 0 0 0 4px rgb(31 121 179 / 0.14);
+
+  /* Motion tokens: one rhythm for the whole site. */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-base: 260ms;
+  --duration-slow: 450ms;
 }
 
 /* ---------------------------------------------------------------
@@ -34,7 +53,6 @@
    --------------------------------------------------------------- */
 html {
   scroll-behavior: smooth;
-  /* Sticky basket bar is ~92px; keep anchored sections clear of it. */
   scroll-padding-top: 1rem;
   -webkit-text-size-adjust: 100%;
 }
@@ -43,13 +61,17 @@ body {
   background: var(--color-sky-soft);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  /* Never allow a stray wide element to scroll the page sideways. */
   overflow-x: hidden;
 }
 
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.015em;
+}
+
+/* Taps answer within a frame; no 300 ms delay on touch. */
+button, a, input, label, select, [role='button'] {
+  touch-action: manipulation;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -62,45 +84,93 @@ h1, h2, h3, .font-display {
 }
 
 /* Visible focus for keyboard users and for BAs tabbing quickly. */
-/* tabindex="-1" targets are programmatic focus (headings), not keyboard stops. */
 :where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: 3px solid var(--color-blue);
   outline-offset: 2px;
 }
 
 /* ---------------------------------------------------------------
-   Reward unlock — restrained, premium. No confetti storm.
+   Interaction feedback
+   --------------------------------------------------------------- */
+/* Press: a small squeeze on tap. Transform only, so layout never moves. */
+.press {
+  transition: transform var(--duration-fast) var(--ease-soft), background-color var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+.press:active:not(:disabled) { transform: scale(0.97); }
+.press-lg:active:not(:disabled) { transform: scale(0.985); }
+
+/* ---------------------------------------------------------------
+   Entrances & state changes
    --------------------------------------------------------------- */
 @keyframes rise-in {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-rise { animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-rise { animation: rise-in var(--duration-slow) var(--ease-soft) both; }
 
-@keyframes sheen {
-  0%   { background-position: -180% 0; }
-  100% { background-position: 280% 0; }
+/* Staggered lists: set style="--i: n" on each child. */
+.stagger > * { animation: rise-in var(--duration-slow) var(--ease-soft) both; animation-delay: calc(var(--i, 0) * 40ms); }
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
-.reward-sheen {
-  background-image: linear-gradient(
-    100deg,
-    transparent 38%,
-    rgb(255 255 255 / 0.62) 50%,
-    transparent 62%
-  );
-  background-size: 220% 100%;
-  background-repeat: no-repeat;
-  animation: sheen 1.5s ease-out 1 both;
+.animate-slide-up { animation: slide-up var(--duration-slow) var(--ease-soft) both; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
+.animate-fade { animation: fade-in var(--duration-base) ease-out both; }
 
 @keyframes soft-pop {
   0%   { transform: scale(0.88); opacity: 0; }
   60%  { transform: scale(1.04); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
-.animate-pop { animation: soft-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-pop { animation: soft-pop 0.5s var(--ease-spring) both; }
 
-/* Progress bar fill */
-.progress-fill {
-  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+@keyframes bump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
 }
+.animate-bump { animation: bump 0.35s var(--ease-spring) both; }
+
+@keyframes sheen {
+  0%   { background-position: -180% 0; }
+  100% { background-position: 280% 0; }
+}
+.reward-sheen {
+  background-image: linear-gradient(100deg, transparent 38%, rgb(255 255 255 / 0.62) 50%, transparent 62%);
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: sheen 1.5s ease-out 1 both;
+}
+
+/* Reward progress fills. */
+.progress-fill { transition: width 0.55s var(--ease-soft); }
+.meter-fill { transition: height 0.7s var(--ease-soft); }
+
+/* Slow float for the pastel blobs behind the sign-up card. */
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(12px, -10px, 0); }
+}
+.animate-drift { animation: drift 9s ease-in-out infinite; }
+
+/* Loading skeleton (admin list while it fetches). */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgb(0 59 97 / 0.06) 25%, rgb(0 59 97 / 0.12) 50%, rgb(0 59 97 / 0.06) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 0.5rem;
+}
+
+/* Hide the scrollbar on horizontal chip rows without losing scrolling. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
