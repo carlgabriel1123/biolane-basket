@@ -24,6 +24,17 @@ npm run build
 
 ---
 
+## Design ("Nursery Soft")
+
+The look is defined once and reused everywhere: brand tokens and motion in
+`app/globals.css`, the icon family in `components/icons.tsx`, and the
+building blocks (Button, ChoiceChip, Card, Badge, StepIndicator,
+BottleMeter, stage tones) in `components/ui.tsx`. The brief every screen
+follows is `docs/superpowers/specs/2026-09-23-nursery-soft-redesign.md`.
+Each baby stage has its own tint and icon (Expecting peach/heart, Baby
+sky/baby, Toddler mint/sun, Others lilac/sparkles); the reward meter is a
+bottle that fills as the basket grows. No emoji are used as icons.
+
 ## What you will want to edit
 
 Everything tweakable lives in three data files. No component needs touching.
