@@ -53,20 +53,20 @@ export default function ChecklistPage({
     changeButtonRef.current?.focus({ preventScroll: true })
   }
 
+  const [stageAnnouncement, setStageAnnouncement] = useState('')
+
   const pickStage = (next: BabyStage) => {
     setStagePickerOpen(false)
-    if (next === stage) {
-      changeButtonRef.current?.focus({ preventScroll: true })
-      return
-    }
-    // The new heading takes focus (effect below) so the change is announced.
+    changeButtonRef.current?.focus({ preventScroll: true })
+    if (next === stage) return
     onChangeStage(next)
+    setStageAnnouncement(`Showing ${stagePlans[next].title.toLowerCase()}.`)
   }
 
   // Land on the heading when the screen opens, for keyboard and screen readers.
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true })
-  }, [stage])
+  }, [])
 
   const picks = useMemo(
     () =>
@@ -115,9 +115,10 @@ export default function ChecklistPage({
           <Image
             src={asset('/images/brand/biolane-logo.png')}
             alt="Biolane"
-            width={104}
-            height={30}
-            className="h-auto w-[96px]"
+            width={547}
+            height={159}
+            priority
+            className="h-auto w-[150px] md:w-[180px]"
           />
           <button
             type="button"
@@ -128,19 +129,39 @@ export default function ChecklistPage({
           </button>
         </div>
 
-        <p className="mt-5 text-[14px] font-semibold text-blue">
+        <p className="mt-6 font-display text-[30px] font-extrabold leading-tight text-blue md:mt-8 md:text-5xl">
           Hi {firstName} <span aria-hidden="true">💛</span>
         </p>
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          className="mt-1 font-display text-[26px] font-extrabold leading-tight text-ink outline-none md:text-4xl"
-        >
-          {plan.title}
+        <h1 ref={headingRef} tabIndex={-1} className="mt-2 outline-none">
+          <span className="block font-display text-[22px] font-extrabold leading-tight text-ink md:text-3xl">
+            {campaign.checklistHeading}
+          </span>
+          <span className="mt-1 block font-display text-[17px] font-bold leading-snug text-ink/85 md:text-xl">
+            {campaign.checklistSubheading}
+          </span>
         </h1>
-        <p className="mt-1.5 text-[14px] leading-relaxed text-ink-soft md:text-[15px]">{plan.caption}</p>
+        <p className="mt-3 text-[14px] leading-relaxed text-ink-soft md:text-base">
+          {campaign.checklistIntro} <span aria-hidden="true">💛</span>
+        </p>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        {/* The reward, introduced here — right after she joins. */}
+        <div className="mt-4 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft md:max-w-2xl">
+          <span aria-hidden="true" className="text-2xl">
+            🎁
+          </span>
+          <p className="text-[13.5px] leading-snug text-ink-soft md:text-[15px]">
+            <span className="font-display text-[15px] font-extrabold text-ink md:text-base">
+              {campaign.rewardTeaserAmount}
+            </span>{' '}
+            and get a FREE {campaign.rewardName}!
+          </p>
+        </div>
+
+        <p className="sr-only" aria-live="polite">
+          {stageAnnouncement}
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-sky px-3 py-1.5 text-[12.5px] font-semibold text-ink">
             {plan.label}
           </span>
@@ -204,23 +225,6 @@ export default function ChecklistPage({
           </div>
         )}
 
-        {/* The reward, introduced here — right after she joins. */}
-        <div className="mt-4 flex items-center gap-3 rounded-card border border-gold/25 bg-cream-soft px-4 py-3 shadow-soft md:max-w-xl">
-          <span aria-hidden="true" className="text-2xl">
-            🎁
-          </span>
-          <p className="text-[13px] leading-snug text-ink-soft md:text-sm">
-            <span className="font-display text-[15px] font-extrabold text-ink md:text-base">
-              {campaign.rewardTeaserAmount}
-            </span>{' '}
-            on Biolane and get a free {campaign.rewardName}.
-          </p>
-        </div>
-
-        <p className="mt-3 text-[12px] leading-relaxed text-ink-soft/80">
-          This is a checklist, not a checkout — nothing is charged here. Tap Add, then use − and + for
-          more than one.
-        </p>
       </header>
 
       <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-10">
@@ -228,8 +232,8 @@ export default function ChecklistPage({
         <div className="lg:col-start-1 lg:row-start-1">
           {picks ? (
             <ProductSection
-              title="Picked for you"
-              caption={`${picks.length} essentials for this stage, most important first.`}
+              title={plan.title}
+              caption={plan.caption}
               items={picks}
               quantities={quantities}
               suggestedIds={suggestedIds}
@@ -238,11 +242,18 @@ export default function ChecklistPage({
             />
           ) : (
             <div className="flex flex-col gap-3">
+              <div className="mb-1">
+                <h2 className="font-display text-[17px] font-extrabold leading-snug text-ink md:text-xl">
+                  {plan.title}
+                </h2>
+                <p className="mt-1 text-[13px] leading-snug text-ink-soft">{plan.caption}</p>
+              </div>
               {productGroups.map((g, i) => {
                 const items = products.filter((p) => p.group === g.id)
                 return (
                   <ProductSection
                     key={g.id}
+                    headingLevel={3}
                     title={g.title}
                     caption={g.caption}
                     items={items}

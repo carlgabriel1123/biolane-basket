@@ -23,8 +23,13 @@ export const campaign = {
     "Build your baby's Biolane essentials and see how close you are to unlocking your Grand Baby Fair reward.",
   ctaLabel: 'Start my nesting checklist',
 
-  /** Reward banner in the hero */
-  rewardTeaserAmount: 'Spend ₱2,299',
+  /** Checklist page, under "Hi {name}" */
+  checklistHeading: 'Welcome to Biolane Community!',
+  checklistSubheading: 'Let’s build your baby’s essentials together.',
+  checklistIntro: 'We’re here to help you discover what’s best for your little one.',
+
+  /** Reward banner on the checklist: "{amount} and get a FREE {rewardName}!" */
+  rewardTeaserAmount: 'Spend ₱2,299 or more',
   rewardTeaserPrize: 'Get a FREE Personalized Biolane Toiletry Bag',
 
   /** Legal / fine print */

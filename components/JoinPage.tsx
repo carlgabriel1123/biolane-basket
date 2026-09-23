@@ -33,10 +33,10 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
         <Image
           src={asset('/images/brand/biolane-logo.png')}
           alt="Biolane"
-          width={132}
-          height={38}
+          width={547}
+          height={159}
           priority
-          className="mx-auto h-auto w-[124px] md:w-[146px]"
+          className="mx-auto h-auto w-[160px] md:w-[190px]"
         />
 
         {/* The ₱2,299 reward is introduced on the checklist, after she joins. */}

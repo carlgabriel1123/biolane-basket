@@ -101,6 +101,9 @@ function writeHistory(mode: 'push' | 'replace', step: Step, sheet = false): void
 
 const scrollTop = () => window.scrollTo({ top: 0, behavior: 'instant' })
 
+/** "carl" → "Carl" for the greeting. The saved record keeps what she typed. */
+const capitalize = (s: string) => (s ? s.charAt(0).toLocaleUpperCase('en-PH') + s.slice(1) : s)
+
 export default function Page() {
   const [hydrated, setHydrated] = useState(false)
   const [step, setStep] = useState<Step>('join')
@@ -417,7 +420,7 @@ export default function Page() {
     return (
       <>
         <ChecklistPage
-          firstName={tidy(form.name).split(' ')[0] || 'Mommy'}
+          firstName={capitalize(tidy(form.name).split(' ')[0]) || 'there'}
           stage={stage}
           quantities={quantities}
           basket={basket}
