@@ -5,6 +5,8 @@ import { useEffect } from 'react'
 import { campaign } from '@/data/campaign'
 import { asset } from '@/lib/asset'
 import CommunityForm, { type CommunityValues } from './CommunityForm'
+import { InfoIcon } from './icons'
+import { StepIndicator } from './ui'
 
 interface Props {
   values: CommunityValues
@@ -26,8 +28,16 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
 
   return (
     <main className="relative overflow-hidden px-4 pb-16 pt-7 md:pt-12">
-      <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-sky/60 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute -right-20 top-40 h-52 w-52 rounded-full bg-blush/40 blur-3xl" />
+      {/* Two pastel blobs drift slowly behind the card; out of phase so they never move in lockstep. */}
+      <div
+        aria-hidden="true"
+        className="animate-drift pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-sky/60 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="animate-drift pointer-events-none absolute -right-20 top-40 h-52 w-52 rounded-full bg-blush/40 blur-3xl"
+        style={{ animationDelay: '-4.5s' }}
+      />
 
       <div className="relative mx-auto max-w-md md:max-w-xl">
         <Image
@@ -39,10 +49,13 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
           className="mx-auto h-auto w-[160px] md:w-[190px]"
         />
 
+        <StepIndicator step={1} total={2} label="About you" className="mt-4 justify-center" />
+
         {/* The ₱2,299 reward is introduced on the checklist, after she joins. */}
         {returning && (
-          <p className="mt-4 rounded-xl bg-sky-soft px-4 py-3 text-[13px] leading-snug text-ink-soft">
-            Update your details or baby stage, then continue. Your basket is saved.
+          <p className="mt-4 flex items-start gap-2.5 rounded-2xl bg-sky-soft px-4 py-3 text-[13px] leading-snug text-ink-soft">
+            <InfoIcon size={18} className="mt-px shrink-0 text-blue" />
+            <span>Update your details or baby stage, then continue. Your basket is saved.</span>
           </p>
         )}
 
