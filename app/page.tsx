@@ -21,6 +21,7 @@ import { makeProgressTracker, track } from '@/lib/analytics'
 import {
   flushPending,
   newSubmissionId,
+  newWriteKey,
   nextSeq,
   sendSubmission,
   type Submission,
@@ -67,6 +68,8 @@ interface SavedSession {
   quantities: Quantities
   personalizationName: string
   submissionId: string | null
+  /** Never displayed; proves later saves come from this phone. */
+  writeKey: string | null
   result: Result | null
 }
 
@@ -112,6 +115,7 @@ export default function Page() {
   const [quantities, setQuantities] = useState<Quantities>({})
   const [personalizationName, setPersonalizationName] = useState('')
   const [submissionId, setSubmissionId] = useState<string | null>(null)
+  const [writeKey, setWriteKey] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
@@ -164,9 +168,16 @@ export default function Page() {
           setResult(saved.result)
           setSubmissionId(saved.result.submission.submissionId)
           initial = 'done'
-        // A session saved before "Are you…" existed must answer it first.
-        } else if (typeof saved.submissionId === 'string' && savedForm.babyStage && savedForm.relationship) {
+        // A session saved before "Are you…" or the write key existed goes
+        // back to the sign-up, which gives it both.
+        } else if (
+          typeof saved.submissionId === 'string' &&
+          typeof saved.writeKey === 'string' &&
+          savedForm.babyStage &&
+          savedForm.relationship
+        ) {
           setSubmissionId(saved.submissionId)
+          setWriteKey(saved.writeKey)
           joinedRef.current = true
           if (saved.step === 'checklist') initial = 'checklist'
         }
@@ -182,6 +193,9 @@ export default function Page() {
     // connection comes back.
     flushPending()
     window.addEventListener('online', flushPending)
+    // Also retry on a timer: 'online' only fires when the phone's own
+    // network changes, not when the booth wifi or the server recovers.
+    const retryTimer = window.setInterval(flushPending, 30000)
 
     const onPop = (e: PopStateEvent) => {
       const state = (e.state ?? {}) as { step?: Step; sheet?: boolean }
@@ -214,6 +228,7 @@ export default function Page() {
     return () => {
       window.removeEventListener('popstate', onPop)
       window.removeEventListener('online', flushPending)
+      window.clearInterval(retryTimer)
     }
   }, [])
 
@@ -227,13 +242,14 @@ export default function Page() {
         quantities,
         personalizationName,
         submissionId,
+        writeKey,
         result: step === 'done' ? result : null,
       }
       window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
     } catch {
       /* storage unavailable — everything still works in memory */
     }
-  }, [hydrated, step, form, draft, quantities, personalizationName, submissionId, result])
+  }, [hydrated, step, form, draft, quantities, personalizationName, submissionId, writeKey, result])
 
   /* ---------------- analytics ---------------- */
   useEffect(() => {
@@ -248,10 +264,11 @@ export default function Page() {
 
   /* ---------------- building the record ---------------- */
   const buildSubmission = useCallback(
-    (id: string, event: Submission['event'], values: CommunityValues): Submission => {
+    (id: string, key: string, event: Submission['event'], values: CommunityValues): Submission => {
       const bagName = tidy(personalizationName)
       return {
         submissionId: id,
+        writeKey: key,
         timestamp: new Date().toISOString(),
         seq: nextSeq(),
         event,
@@ -290,25 +307,27 @@ export default function Page() {
     if (finishingRef.current) return
     const committed = draft
     const id = submissionId ?? newSubmissionId()
+    const key = writeKey ?? newWriteKey()
     const firstTime = submissionId === null
     setForm(committed)
     setSubmissionId(id)
+    setWriteKey(key)
     joinedRef.current = true
     // Save the lead now, so a mom who stops here is still captured. Not
     // awaited: slow booth wifi must never hold her on the form.
-    void sendSubmission(buildSubmission(id, 'signup', committed))
+    void sendSubmission(buildSubmission(id, key, 'signup', committed))
     if (firstTime) {
       track('community_signup_completed', { stage: committed.babyStage })
       track('nesting_started', { stage: committed.babyStage })
     }
     goTo('checklist')
-  }, [draft, submissionId, buildSubmission, goTo])
+  }, [draft, submissionId, writeKey, buildSubmission, goTo])
 
   // Switch stage in place from the checklist. Her basket is untouched; the
   // lead record is re-sent (same id) so it carries the new stage.
   const changeStage = useCallback(
     (next: BabyStage) => {
-      if (finishingRef.current || !submissionId || next === form.babyStage) return
+      if (finishingRef.current || !submissionId || !writeKey || next === form.babyStage) return
       const updated: CommunityValues = {
         ...form,
         babyStage: next,
@@ -316,10 +335,10 @@ export default function Page() {
       }
       setForm(updated)
       setDraft(updated)
-      void sendSubmission(buildSubmission(submissionId, 'signup', updated))
+      void sendSubmission(buildSubmission(submissionId, writeKey, 'signup', updated))
       track('stage_changed', { from: form.babyStage, to: next })
     },
-    [form, submissionId, buildSubmission]
+    [form, submissionId, writeKey, buildSubmission]
   )
 
   const changeQty = useCallback(
@@ -362,7 +381,7 @@ export default function Page() {
   }, [closeBasket])
 
   const handleFinish = useCallback(async () => {
-    if (finishingRef.current || basket.count === 0 || !submissionId) return
+    if (finishingRef.current || basket.count === 0 || !submissionId || !writeKey) return
     // A bag name the vendor can't print: send her back to fix it first.
     if (basket.unlocked && personalizationName.trim() && !isPrintableBagName(personalizationName)) {
       goToPersonalization()
@@ -370,7 +389,7 @@ export default function Page() {
     }
     finishingRef.current = true // synchronous — blocks the double-tap
     setFinishing(true)
-    const submission = buildSubmission(submissionId, 'checklist_completed', form)
+    const submission = buildSubmission(submissionId, writeKey, 'checklist_completed', form)
     const storedRemotely = await sendSubmission(submission)
     track('form_submitted', { total: basket.total, units: basket.units, unlocked: basket.unlocked })
     finishingRef.current = false
@@ -378,11 +397,11 @@ export default function Page() {
     setResult({ submission, storedRemotely })
     setSheetOpen(false)
     goTo('done')
-  }, [basket, submissionId, personalizationName, buildSubmission, form, goTo, goToPersonalization])
+  }, [basket, submissionId, writeKey, personalizationName, buildSubmission, form, goTo, goToPersonalization])
 
   const handleStartOver = useCallback(() => {
     if (finishingRef.current) return
-    if (stepRef.current !== 'done' && !window.confirm('Clear this session? The next mom starts fresh.')) {
+    if (stepRef.current !== 'done' && !window.confirm('Clear this session? The next guest starts fresh.')) {
       return
     }
     try {
@@ -395,6 +414,7 @@ export default function Page() {
     setQuantities({})
     setPersonalizationName('')
     setSubmissionId(null)
+    setWriteKey(null)
     joinedRef.current = false
     setSheetOpen(false)
     setResult(null)

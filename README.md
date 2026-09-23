@@ -143,38 +143,76 @@ is usually true once she is past ₱1,600.
 
 ## Deployment
 
-Live at **https://carlgabriel1123.github.io/biolane-basket/**
+**Vercel** hosts the real site (it has a small server route that saves sign-ups):
+**https://biolane-basket.vercel.app** — every push to `main` deploys it
+automatically once the GitHub repo is connected to the Vercel project
+`biolane-basket`.
 
-Every push to `main` runs `.github/workflows/deploy.yml`: it runs the tests,
-builds a static export, and publishes it to GitHub Pages. Nothing to do by hand.
-Watch it at https://github.com/carlgabriel1123/biolane-basket/actions.
+Vercel → Project → Settings → Environment Variables must have:
 
-The site is served from the `/biolane-basket/` sub-path; `next.config.mjs`
-sets that from the repo name. Rename the repo → update `repoName` there.
+| Name | What |
+|---|---|
+| `SUPABASE_URL` | `https://qomynrtdrzpzaevotird.supabase.co` |
+| `SUPABASE_PUBLISHABLE_KEY` | the project's publishable key (Supabase → Settings → API Keys) |
+| `SUBMIT_TOKEN` | the write token; only its SHA-256 is stored in the database |
 
-## Connecting a real backend
+The same three go in `.env.local` (git-ignored) for local runs.
 
-This is a static site with no server of its own, so submissions go to a
-webhook you provide. Set it as a repository secret named
-`NEXT_PUBLIC_SUBMIT_WEBHOOK_URL` (Settings → Secrets → Actions) and add it to
-the build step in `deploy.yml`, or put it in `.env.local` for local runs:
+**GitHub Pages** (`https://carlgabriel1123.github.io/biolane-basket/`) is run by
+`.github/workflows/deploy.yml`, which always runs the tests first. Its
+`PAGES_MODE` setting decides what Pages serves:
 
-```
-NEXT_PUBLIC_SUBMIT_WEBHOOK_URL=https://script.google.com/macros/s/…/exec
-```
+- `static` — a copy of the site **without saving** (sign-ups stay on the
+  phone). Only for previewing.
+- `redirect` — sends every visitor to the Vercel site. Use this once Vercel
+  is live, so an old QR code or link still lands on the working site.
 
-Anything that accepts a JSON POST works: a Google Apps Script web app writing
-to a Sheet, an n8n / Make / Zapier webhook, or a small edge function in front
-of Airtable or Supabase. See the comment block in `lib/submission.ts`.
+## Where sign-ups are saved
 
-Until a webhook is set, every lead is kept in the phone's `localStorage` and
-the confirmation screen shows "Will sync" instead of "Saved". A dropped
-connection at the booth never loses a signup either way.
+Supabase project **biolane-nesting-checklist** (Singapore), table
+`public.submissions`: one row per claim code, created on Join and updated
+when the checklist is finished.
 
-The stored record contains: submission ID, timestamp, name, email, mobile
-(normalised to `+639XXXXXXXXX`), baby stage, due date (only when Expecting),
-marketing consent, selected products with SKUs and prices, basket total,
-reward-unlocked flag, personalization name.
+**To see or export them:** Supabase → Table Editor → `submissions`, or SQL
+Editor → `select * from submissions_readable order by submitted_manila desc;`
+then **Export → CSV**. The readable view shows claim code, status, Manila
+time, name, relationship, email, mobile, stage, due date, consent, total,
+reward, bag name and a one-line product list.
+
+**How a save travels:** phone → `POST /api/submit` (this site's own server,
+`app/api/submit/route.ts`) → validated field by field → database function
+`upsert_submission`. The public can't read or write the table at all.
+
+- The function only runs with the server's `SUBMIT_TOKEN`, which never
+  reaches the browser.
+- Every record carries a hidden per-record write key made on the phone, so
+  knowing a claim code is not enough to overwrite someone's record.
+- A finished checklist always beats a later-arriving sign-up for the same
+  claim code.
+- The phone keeps a copy of anything not yet saved and re-sends it on the
+  next load, when the connection returns, and every 30 seconds. Once saved,
+  the phone's copy is deleted. If the network drops, the confirmation shows
+  an amber **"Will sync"** badge instead of **"Saved"** — still a valid claim.
+
+**Keep-alive:** free Supabase projects pause after about a week with no
+traffic. `vercel.json` runs a daily cron on `/api/health`, which pings the
+database. Open `/api/health` on a phone any time — `{"ok":true}` means saving
+works.
+
+**Rotating the write token** (if it ever leaks):
+1. Make a new random token, e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+2. In the SQL Editor: `insert into private.write_tokens (name, token_hash) values ('2026-10', encode(extensions.digest('<new token>', 'sha256'), 'hex'));`
+3. Put the new token in Vercel's `SUBMIT_TOKEN` and redeploy.
+4. Delete the old row from `private.write_tokens`.
+
+**Retention:** the due date is health information and the table holds
+contact details. Export what the team needs after the fair follow-up, then
+clear it: `delete from public.submissions where submitted_at < now() - interval '90 days';`
+
+The stored record contains: claim code, timestamp, name, relationship (and
+the "Others" text), email, mobile (normalised to `+639XXXXXXXXX`), baby stage,
+due date (only when Expecting), marketing consent, selected products with
+SKUs and prices, basket total, reward-unlocked flag, bag name.
 
 ## Analytics
 
@@ -190,8 +228,8 @@ Uncomment the Meta Pixel / GA4 lines to connect. The site runs fine without them
 - **Start over** is on the checklist and the confirmation, and wipes
   everything in one tap.
 - A refresh keeps her place, details and basket — but only in that browser
-  tab (`sessionStorage`). Finishing or Start over clears it, so the next mom
-  never sees the last one's details.
+  tab (`sessionStorage`). Start over clears it, so the next guest never sees
+  the last one's details.
 - **Change** next to her stage opens the four stage options right on the
   checklist. Tapping one swaps her picks instantly and keeps her basket; her
   lead record is re-sent with the new stage. The phone's Back button still
@@ -201,6 +239,8 @@ Uncomment the Meta Pixel / GA4 lines to connect. The site runs fine without them
   cannot change what staff see.
 - If the network drops, the confirmation still appears with an amber
   **"Will sync"** badge. It is still a valid claim — hand over the bag.
+- If a booth tablet's clock is wrong, saves still work: the server corrects
+  for a clock that runs fast.
 - Consent is never pre-checked and never blocks submission.
 
 ## Assets

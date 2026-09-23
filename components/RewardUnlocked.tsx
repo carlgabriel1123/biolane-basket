@@ -40,7 +40,7 @@ export default function RewardUnlocked({
           id="reward-unlocked-heading"
           className="mt-1 font-display text-2xl font-extrabold text-ink"
         >
-          You did it, Mommy!
+          You did it!
         </h2>
 
         <p className="mt-1.5 text-[14px] text-ink-soft">

@@ -20,7 +20,7 @@ export default function Suggestions({ items, remaining, onAdd }: Props) {
   return (
     <section aria-labelledby="suggestions-heading" className="rounded-card border border-gold/25 bg-cream-soft p-4">
       <h2 id="suggestions-heading" className="font-display text-[15px] font-extrabold text-ink">
-        Almost there, Mommy <span aria-hidden="true">💛</span>
+        Almost there <span aria-hidden="true">💛</span>
       </h2>
 
       <p className="mt-1 text-[13px] leading-snug text-ink-soft">

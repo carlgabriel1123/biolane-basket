@@ -22,6 +22,10 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
 
+  // Dads and grandparents sign up too, so thank them by name.
+  const first = submission.name.trim().split(/\s+/)[0] ?? ''
+  const firstName = first ? first.charAt(0).toLocaleUpperCase('en-PH') + first.slice(1) : ''
+
   const stamp = new Date(submission.timestamp).toLocaleString('en-PH', {
     timeZone: 'Asia/Manila',
     dateStyle: 'medium',
@@ -49,7 +53,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
           tabIndex={-1}
           className="mt-1 font-display text-[26px] font-extrabold leading-tight text-ink outline-none"
         >
-          Thank you, Mommy!
+          {firstName ? <>Thank you, {firstName}!</> : <>Thank you!</>}
         </h1>
 
         <p className="mt-1.5 text-[14px] text-ink-soft">
@@ -138,7 +142,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
       {/* Community */}
       <div className="mt-4 rounded-card bg-sky-soft p-4 text-center">
         <p className="text-[13.5px] font-semibold text-ink">
-          You&rsquo;re in the Biolane Mom Community <span aria-hidden="true">💛</span>
+          You&rsquo;re in the Biolane Community <span aria-hidden="true">💛</span>
         </p>
         <p className="mt-1 text-[12px] text-ink-soft">
           We&rsquo;ll reach {submission.name} at {submission.mobile}.
@@ -168,7 +172,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
         onClick={onStartOver}
         className="mt-8 min-h-[48px] w-full rounded-full border-2 border-ink/15 bg-white px-6 text-[14px] font-bold text-ink-soft transition-colors hover:border-blue hover:text-blue"
       >
-        Start over for the next mom
+        Start over for the next guest
       </button>
     </main>
   )

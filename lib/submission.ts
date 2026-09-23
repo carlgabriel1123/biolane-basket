@@ -24,6 +24,12 @@ export interface LeadInfo {
  */
 export interface Submission extends LeadInfo {
   submissionId: string
+  /**
+   * 32 hex chars, created with the claim code and never shown on screen.
+   * The database only lets a later save replace a record if it carries the
+   * same key, so seeing a claim code is not enough to overwrite it.
+   */
+  writeKey: string
   timestamp: string
   seq: number
   event: 'signup' | 'checklist_completed'
@@ -61,6 +67,12 @@ let seqCounter = 0
 export function nextSeq(): number {
   seqCounter = Math.max(seqCounter + 1, Date.now())
   return seqCounter
+}
+
+export function newWriteKey(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 export function newSubmissionId(): string {
@@ -130,7 +142,18 @@ function purgeSynced(): void {
   }
 }
 
-async function post(submission: Submission): Promise<boolean> {
+/**
+ * saved    — the database has it.
+ * retry    — temporary problem (offline, timeout, server busy, or the save
+ *            endpoint missing on this host): keep it.
+ * rejected — the server looked at this record and says it can never be
+ *            saved (400 / 413 / 422); resending it forever would not help,
+ *            so it is dropped.
+ */
+type Outcome = 'saved' | 'retry' | 'rejected'
+const REJECTED_STATUSES = new Set([400, 413, 422])
+
+async function post(submission: Submission): Promise<Outcome> {
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 10000)
@@ -141,32 +164,56 @@ async function post(submission: Submission): Promise<boolean> {
       signal: controller.signal,
     })
     clearTimeout(timeout)
-    if (res.ok) markSynced(submission.submissionId, submission.seq)
-    return res.ok
+    if (res.ok) {
+      markSynced(submission.submissionId, submission.seq)
+      return 'saved'
+    }
+    if (REJECTED_STATUSES.has(res.status)) {
+      console.warn('[submit] record rejected by the server', res.status, submission.submissionId)
+      markSynced(submission.submissionId, submission.seq) // removes it
+      return 'rejected'
+    }
+    return 'retry'
   } catch {
     // Offline / flaky booth wifi. The local copy means nothing is lost.
-    return false
+    return 'retry'
   }
 }
 
 // One request at a time, in order, so a sign-up can never overtake the
 // finished checklist for the same mom.
 let queue: Promise<unknown> = Promise.resolve()
+// Records currently queued or being sent, so a retry never doubles up.
+const inFlight = new Set<string>()
+const flightKey = (s: { submissionId: string; seq: number }) => `${s.submissionId}:${s.seq}`
 
 /** Saves locally, then POSTs. Resolves true only if the database accepted it. */
 export function sendSubmission(submission: Submission): Promise<boolean> {
   stashLocally(submission)
-  const job = queue.then(() => post(submission))
+  const key = flightKey(submission)
+  inFlight.add(key)
+  const job = queue.then(() => post(submission)).finally(() => inFlight.delete(key))
   queue = job.catch(() => undefined)
-  return job
+  return job.then((outcome) => outcome === 'saved')
 }
 
 /** Re-send every record the database has not accepted yet. */
 export function flushPending(): void {
   purgeSynced()
   for (const rec of readStore().filter((s) => !s.synced)) {
-    const { synced: _synced, ...submission } = rec
-    queue = queue.then(() => post(submission)).catch(() => undefined)
+    const key = flightKey(rec)
+    if (inFlight.has(key)) continue
+    inFlight.add(key)
+    queue = queue
+      .then(async () => {
+        // Re-read: it may have been saved, replaced or dropped meanwhile.
+        const current = readStore().find((s) => s.submissionId === rec.submissionId && s.seq === rec.seq)
+        if (!current) return
+        const { synced: _synced, ...submission } = current
+        await post(submission)
+      })
+      .catch(() => undefined)
+      .finally(() => inFlight.delete(key))
   }
 }
 
