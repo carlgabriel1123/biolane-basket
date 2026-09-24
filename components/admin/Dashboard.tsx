@@ -5,10 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { useRouter } from 'next/navigation'
 import type { AdminSubmission } from '@/lib/admin-db'
 import { asset } from '@/lib/asset'
+import { dayInRange, dayLabel, isIsoDay, manilaDay, orderedRange, rangeLabel, type DayRange } from '@/lib/dates'
 import { peso } from '@/lib/format'
 import {
   BagIcon,
   BanIcon,
+  CalendarIcon,
   CheckCircleIcon,
   CheckIcon,
   ChevronDownIcon,
@@ -56,12 +58,15 @@ const POLL_MS = 30_000
 const OVERLAP_MS = 5_000
 
 const timeFmt = new Intl.DateTimeFormat('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' })
 const when = (iso: string | null) => (iso ? timeFmt.format(new Date(iso)) : '')
 
 /* Layout strings shared by real rows and the loading skeleton. */
 const CARD = 'rounded-card border border-ink/10 bg-white p-3.5 shadow-soft'
 const ROW_GRID = 'md:grid md:grid-cols-[160px_minmax(0,1fr)_170px_150px] md:items-start md:gap-4'
+/* Shared by the Date select and the From / To boxes; each adds its own border colour and background. */
+const DATE_BOX =
+  'block min-h-[48px] w-full rounded-2xl border-2 text-[16px] text-ink outline-none transition-[border-color,box-shadow] duration-150 focus:border-blue focus:shadow-glow'
+
 /* Stagger delay, capped so a long list never waits on its tail. */
 const at = (i: number) => ({ '--i': Math.min(i, 8) }) as CSSProperties
 
@@ -72,6 +77,10 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
   const [loadError, setLoadError] = useState('')
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  /** 'all', one Manila day ('YYYY-MM-DD'), or 'range' for the From / To boxes. */
+  const [dateChoice, setDateChoice] = useState('all')
+  const [rangeFrom, setRangeFrom] = useState('')
+  const [rangeTo, setRangeTo] = useState('')
   const [open, setOpen] = useState<Set<string>>(new Set())
   const [notice, setNotice] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -133,17 +142,51 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
     [rows]
   )
 
-  const today = dayFmt.format(new Date())
+  // Each sign-up's Manila date, worked out once per refresh.
+  const dayOf = useMemo(() => new Map(all.map((r) => [r.submission_id, manilaDay(r.received_at)])), [all])
+
+  const today = manilaDay(new Date())
+  const thisYear = today.slice(0, 4)
   const counts = useMemo(
     () => ({
-      today: all.filter((r) => dayFmt.format(new Date(r.received_at)) === today).length,
+      today: all.filter((r) => dayOf.get(r.submission_id) === today).length,
       total: all.length,
       finished: all.filter((r) => r.event === 'checklist_completed').length,
       gift: all.filter((r) => r.reward_unlocked).length,
       paid: all.filter((r) => r.paid_at).length,
     }),
-    [all, today]
+    [all, dayOf, today]
   )
+
+  /** Days that have sign-ups, newest first, with how many. */
+  const dayOptions = useMemo(() => {
+    const perDay = new Map<string, number>()
+    for (const d of dayOf.values()) if (d) perDay.set(d, (perDay.get(d) ?? 0) + 1)
+    // A picked day stays listed even if its rows disappear.
+    if (dateChoice !== 'all' && dateChoice !== 'range' && !perDay.has(dateChoice)) perDay.set(dateChoice, 0)
+    return [...perDay].sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0))
+  }, [dayOf, dateChoice])
+
+  const dateRange = useMemo<DayRange | null>(() => {
+    if (dateChoice === 'all') return null
+    if (dateChoice === 'range') {
+      // A half-typed or impossible date (Chrome allows a 6-digit year) counts as
+      // no limit, so the list and the CSV link always use the same range.
+      const from = isIsoDay(rangeFrom) ? rangeFrom : ''
+      const to = isIsoDay(rangeTo) ? rangeTo : ''
+      return from || to ? orderedRange(from, to) : null
+    }
+    return { from: dateChoice, to: dateChoice }
+  }, [dateChoice, rangeFrom, rangeTo])
+  const dateText = dateRange ? rangeLabel(dateRange, thisYear) : ''
+
+  const exportHref = useMemo(() => {
+    if (!dateRange) return '/api/admin/export'
+    const q = new URLSearchParams()
+    if (dateRange.from) q.set('from', dateRange.from)
+    if (dateRange.to) q.set('to', dateRange.to)
+    return `/api/admin/export?${q}`
+  }, [dateRange])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -152,6 +195,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
     // Usernames are stored without the @.
     const handle = q.replace(/^@/, '')
     return all.filter((r) => {
+      if (dateRange && !dayInRange(dayOf.get(r.submission_id) ?? '', dateRange)) return false
       if (filter === 'unpaid' && r.paid_at) return false
       if (filter === 'paid' && !r.paid_at) return false
       if (filter === 'gift' && !r.reward_unlocked) return false
@@ -168,7 +212,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
         (handle.length >= 2 && [r.tiktok, r.instagram].some((h) => h?.includes(handle)))
       )
     })
-  }, [all, query, filter])
+  }, [all, query, filter, dateRange, dayOf])
 
   const flash = (msg: string) => {
     setNotice(msg)
@@ -286,7 +330,8 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
 
         {/* Toolbar */}
         <section className="mt-4 flex flex-wrap items-center gap-2.5">
-          <div className="relative order-1 w-full md:w-auto md:flex-1">
+          {/* min-w: on tablets the buttons wrap to the next line before the search box gets cramped. */}
+          <div className="relative order-1 w-full md:w-auto md:min-w-[280px] md:flex-1">
             <input
               type="search"
               value={query}
@@ -297,12 +342,60 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
             />
             <SearchIcon size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft/85 transition-colors peer-focus:text-blue" />
           </div>
-          <div className="order-3 flex w-full gap-2 md:order-2 md:w-auto">
-            <a
-              href="/api/admin/export"
-              className="press inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill border-2 border-blue bg-white px-5 text-[14.5px] font-bold text-blue hover:bg-blue hover:text-white md:flex-none"
+          <div className="relative order-1 w-full md:w-[300px]">
+            <select
+              value={dateChoice}
+              onChange={(e) => setDateChoice(e.target.value)}
+              aria-label="Sign-up date"
+              className={`peer appearance-none pl-11 pr-10 ${DATE_BOX} ${
+                dateChoice === 'all' ? 'border-ink/10 bg-white' : 'border-blue bg-sky-soft font-semibold'
+              }`}
             >
-              <DownloadIcon size={18} />
+              <option value="all">All dates</option>
+              {/* Short enough that the count is never cut off, even at 3 digits. */}
+              {dayOptions.map(([d, n]) => (
+                <option key={d} value={d}>
+                  {d === today ? 'Today · ' : ''}
+                  {dayLabel(d, thisYear)} ({n})
+                </option>
+              ))}
+              <option value="range">Custom range…</option>
+            </select>
+            <CalendarIcon size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft/85 transition-colors peer-focus:text-blue" />
+            <ChevronDownIcon size={18} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft/85" />
+          </div>
+          {dateChoice === 'range' && (
+            <div role="group" aria-label="Custom date range" className="animate-rise order-1 grid w-full grid-cols-2 gap-2.5 md:order-3 md:max-w-[540px]">
+              <label className="text-[12.5px] font-semibold text-ink-soft">
+                From
+                <input
+                  type="date"
+                  value={rangeFrom}
+                  onChange={(e) => setRangeFrom(e.target.value)}
+                  max="9999-12-31"
+                  className={`mt-1 bg-white px-3 ${DATE_BOX} border-ink/10`}
+                />
+              </label>
+              <label className="text-[12.5px] font-semibold text-ink-soft">
+                To
+                <input
+                  type="date"
+                  value={rangeTo}
+                  onChange={(e) => setRangeTo(e.target.value)}
+                  max="9999-12-31"
+                  className={`mt-1 bg-white px-3 ${DATE_BOX} border-ink/10`}
+                />
+              </label>
+            </div>
+          )}
+          <div className="order-3 flex w-full gap-2 md:order-2 md:w-auto">
+            {/* The label stays "Download CSV"; the result line and the tooltip name the dates. */}
+            <a
+              href={exportHref}
+              title={dateText ? `CSV of sign-ups ${dateText.startsWith('from') || dateText.startsWith('until') ? dateText : `on ${dateText}`}` : 'CSV of every sign-up'}
+              className="press inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-pill border-2 border-blue bg-white px-5 text-[14.5px] font-bold text-blue hover:bg-blue hover:text-white md:flex-none"
+            >
+              <DownloadIcon size={18} className="shrink-0" />
               <span>Download CSV</span>
             </a>
             <Button
@@ -342,7 +435,12 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
         </section>
 
         <p className="mt-2.5 text-[12.5px] text-ink-soft" aria-live="polite">
-          {notice || (loadError ? loadError : loaded ? `${visible.length} of ${all.length} shown · refreshes every 30 s · times are Manila` : 'Loading…')}
+          {notice ||
+            (loadError
+              ? loadError
+              : loaded
+                ? `${visible.length} of ${all.length} shown${dateText ? ` · ${dateText}` : ''} · refreshes every 30 s · times are Manila`
+                : 'Loading…')}
         </p>
 
         {/* Loading skeleton: shown only until the first fetch answers. */}
@@ -518,7 +616,13 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
             <span className="grid h-14 w-14 place-items-center rounded-full bg-sky text-blue">
               <BagIcon size={26} />
             </span>
-            <p className="text-[14px] text-ink-soft">{all.length === 0 ? 'No sign-ups yet.' : 'Nothing matches that search.'}</p>
+            <p className="text-[14px] text-ink-soft">
+              {all.length === 0
+                ? 'No sign-ups yet.'
+                : dateRange
+                  ? 'No sign-ups match these dates and filters.'
+                  : 'Nothing matches that search.'}
+            </p>
           </div>
         )}
       </main>

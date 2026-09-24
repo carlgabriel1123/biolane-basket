@@ -11,6 +11,7 @@ import {
   isSameOriginPost,
 } from '../lib/admin-auth.ts'
 import { readFileSync } from 'node:fs'
+import { dayInRange, dayLabel, isIsoDay, manilaDay, orderedRange, rangeLabel } from '../lib/dates.ts'
 import { toSheetRow, toCsv, formatManila, formulaSafe, localMobile, SHEET_COLUMNS } from '../lib/sheet-row.ts'
 
 let failures = 0
@@ -86,6 +87,21 @@ const gs = readFileSync(new URL('../docs/google-sheets/Code.gs', import.meta.url
 const gsList = (name) => [...gs.match(new RegExp(`var ${name} = \\[([\\s\\S]*?)\\];`))[1].matchAll(/'([^']*)'/g)].map((m) => m[1])
 eq('Code.gs headers match the site', gsList('HEADERS').join('|'), SHEET_COLUMNS.map(([, l]) => l).join('|'))
 eq('Code.gs keys match the site', gsList('KEYS').join('|'), SHEET_COLUMNS.map(([k]) => k).join('|'))
+
+console.log('\nDate filter (Manila days):')
+eq('11:59 PM Manila stays on that day', manilaDay('2026-07-02T15:59:59.000Z'), '2026-07-02')
+eq('12:00 AM Manila starts the next day', manilaDay('2026-07-02T16:00:00.000Z'), '2026-07-03')
+eq('unreadable time gives no day', manilaDay('not a date'), '')
+eq('real days accepted', [isIsoDay('2026-07-02'), isIsoDay('2028-02-29')], [true, true])
+eq('impossible or malformed days refused', [isIsoDay('2026-02-30'), isIsoDay('2026-7-2'), isIsoDay(''), isIsoDay(null)], [false, false, false, false])
+eq('range ends put in order', orderedRange('2026-07-03', '2026-07-02'), { from: '2026-07-02', to: '2026-07-03' })
+const julyTwoToThree = { from: '2026-07-02', to: '2026-07-03' }
+eq('both ends included', ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04'].map((d) => dayInRange(d, julyTwoToThree)), [false, true, true, false])
+eq('open ends', [dayInRange('2026-01-01', { from: '', to: '2026-07-02' }), dayInRange('2027-01-01', { from: '2026-07-02', to: '' })], [true, true])
+eq('a row without a day never matches', dayInRange('', { from: '', to: '2026-07-02' }), false)
+eq('day label', dayLabel('2026-07-02', '2026'), 'Thu, Jul 2')
+eq('year shown when not this year', dayLabel('2025-07-02', '2026').includes('2025'), true)
+eq('range labels', [rangeLabel(julyTwoToThree, '2026'), rangeLabel({ from: '2026-07-02', to: '2026-07-02' }, '2026'), rangeLabel({ from: '2026-07-02', to: '' }, '2026')], ['Thu, Jul 2 – Fri, Jul 3', 'Thu, Jul 2', 'from Thu, Jul 2'])
 
 const csv = toCsv([row])
 const lines = csv.split('\r\n')

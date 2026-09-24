@@ -219,7 +219,12 @@ hidden from search engines.
   baby stage, due date, consent, Signed up / Finished, basket total, gift
   unlocked, bag name, and the products. Search by claim code, name, mobile,
   email or username; filter by Unpaid, Paid, Gift unlocked, Finished, Signed up only or
-  stage. Counts on top. Refreshes itself every 30 s.
+  stage. Counts on top (always for all dates). Refreshes itself every 30 s.
+- **Date filter:** the date box next to the search lists every day that has
+  sign-ups, with how many (e.g. "Thu, Jul 2 (12)"); pick one to see only that
+  day. **Custom range…** opens From / To boxes for several days (Jul 2 to
+  Jul 3). Days are Manila dates of when she signed up. **Download CSV** then
+  downloads only those dates (`/api/admin/export?from=YYYY-MM-DD&to=YYYY-MM-DD`).
 - **Mark paid:** one tap when the purchase is verified; it records the time.
   Tap again (with a confirmation) to undo.
 - **Download CSV:** everything, ready for Excel or Google Sheets.
