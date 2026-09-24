@@ -319,7 +319,7 @@ Supabase project **biolane-nesting-checklist** (Singapore), table
 `public.submissions`: one row per claim code, created on Join and updated
 when the checklist is finished.
 
-**Archive.** On 2026-09-24 the 7 sign-ups made before the fair (tests and early
+**Archive.** On 2026-09-24 the 9 sign-ups made before the fair (tests and early
 sign-ups) were moved, not deleted, into `private.submissions_archive` (same
 columns plus `archived_at`) so the admin could start fresh. It is only
 reachable from the SQL Editor; the dashboard, CSV and sheet never read it.
