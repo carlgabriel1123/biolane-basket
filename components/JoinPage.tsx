@@ -55,8 +55,6 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
         </div>
 
         <p className="mt-5 text-center text-[11px] leading-relaxed text-ink-soft/90">
-          {campaign.promoDates}
-          <br />
           {campaign.rewardDisclaimer}
         </p>
       </div>

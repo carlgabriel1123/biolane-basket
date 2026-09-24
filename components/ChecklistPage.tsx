@@ -507,8 +507,7 @@ export default function ChecklistPage({
       )}
 
       <footer className="mt-10 text-center text-[11px] leading-relaxed text-ink-soft/85 md:text-xs">
-        <p>{campaign.promoDates}</p>
-        <p className="mt-1">{campaign.rewardDisclaimer}</p>
+        <p>{campaign.rewardDisclaimer}</p>
       </footer>
     </main>
   )

@@ -20,7 +20,7 @@ export const campaign = {
   headline: 'Are you ready, Mommy?',
   subheadline: "Let's get baby ready.",
   supportingText:
-    "Build your baby's Biolane essentials and see how close you are to unlocking your Grand Baby Fair reward.",
+    "Build your baby's Biolane essentials and see how close you are to unlocking your reward.",
   ctaLabel: 'Start my checklist',
 
   /** Checklist page, under "Hi {name}" */
@@ -41,9 +41,6 @@ export const campaign = {
     'Qualifying purchase will be verified by the Biolane team at checkout. While supplies last.',
   confirmationDisclaimer:
     'Final reward qualification is based on the actual verified purchase.',
-
-  /** Promo dates — shown in the footer. Free text, edit as needed. */
-  promoDates: 'Grand Baby Fair · October 8–11',
 
   /**
    * Policy links. Privacy points at Biolane PH's live policy page.

@@ -54,7 +54,6 @@ Everything tweakable lives in three data files. No component needs touching.
 | Reward name | `data/campaign.ts` | `rewardName`, `rewardShortName` |
 | Sign-up button text | `data/campaign.ts` | `joinCtaLabel` |
 | Sign-up page heading | `data/campaign.ts` | `communityHeading`, `communitySubheading` |
-| Promo dates | `data/campaign.ts` | `promoDates` |
 | Privacy / Terms links | `data/campaign.ts` | `privacyPolicyUrl`, `termsUrl` |
 | Consent wording | `data/campaign.ts` | `consentLabel` |
 | Prices, names, sizes | `data/products.ts` | `price`, `name`, `size` |
