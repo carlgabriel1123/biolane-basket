@@ -505,10 +505,6 @@ export default function ChecklistPage({
           </div>
         </div>
       )}
-
-      <footer className="mt-10 text-center text-[11px] leading-relaxed text-ink-soft/85 md:text-xs">
-        <p>{campaign.rewardDisclaimer}</p>
-      </footer>
     </main>
   )
 }

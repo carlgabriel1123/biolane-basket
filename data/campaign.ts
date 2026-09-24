@@ -37,8 +37,6 @@ export const campaign = {
   rewardTeaserPrize: 'Get a FREE Personalized Biolane Toiletry Bag',
 
   /** Legal / fine print */
-  rewardDisclaimer:
-    'Qualifying purchase will be verified by the Biolane team at checkout. While supplies last.',
   confirmationDisclaimer:
     'Final reward qualification is based on the actual verified purchase.',
 

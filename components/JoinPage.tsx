@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { useEffect } from 'react'
-import { campaign } from '@/data/campaign'
 import { asset } from '@/lib/asset'
 import CommunityForm, { type CommunityValues } from './CommunityForm'
 import { InfoIcon } from './icons'
@@ -53,10 +52,6 @@ export default function JoinPage({ values, onChange, onSubmit, submitting, retur
         <div className="mt-5">
           <CommunityForm values={values} onChange={onChange} onSubmit={onSubmit} submitting={submitting} />
         </div>
-
-        <p className="mt-5 text-center text-[11px] leading-relaxed text-ink-soft/90">
-          {campaign.rewardDisclaimer}
-        </p>
       </div>
     </main>
   )

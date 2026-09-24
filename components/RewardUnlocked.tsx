@@ -106,10 +106,6 @@ export default function RewardUnlocked({
             </p>
           )}
         </div>
-
-        <p className="mt-3 text-[11px] leading-relaxed text-ink-soft/90">
-          {campaign.rewardDisclaimer}
-        </p>
       </div>
     </section>
   )
