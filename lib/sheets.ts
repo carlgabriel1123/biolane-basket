@@ -80,6 +80,37 @@ export async function syncToSheet(subs: AdminSubmission[]): Promise<SyncResult> 
   return { attempted: subs.length, synced, error: null }
 }
 
+/**
+ * Sends an empty batch. The sheet script checks the secret before anything
+ * else, so this says whether the sheet is reachable and accepts our secret
+ * even when there is nothing to send. Resolves to an error message, or null.
+ */
+export async function checkSheet(): Promise<string | null> {
+  const url = process.env.SHEETS_WEBHOOK_URL
+  const secret = process.env.SHEETS_WEBHOOK_SECRET
+  if (!url || !secret) return 'not-configured'
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ secret, rows: [] }),
+      redirect: 'follow',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
+    })
+    const text = (await res.text()).slice(0, 500)
+    if (!res.ok) return `sheet http ${res.status}: ${text}`
+    try {
+      const parsed = JSON.parse(text) as { ok?: boolean; error?: string }
+      return parsed.ok ? null : `sheet refused: ${parsed.error ?? text.slice(0, 120)}`
+    } catch {
+      return `sheet returned non-JSON (is the script deployed with access "Anyone"?): ${text.slice(0, 120)}`
+    }
+  } catch (err) {
+    return `sheet unreachable: ${err instanceof Error ? err.message : String(err)}`
+  }
+}
+
 /** Re-sends everything the sheet has not confirmed yet (oldest first). */
 export async function retryUnsynced(limit: number): Promise<SyncResult> {
   if (!sheetConfigured()) return { attempted: 0, synced: 0, error: 'not-configured' }

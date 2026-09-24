@@ -242,10 +242,16 @@ Once, about three minutes:
    **Anyone** (not "Anyone with Google account"). Approve the permissions
    (Advanced → Go to … if Google warns it's unverified — it's your own
    script). Copy the Web app URL (ends in `/exec`).
-4. Open that URL in a browser: `{"ok":true,…}` means it's live. A Google
-   sign-in page means step 3's access setting is wrong.
+4. Open that URL in a browser. It should show `"ok":true`, the current
+   `"version"` (the `VERSION` line in `Code.gs`) and `"secretSet":true`. A
+   Google sign-in page means step 3's access setting is wrong.
 5. Put the URL in Vercel as `SHEETS_WEBHOOK_URL` and redeploy. Then press
-   **Sync sheet** on the dashboard once: it sends every existing sign-up.
+   **Sync sheet** on the dashboard: it sends any sign-up the sheet is missing
+   and, with nothing to send, checks that the sheet accepts the secret ("The
+   sheet is connected and up to date").
+6. Reload the sheet in a computer browser: a **Biolane** menu appears next to
+   Help (not in the Sheets phone app). Google asks you to authorize it the
+   first time you use it.
 
 From then on every sign-up, finished checklist and Paid change appears in a
 **Sign-ups** tab within seconds, one row per claim code (a finished checklist
@@ -256,19 +262,38 @@ and by the daily health cron. Never reorder the sheet's columns; the script
 writes them by position.
 
 **After changing `Code.gs`** (for example when the TikTok / Instagram columns
-were added): paste the new file, keep your `SECRET`, then **Deploy → Manage
-deployments → pencil → Version: New version → Deploy** (the URL stays the
-same). The script upgrades an older sheet in place on its next save: it
-inserts the new columns after Mobile and every existing row keeps its values.
-Then press **Sync sheet** once. Visitor-typed text is stored as plain text, so
+were added): first copy your line `var SECRET = '…';`, then paste the new
+file over everything, put that line back, and click Save. Then **Deploy →
+Manage deployments → pencil → Version: New version → Deploy** (the URL stays
+the same; "New deployment" would make a new URL the site doesn't use). Open
+the URL and check the `"version"` changed and `"secretSet":true`. The
+script upgrades an older sheet in place on its next save: it inserts the new
+columns after Mobile and every existing row keeps its values. Then press
+**Sync sheet** once.
+
+**Start fresh (keep a backup tab)** — e.g. to clear test sign-ups before the
+fair. Only once the step above shows the new version:
+1. In the sheet: **Biolane → Start fresh (keep a backup tab)… → Yes.** The
+   whole Sign-ups tab is copied, exactly as it is, into a grey, protected tab
+   named `Backup <date> <time>`, then its rows are removed from Sign-ups (the
+   header stays). New sign-ups keep arriving in Sign-ups.
+2. On the admin page press **Sync sheet**, and answer OK to "Send all … sign-ups
+   to it again?". Everyone still in the admin is put back into Sign-ups
+   (nothing is duplicated). With an empty admin there is nothing to send.
+
+Start fresh never changes the columns; only the deployed script does, so the
+header always matches the version writing the rows. To also clear the admin,
+the database rows are archived (see "Where sign-ups are saved"). Visitor-typed text is stored as plain text, so
 nothing typed on the site can run as a formula in the sheet or the CSV.
 
 **Keep the copies private.** The sheet and any downloaded CSV hold names,
 mobiles, emails and due dates. Use a company Google account rather than a
 personal one, share the sheet view-only with as few people as possible
 (anyone who can edit the script can read the secret), delete downloaded
-CSVs from booth phones after the fair, and delete the sheet when the
-database is cleared. If the script was shared with editors, rotate
+CSVs from booth phones after the fair, and when the fair data is no longer
+needed delete the Backup tabs (and the whole sheet only if the site is being
+retired: deleting it also deletes the script, and saves stop reaching any
+sheet). If the script was shared with editors, rotate
 `SHEETS_WEBHOOK_SECRET` (new value in Vercel and in `Code.gs`, redeploy both).
 
 ### Admin environment variables (Vercel + `.env.local`)
@@ -293,6 +318,31 @@ dashboard is unusable until it's done.
 Supabase project **biolane-nesting-checklist** (Singapore), table
 `public.submissions`: one row per claim code, created on Join and updated
 when the checklist is finished.
+
+**Archive.** On 2026-09-24 the 7 sign-ups made before the fair (tests and early
+sign-ups) were moved, not deleted, into `private.submissions_archive` (same
+columns plus `archived_at`) so the admin could start fresh. It is only
+reachable from the SQL Editor; the dashboard, CSV and sheet never read it.
+To bring them back:
+
+```sql
+begin;
+insert into public.submissions (submission_id, seq, event, submitted_at, received_at, updated_at,
+  name, relationship, relationship_other, email, mobile, baby_stage, due_date, marketing_consent,
+  selected_products, basket_total, reward_unlocked, personalization_name, write_key_hash, paid_at,
+  sheet_synced_at, tiktok, instagram, no_socials)
+select submission_id, seq, event, submitted_at, received_at, updated_at,
+  name, relationship, relationship_other, email, mobile, baby_stage, due_date, marketing_consent,
+  selected_products, basket_total, reward_unlocked, personalization_name, write_key_hash, paid_at,
+  null, tiktok, instagram, no_socials
+from private.submissions_archive a
+where not exists (select 1 from public.submissions s where s.submission_id = a.submission_id);
+delete from private.submissions_archive a
+where exists (select 1 from public.submissions s where s.submission_id = a.submission_id);
+commit;
+```
+
+(`sheet_synced_at` is left empty so the rows are sent to the sheet again.)
 
 **To see or export them:** Supabase → Table Editor → `submissions`, or SQL
 Editor → `select * from submissions_readable order by submitted_manila desc;`
@@ -329,7 +379,10 @@ works.
 
 **Retention:** the due date is health information and the table holds
 contact details. Export what the team needs after the fair follow-up, then
-clear it: `delete from public.submissions where submitted_at < now() - interval '90 days';`
+clear it, the archive too:
+`delete from public.submissions where submitted_at < now() - interval '90 days';`
+`delete from private.submissions_archive where submitted_at < now() - interval '90 days';`
+and delete the sheet's Backup tabs at the same time.
 
 The stored record contains: claim code, timestamp, name, relationship (and
 the "Others" text), email, mobile (normalised to `+639XXXXXXXXX`), TikTok and

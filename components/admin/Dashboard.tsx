@@ -55,6 +55,8 @@ const STAGE: Record<string, string> = { expecting: 'Expecting', baby: 'Baby 0–
 const REL: Record<string, string> = { dad: 'Dad', mom: 'Mom', grandparent: 'Grandparent', others: 'Others' }
 
 const POLL_MS = 30_000
+/** Every 10th refresh (about 5 minutes) reloads the whole list. */
+const FULL_EVERY = 10
 const OVERLAP_MS = 5_000
 
 const timeFmt = new Intl.DateTimeFormat('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -87,6 +89,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
   const [syncing, setSyncing] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const lastServerTime = useRef<string | null>(null)
+  const polls = useRef(0)
 
   const merge = useCallback((incoming: AdminSubmission[]) => {
     if (incoming.length === 0) return
@@ -100,16 +103,23 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
     })
   }, [])
 
-  const load = useCallback(async () => {
+  /**
+   * `full` reloads everything and replaces the list, so rows removed from the
+   * database (e.g. archived for a fresh start) also leave tabs that were
+   * already open. Otherwise only changes since the last answer are fetched.
+   */
+  const load = useCallback(async (full = false) => {
     try {
-      const since = lastServerTime.current
-        ? new Date(new Date(lastServerTime.current).getTime() - OVERLAP_MS).toISOString()
-        : null
+      const everything = full || !lastServerTime.current || ++polls.current % FULL_EVERY === 0
+      const since = everything
+        ? null
+        : new Date(new Date(lastServerTime.current!).getTime() - OVERLAP_MS).toISOString()
       const data = await adminGet<{ rows: AdminSubmission[]; serverTime: string }>(
         `/api/admin/submissions${since ? `?since=${encodeURIComponent(since)}` : ''}`
       )
       lastServerTime.current = data.serverTime
-      merge(data.rows)
+      if (everything) setRows(new Map(data.rows.map((r) => [r.submission_id, r])))
+      else merge(data.rows)
       setLoaded(true)
       setLoadError('')
     } catch (err) {
@@ -128,7 +138,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
       if (document.visibilityState === 'visible') void load()
     }, POLL_MS)
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void load()
+      if (document.visibilityState === 'visible') void load(true)
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => {
@@ -247,16 +257,32 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
   }
 
   const syncSheet = async () => {
+    type SyncReply = { attempted: number; synced: number; error: string | null; total?: number }
+    const failed = (e?: string | null) =>
+      flash(e === 'not-configured' ? 'Google Sheet is not connected yet.' : `Sheet sync failed: ${e ?? 'unknown'}`)
     setSyncing(true)
     try {
-      const data = await adminPost<{ attempted: number; synced: number; error: string | null }>('/api/admin/sync', {})
-      flash(data.attempted === 0 ? 'The sheet is already up to date.' : `Sent ${data.synced} of ${data.attempted} rows to the sheet.`)
-      void load()
+      const data = await adminPost<SyncReply>('/api/admin/sync', {})
+      if (data.error) return failed(data.error)
+      if (data.attempted > 0) return flash(`Sent ${data.synced} of ${data.attempted} rows to the sheet.`)
+      // Nothing pending. After "Start fresh" in the sheet, rows it already had
+      // were cleared there, so offer to send every sign-up again.
+      if (
+        all.length > 0 &&
+        window.confirm(
+          `The sheet has every change already. Send all ${all.length} sign-ups to it again?\n\nDo this after using "Start fresh" in the Google Sheet. Rows already there are updated, not duplicated.`
+        )
+      ) {
+        const again = await adminPost<SyncReply>('/api/admin/sync', { all: true })
+        if (again.error) return failed(again.error)
+        return flash(`Sent ${again.synced} of ${again.attempted} sign-ups to the sheet.`)
+      }
+      flash('The sheet is connected and up to date.')
     } catch (err) {
-      const e = err as { error?: string }
-      flash(e?.error === 'not-configured' ? 'Google Sheet is not connected yet.' : `Sheet sync failed: ${e?.error ?? 'unknown'}`)
+      failed((err as { error?: string })?.error)
     } finally {
       setSyncing(false)
+      void load()
     }
   }
 

@@ -1,10 +1,11 @@
 /**
- * Biolane Nesting Checklist → Google Sheet
+ * Biolane Checklist → Google Sheet
  *
  * HOW TO INSTALL (once, about 3 minutes)
  * 1. Open your Google Sheet → Extensions → Apps Script.
- * 2. Delete whatever is in the editor, paste this whole file, and set
- *    SECRET below to the value you were given (SHEETS_WEBHOOK_SECRET).
+ * 2. UPDATING? First copy your existing line  var SECRET = '…';  somewhere
+ *    safe. Then delete whatever is in the editor, paste this whole file, and
+ *    set SECRET below to that value (SHEETS_WEBHOOK_SECRET). Click Save.
  * 3. Click Deploy → New deployment → gear icon → Web app.
  *      Description:     Biolane sign-ups
  *      Execute as:      Me
@@ -14,8 +15,23 @@
  *    Web app URL (ends in /exec) and send it to the site owner.
  * 4. After ANY edit to this script: Deploy → Manage deployments → pencil →
  *    Version: New version → Deploy. The URL stays the same.
- * 5. To check it works, open the Web app URL in a browser: you should see
- *    {"ok":true,...}. A Google sign-in page means step 3's access is wrong.
+ * 5. To check it works, open the Web app URL in a browser. You should see
+ *    "version":"2026-09-24 start-fresh" and "secretSet":true. An older
+ *    version means step 4 was missed (or "New deployment" was used, which
+ *    makes a new URL the site does not know). A Google sign-in page means
+ *    step 3's access is wrong.
+ * 6. Reload the sheet in a computer browser. A "Biolane" menu appears next
+ *    to Help (menus don't show in the Sheets phone app). The first time you
+ *    use it, Google asks you to authorize the script: allow it.
+ *
+ * START FRESH (Biolane menu → Start fresh (keep a backup tab)…)
+ * Only after step 5 shows the new version. Copies the whole Sign-ups tab,
+ * exactly as it is, into a new tab named "Backup <date> <time>", then
+ * removes those rows from Sign-ups (the header row stays). New sign-ups keep
+ * arriving in Sign-ups as usual. Nothing is lost: the backup tab is
+ * protected (editing it shows a warning) and can be kept for good. Then
+ * press "Sync sheet" on the admin page, so anyone still listed there is put
+ * back into Sign-ups.
  *
  * WHAT IT DOES
  * The site POSTs rows here after every sign-up, every finished checklist
@@ -35,6 +51,7 @@
  */
 
 var SECRET = 'PASTE_THE_SECRET_HERE';
+var VERSION = '2026-09-24 start-fresh';
 var TAB = 'Sign-ups';
 var HEADERS = [
   'Claim code', 'Status', 'Signed up (Manila)', 'Last update (Manila)', 'Name',
@@ -114,7 +131,12 @@ function doPost(e) {
 
 /** Opening the URL in a browser shows this, which is handy to confirm the deployment. */
 function doGet() {
-  return reply({ ok: true, message: 'Biolane sign-ups endpoint is live. The site sends rows here with POST.' });
+  return reply({
+    ok: true,
+    version: VERSION,
+    secretSet: SECRET !== '' && SECRET !== 'PASTE_THE_SECRET_HERE',
+    message: 'Biolane sign-ups endpoint is live. The site sends rows here with POST.'
+  });
 }
 
 /**
@@ -143,6 +165,84 @@ function getSheet() {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+/** Adds the Biolane menu. Google runs this by itself whenever the sheet is opened. */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Biolane')
+    .addItem('Start fresh (keep a backup tab)…', 'startFresh')
+    .addToUi();
+}
+
+/**
+ * Copies the Sign-ups tab to a new, protected "Backup <date> <time>" tab,
+ * then removes those rows from Sign-ups (the header row stays). Asks first;
+ * changes nothing if the answer is No or if Sign-ups is already empty.
+ * It never changes the columns: only the deployed doPost upgrades the
+ * header, so the header always matches the version that writes the rows.
+ */
+function startFresh() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var current = ss.getSheetByName(TAB);
+  var count = current ? Math.max(current.getLastRow() - 1, 0) : 0;
+  if (count === 0) {
+    ui.alert('Nothing to back up', 'The "' + TAB + '" tab has no sign-ups yet.', ui.ButtonSet.OK);
+    return;
+  }
+  var answer = ui.alert(
+    'Start fresh?',
+    'All ' + count + ' rows of "' + TAB + '" will be copied into a new backup tab, then "' + TAB +
+      '" will be emptied (the header row stays). New sign-ups will keep arriving in "' + TAB + '".',
+    ui.ButtonSet.YES_NO
+  );
+  if (answer !== ui.Button.YES) return;
+
+  // Dialogs are shown only outside the lock, so the site's saves never wait on them.
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  var name = '';
+  var moved = 0;
+  try {
+    var sheet = ss.getSheetByName(TAB);
+    if (sheet && String(sheet.getRange(1, 1).getValue()) === HEADERS[0]) {
+      var last = sheet.getLastRow();
+      moved = Math.max(last - 1, 0);
+      name = uniqueSheetName(ss, 'Backup ' + Utilities.formatDate(new Date(), 'Asia/Manila', 'yyyy-MM-dd h.mm a'));
+      // copyTo keeps every value and format exactly (text stays text).
+      var backup = sheet.copyTo(ss).setName(name);
+      backup.setTabColor('#9e9e9e');
+      backup.protect().setDescription('Backup made by Start fresh. Please do not edit.').setWarningOnly(true);
+      if (moved > 0) {
+        // Delete the rows (values, colours, notes, hidden state) so new sign-ups
+        // start on clean rows. Sheets won't delete every row below a frozen
+        // header, so add one blank row first when needed.
+        if (sheet.getMaxRows() <= last) sheet.insertRowsAfter(last, 1);
+        sheet.deleteRows(2, moved);
+      }
+      ss.setActiveSheet(sheet);
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  if (!name) {
+    ui.alert('Row 1 of "' + TAB + '" was changed. Restore the headers, then try again.');
+    return;
+  }
+  ui.alert(
+    'Done',
+    moved + ' rows are saved in the "' + name + '" tab, and "' + TAB + '" is empty. ' +
+      'Now press "Sync sheet" on the admin page, so anyone still listed there is added back.',
+    ui.ButtonSet.OK
+  );
+}
+
+/** base, or "base (2)", "base (3)"… if a tab with that name already exists. */
+function uniqueSheetName(ss, base) {
+  var name = base;
+  for (var n = 2; ss.getSheetByName(name); n++) name = base + ' (' + n + ')';
+  return name;
 }
 
 /** Numbers stay numbers; everything else is stored as text, never as a formula. */
