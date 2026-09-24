@@ -10,6 +10,7 @@ import {
   sessionCookieHeader,
   isSameOriginPost,
 } from '../lib/admin-auth.ts'
+import { readFileSync } from 'node:fs'
 import { toSheetRow, toCsv, formatManila, formulaSafe, localMobile, SHEET_COLUMNS } from '../lib/sheet-row.ts'
 
 let failures = 0
@@ -58,6 +59,7 @@ const sub = {
   baby_stage: 'baby', due_date: null, marketing_consent: true,
   selected_products: [{ id: 'pure-h2o-750', name: 'Pure H2O', size: '750ml', gbfSku: '10347447', price: 960, qty: 2, lineTotal: 1920 }, { id: 'sunstick', name: 'Baby Sunstick SPF 50+', size: '', gbfSku: '10339125', price: 845, qty: 1, lineTotal: 845 }],
   basket_total: 2765, reward_unlocked: true, personalization_name: 'Sofia', paid_at: '2026-10-08T07:00:00.000Z', sheet_synced_at: null,
+  tiktok: 'maria.s', instagram: null, no_socials: false,
 }
 const row = toSheetRow(sub)
 eq('Manila time', formatManila('2026-10-08T06:05:01.000Z'), '2026-10-08 14:05')
@@ -74,6 +76,16 @@ eq('hostile name cannot become a formula in the sheet or CSV', toSheetRow({ ...s
 eq('odd mobile falls back safely', localMobile('12345'), '12345')
 eq('unpaid columns', [toSheetRow({ ...sub, paid_at: null }).paid, toSheetRow({ ...sub, paid_at: null }).paidAt], ['No', ''])
 eq('null due date is blank', row.dueDate, '')
+eq('TikTok only: username, Instagram blank', [row.tiktok, row.instagram], ['maria.s', ''])
+const none = toSheetRow({ ...sub, tiktok: null, no_socials: true })
+eq('N/A shown in both columns', [none.tiktok, none.instagram], ['N/A', 'N/A'])
+eq('sign-ups from before the question stay blank', toSheetRow({ ...sub, tiktok: null, no_socials: false }).tiktok, '')
+
+// The Apps Script pasted into the sheet must list the same columns in the same order.
+const gs = readFileSync(new URL('../docs/google-sheets/Code.gs', import.meta.url), 'utf8')
+const gsList = (name) => [...gs.match(new RegExp(`var ${name} = \\[([\\s\\S]*?)\\];`))[1].matchAll(/'([^']*)'/g)].map((m) => m[1])
+eq('Code.gs headers match the site', gsList('HEADERS').join('|'), SHEET_COLUMNS.map(([, l]) => l).join('|'))
+eq('Code.gs keys match the site', gsList('KEYS').join('|'), SHEET_COLUMNS.map(([k]) => k).join('|'))
 
 const csv = toCsv([row])
 const lines = csv.split('\r\n')

@@ -20,7 +20,7 @@ const inter = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'Biolane Nesting Checklist | Grand Baby Fair',
+  title: 'Biolane Checklist | Grand Baby Fair',
   description:
     "Build your baby's Biolane essentials and unlock your free personalized toiletry bag at the Grand Baby Fair.",
   robots: { index: false, follow: false },

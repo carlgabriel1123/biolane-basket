@@ -7,7 +7,7 @@ import Confirmation from '@/components/Confirmation'
 import BasketBar from '@/components/BasketBar'
 import BasketSheet from '@/components/BasketSheet'
 import NurseryBackdrop from '@/components/NurseryBackdrop'
-import type { CommunityValues } from '@/components/CommunityForm'
+import { socialsFor, type CommunityValues, type Social } from '@/components/CommunityForm'
 import { campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { productById, products, type Product } from '@/data/products'
 import { stagePlans } from '@/data/stages'
@@ -55,6 +55,9 @@ const EMPTY_FORM: CommunityValues = {
   relationshipOther: '',
   email: '',
   mobile: '',
+  socials: [],
+  tiktok: '',
+  instagram: '',
   babyStage: '',
   dueDate: '',
   consent: false, // never pre-checked, on every render path
@@ -80,6 +83,19 @@ const isRelationship = (v: unknown): v is Relationship =>
 const isStage = (v: unknown): v is BabyStage =>
   typeof v === 'string' && Object.prototype.hasOwnProperty.call(stagePlans, v)
 
+/** Sessions saved before the TikTok / Instagram question simply have none ticked. */
+function cleanSocials(socials: unknown, tiktok: unknown, instagram: unknown) {
+  const picked = Array.isArray(socials) ? socials : []
+  const has = (s: Social) => picked.includes(s)
+  const none = has('none') && !has('tiktok') && !has('instagram')
+  const str = (v: unknown) => (typeof v === 'string' ? v : '')
+  return {
+    socials: none ? (['none'] as Social[]) : (['tiktok', 'instagram'] as const).filter(has),
+    tiktok: has('tiktok') ? str(tiktok) : '',
+    instagram: has('instagram') ? str(instagram) : '',
+  }
+}
+
 function cleanForm(raw: unknown): CommunityValues {
   if (!raw || typeof raw !== 'object') return EMPTY_FORM
   const f = raw as Partial<Record<keyof CommunityValues, unknown>>
@@ -90,6 +106,7 @@ function cleanForm(raw: unknown): CommunityValues {
     relationshipOther: f.relationship === 'others' ? str(f.relationshipOther) : '',
     email: str(f.email),
     mobile: str(f.mobile),
+    ...cleanSocials(f.socials, f.tiktok, f.instagram),
     // 'newborn' was merged into 'baby' (0 to 12 months).
     babyStage: f.babyStage === 'newborn' ? 'baby' : isStage(f.babyStage) ? f.babyStage : '',
     dueDate: str(f.dueDate),
@@ -284,6 +301,7 @@ export default function Page() {
           : {}),
         email: values.email.trim(),
         mobile: normalisePhMobile(values.mobile) ?? values.mobile.trim(),
+        ...socialsFor(values),
         babyStage: values.babyStage || 'others',
         ...(values.babyStage === 'expecting' && values.dueDate ? { dueDate: values.dueDate } : {}),
         marketingConsent: values.consent,

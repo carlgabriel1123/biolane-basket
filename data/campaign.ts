@@ -17,11 +17,11 @@ export const campaign = {
   joinCtaLabel: 'Join',
 
   /** Hero copy */
-  headline: 'Are you nesting, Mommy?',
+  headline: 'Are you ready, Mommy?',
   subheadline: "Let's get baby ready.",
   supportingText:
     "Build your baby's Biolane essentials and see how close you are to unlocking your Grand Baby Fair reward.",
-  ctaLabel: 'Start my nesting checklist',
+  ctaLabel: 'Start my checklist',
 
   /** Checklist page, under "Hi {name}" */
   checklistHeading: 'Welcome to Biolane Community!',

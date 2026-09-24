@@ -3,20 +3,30 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { babyStages, campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { track } from '@/lib/analytics'
-import { addDays, isPlausibleEmail, manilaToday, normalisePhMobile, tidy } from '@/lib/validate'
+import type { LeadInfo } from '@/lib/submission'
+import { addDays, isPlausibleEmail, manilaToday, normaliseHandle, normalisePhMobile, tidy } from '@/lib/validate'
 import {
   AlertIcon,
   ArrowRightIcon,
+  AtSignIcon,
+  BanIcon,
   CalendarIcon,
   CheckIcon,
   HeartIcon,
+  InstagramIcon,
   MailIcon,
   PhoneIcon,
   SparklesIcon,
+  TikTokIcon,
   UserIcon,
   UsersIcon,
 } from './icons'
 import { Button, Card, ChoiceChip, STAGE_TONES, stageTone } from './ui'
+
+/** TikTok / Instagram question: one app or both, or N/A. */
+export type Social = 'tiktok' | 'instagram' | 'none'
+const SOCIAL_APPS = ['tiktok', 'instagram'] as const
+type SocialApp = (typeof SOCIAL_APPS)[number]
 
 export interface CommunityValues {
   name: string
@@ -26,6 +36,11 @@ export interface CommunityValues {
   relationshipOther: string
   email: string
   mobile: string
+  /** Ticked answers: 'tiktok' and/or 'instagram', or just 'none' (N/A). */
+  socials: Social[]
+  /** Usernames as typed; each is kept only while its app is ticked. */
+  tiktok: string
+  instagram: string
   babyStage: BabyStage | ''
   dueDate: string
   consent: boolean
@@ -48,6 +63,30 @@ const RELATIONSHIP_ICONS: Record<Relationship, typeof UserIcon> = {
   others: SparklesIcon,
 }
 
+const SOCIAL_OPTIONS: Array<{ value: Social; label: string; hint?: string; Icon: typeof UserIcon }> = [
+  { value: 'tiktok', label: 'TikTok', Icon: TikTokIcon },
+  { value: 'instagram', label: 'Instagram', Icon: InstagramIcon },
+  { value: 'none', label: 'N/A', hint: 'I don’t have TikTok or Instagram', Icon: BanIcon },
+]
+
+const APP_NAME: Record<SocialApp, string> = { tiktok: 'TikTok', instagram: 'Instagram' }
+
+/** The TikTok / Instagram part of the saved record: usernames only for the apps she ticked. */
+export function socialsFor(
+  v: Pick<CommunityValues, 'socials' | 'tiktok' | 'instagram'>
+): Pick<LeadInfo, 'tiktok' | 'instagram' | 'noSocials'> {
+  const tiktok = v.socials.includes('tiktok') ? normaliseHandle(v.tiktok) : null
+  const instagram = v.socials.includes('instagram') ? normaliseHandle(v.instagram) : null
+  return {
+    ...(tiktok ? { tiktok } : {}),
+    ...(instagram ? { instagram } : {}),
+    ...(v.socials.includes('none') ? { noSocials: true } : {}),
+  }
+}
+
+/** Groups of chips: focus goes to their first input, not an element with the key as id. */
+const GROUPS = new Set<keyof CommunityValues>(['relationship', 'socials', 'babyStage'])
+
 /** One line under each stage chip's label. */
 const STAGE_HINTS: Record<BabyStage, string> = {
   expecting: 'Getting ready for baby',
@@ -63,6 +102,9 @@ const FIELD_ORDER: Array<keyof CommunityValues> = [
   'relationshipOther',
   'email',
   'mobile',
+  'socials',
+  'tiktok',
+  'instagram',
   'babyStage',
   'dueDate',
 ]
@@ -109,6 +151,23 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
       setErrors((e) => ({ ...e, relationship: undefined, relationshipOther: undefined }))
       return
     }
+    if (key === 'socials') {
+      // Unticking an app clears its username in the same update.
+      const next = value as Social[]
+      onChange({
+        ...values,
+        socials: next,
+        tiktok: next.includes('tiktok') ? values.tiktok : '',
+        instagram: next.includes('instagram') ? values.instagram : '',
+      })
+      setErrors((e) => ({
+        ...e,
+        socials: undefined,
+        tiktok: next.includes('tiktok') ? e.tiktok : undefined,
+        instagram: next.includes('instagram') ? e.instagram : undefined,
+      }))
+      return
+    }
     if (key === 'babyStage' && value !== 'expecting') {
       onChange({ ...values, babyStage: value as BabyStage, dueDate: '' })
       setErrors((e) => ({ ...e, babyStage: undefined, dueDate: undefined }))
@@ -116,6 +175,18 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
     }
     onChange({ ...values, [key]: value })
     setErrors((e) => ({ ...e, [key]: undefined }))
+  }
+
+  /** N/A clears both apps; ticking an app clears N/A. */
+  const toggleSocial = (option: Social) => {
+    const ticked = values.socials.includes(option)
+    const next: Social[] =
+      option === 'none'
+        ? ticked
+          ? []
+          : ['none']
+        : SOCIAL_APPS.filter((app) => (app === option ? !ticked : values.socials.includes(app)))
+    set('socials', next)
   }
 
   /** The rule for ONE field — shared by blur and submit so the messages can never drift apart. */
@@ -133,6 +204,14 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
         return isPlausibleEmail(values.email) ? undefined : 'Please check your email address.'
       case 'mobile':
         return normalisePhMobile(values.mobile) ? undefined : 'Please enter a mobile number like 0917 123 4567.'
+      case 'socials':
+        return values.socials.length ? undefined : 'Please choose TikTok, Instagram or N/A.'
+      case 'tiktok':
+      case 'instagram': {
+        if (!values.socials.includes(key)) return undefined
+        if (!values[key].trim()) return `Please enter your ${APP_NAME[key]} username.`
+        return normaliseHandle(values[key]) ? undefined : 'Just the username: letters, numbers, . or _ (no spaces).'
+      }
       case 'babyStage':
         return values.babyStage ? undefined : 'Please choose one.'
       case 'dueDate':
@@ -155,7 +234,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
 
   const runFieldCheck = (key: keyof CommunityValues) => {
     const v = valuesRef.current[key]
-    const empty = typeof v === 'string' ? v.trim() === '' : !v
+    const empty = typeof v === 'string' ? v.trim() === '' : Array.isArray(v) ? v.length === 0 : !v
     const message = ruleRef.current(key)
     setErrors((e) => {
       // Leaving a field empty isn't an error yet — Join will say so.
@@ -195,7 +274,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
   }
 
   /** Radio groups: only validate when focus leaves the whole group, not while moving between chips. */
-  const validateGroupOnBlur = (key: 'relationship' | 'babyStage') => (e: React.FocusEvent<HTMLFieldSetElement>) => {
+  const validateGroupOnBlur = (key: 'relationship' | 'socials' | 'babyStage') => (e: React.FocusEvent<HTMLFieldSetElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
     validateField(key)
   }
@@ -213,8 +292,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
     // re-rendered the error states yet at this point.
     const firstKey = FIELD_ORDER.find((k) => next[k])
     if (firstKey) {
-      const el =
-        firstKey === 'babyStage' || firstKey === 'relationship'
+      const el = GROUPS.has(firstKey)
           ? document.querySelector<HTMLElement>(`input[name="${firstKey}"]`)
           : document.getElementById(firstKey)
       el?.focus({ preventScroll: true })
@@ -225,11 +303,10 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
   }
 
   /** The keyboard's "Next" key moves to the next field instead of submitting. */
-  const nextOnEnter = (nextId: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const nextOnEnter = (nextId: keyof CommunityValues) => (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return
     e.preventDefault()
-    const isRadioGroup = nextId === 'babyStage' || nextId === 'relationship'
-    const el = isRadioGroup
+    const el = GROUPS.has(nextId)
       ? document.querySelector<HTMLElement>(`input[name="${nextId}"]:checked`) ??
         document.querySelector<HTMLElement>(`input[name="${nextId}"]`)
       : document.getElementById(nextId)
@@ -391,7 +468,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
                 autoComplete="tel"
                 inputMode="numeric"
                 enterKeyHint="next"
-                onKeyDown={nextOnEnter('babyStage')}
+                onKeyDown={nextOnEnter('socials')}
                 data-invalid={Boolean(errors.mobile)}
                 aria-describedby={errors.mobile ? 'mobile-error' : 'mobile-help'}
                 aria-invalid={Boolean(errors.mobile)}
@@ -407,6 +484,68 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
               </p>
             )}
           </div>
+
+          {/* TikTok / Instagram: one or both, or N/A */}
+          <fieldset
+            data-invalid={Boolean(errors.socials)}
+            aria-describedby={errors.socials ? 'socials-error' : 'socials-help'}
+            onBlur={validateGroupOnBlur('socials')}
+          >
+            <legend className={labelClass}>TikTok / Instagram</legend>
+            <p id="socials-help" className="mt-0.5 text-[11.5px] text-ink-soft/90">
+              Tick one or both. No account? Tick N/A.
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {SOCIAL_OPTIONS.map(({ value, label, hint, Icon }) => (
+                <ChoiceChip
+                  compact
+                  kind="checkbox"
+                  key={value}
+                  name="socials"
+                  value={value}
+                  checked={values.socials.includes(value)}
+                  onChange={() => toggleSocial(value)}
+                  label={label}
+                  hint={hint}
+                  icon={<Icon size={18} />}
+                  tone={STAGE_TONES.baby}
+                  className={value === 'none' ? 'col-span-2' : ''}
+                />
+              ))}
+            </div>
+            {err('socials')}
+          </fieldset>
+
+          {/* A username box for each app she ticked */}
+          {SOCIAL_APPS.filter((app) => values.socials.includes(app)).map((app, i, shown) => (
+            <div key={app} className="animate-rise -mt-1">
+              <label htmlFor={app} className={labelClass}>
+                {APP_NAME[app]} username
+              </label>
+              <Field icon={<AtSignIcon size={20} />} invalid={Boolean(errors[app])}>
+                <input
+                  id={app}
+                  type="text"
+                  value={values[app]}
+                  onChange={(e) => set(app, e.target.value)}
+                  onBlur={() => validateField(app)}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  maxLength={80}
+                  enterKeyHint="next"
+                  onKeyDown={nextOnEnter(shown[i + 1] ?? 'babyStage')}
+                  data-invalid={Boolean(errors[app])}
+                  aria-describedby={errors[app] ? `${app}-error` : undefined}
+                  aria-invalid={Boolean(errors[app])}
+                  placeholder="yourusername"
+                  className={inputBase + ' ' + borderFor(app)}
+                />
+              </Field>
+              {err(app)}
+            </div>
+          ))}
 
           {/* Baby stage */}
           <fieldset

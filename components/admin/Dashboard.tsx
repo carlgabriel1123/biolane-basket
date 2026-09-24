@@ -8,6 +8,7 @@ import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
 import {
   BagIcon,
+  BanIcon,
   CheckCircleIcon,
   CheckIcon,
   ChevronDownIcon,
@@ -15,11 +16,13 @@ import {
   CloudOffIcon,
   DownloadIcon,
   GiftIcon,
+  InstagramIcon,
   LogOutIcon,
   PhoneIcon,
   RefreshIcon,
   SearchIcon,
   TagIcon,
+  TikTokIcon,
   UsersIcon,
 } from '@/components/icons'
 import { Badge, Button, Skeleton } from '@/components/ui'
@@ -146,6 +149,8 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
     const q = query.trim().toLowerCase()
     // Mobiles are stored as +639XXXXXXXXX; let staff type 0917…, 917… or 63917….
     const digits = q.replace(/\D/g, '').replace(/^(0|63)?(9\d*)$/, '$2')
+    // Usernames are stored without the @.
+    const handle = q.replace(/^@/, '')
     return all.filter((r) => {
       if (filter === 'unpaid' && r.paid_at) return false
       if (filter === 'paid' && !r.paid_at) return false
@@ -159,7 +164,8 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
         r.name.toLowerCase().includes(q) ||
         r.email.toLowerCase().includes(q) ||
         (digits.length >= 3 && r.mobile.replace(/\D/g, '').includes(digits)) ||
-        (r.personalization_name ?? '').toLowerCase().includes(q)
+        (r.personalization_name ?? '').toLowerCase().includes(q) ||
+        (handle.length >= 2 && [r.tiktok, r.instagram].some((h) => h?.includes(handle)))
       )
     })
   }, [all, query, filter])
@@ -411,6 +417,39 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
                     </a>{' '}
                     · {r.email}
                   </p>
+                  {r.no_socials ? (
+                    <p className="flex items-center gap-1 text-[13px] text-ink-soft">
+                      <BanIcon size={13} />
+                      No TikTok / Instagram
+                    </p>
+                  ) : (
+                    (r.tiktok || r.instagram) && (
+                      <p className="flex flex-wrap gap-x-3 text-[13px]">
+                        {r.tiktok && (
+                          <a
+                            href={`https://www.tiktok.com/@${encodeURIComponent(r.tiktok)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="-my-3 inline-flex items-center gap-1 py-3 font-semibold text-blue"
+                          >
+                            <TikTokIcon size={13} />
+                            <span className="sr-only">TikTok </span>@{r.tiktok}
+                          </a>
+                        )}
+                        {r.instagram && (
+                          <a
+                            href={`https://www.instagram.com/${encodeURIComponent(r.instagram)}/`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="-my-3 inline-flex items-center gap-1 py-3 font-semibold text-blue"
+                          >
+                            <InstagramIcon size={13} />
+                            <span className="sr-only">Instagram </span>@{r.instagram}
+                          </a>
+                        )}
+                      </p>
+                    )
+                  )}
                   <p className="text-[13px] text-ink-soft">
                     {STAGE[r.baby_stage] ?? r.baby_stage}
                     {r.due_date ? ` · due ${r.due_date}` : ''}

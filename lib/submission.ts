@@ -10,6 +10,11 @@ export interface LeadInfo {
   email: string
   /** Normalised to +639XXXXXXXXX. */
   mobile: string
+  /** Bare lower-case usernames (no @), only for the apps she ticked. */
+  tiktok?: string
+  instagram?: string
+  /** She ticked N/A: no TikTok or Instagram. */
+  noSocials?: boolean
   babyStage: BabyStage
   dueDate?: string
   marketingConsent: boolean

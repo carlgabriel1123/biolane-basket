@@ -26,6 +26,11 @@ export interface AdminSubmission {
   personalization_name: string | null
   paid_at: string | null
   sheet_synced_at: string | null
+  /** Bare lower-case usernames; null when not given. */
+  tiktok: string | null
+  instagram: string | null
+  /** She ticked N/A. False for sign-ups from before the question existed. */
+  no_socials: boolean
 }
 
 export interface AdminUser {

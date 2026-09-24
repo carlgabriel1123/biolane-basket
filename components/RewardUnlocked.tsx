@@ -48,7 +48,7 @@ export default function RewardUnlocked({
         </h2>
 
         <p className="mt-1.5 text-[14px] text-ink-soft">
-          Your Biolane nesting reward is unlocked.
+          Your Biolane reward is unlocked.
         </p>
 
         <p className="mt-4 flex items-center justify-center gap-1.5 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold">

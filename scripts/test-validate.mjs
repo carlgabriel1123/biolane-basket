@@ -4,7 +4,7 @@
  * (Node 22.18+ / 23.6+ strip the TypeScript annotations natively; see
  *  the "engines" field in package.json.)
  */
-import { normalisePhMobile, isPlausibleEmail, addDays, tidy } from '../lib/validate.ts'
+import { normalisePhMobile, isPlausibleEmail, addDays, tidy, normaliseHandle } from '../lib/validate.ts'
 
 let fail = 0
 const eq = (label, actual, expected) => {
@@ -53,6 +53,17 @@ console.log('\nName tidying:')
 eq('trims',        tidy('  Sofia  '), 'Sofia')
 eq('collapses',    tidy('Maria   Clara'), 'Maria Clara')
 eq('keeps enye',   tidy(' Niña '), 'Niña')
+
+console.log('\nTikTok / Instagram usernames:')
+eq('plain',              normaliseHandle('hallie.cruz'), 'hallie.cruz')
+eq('with @',             normaliseHandle(' @Hallie_Cruz '), 'hallie_cruz')
+eq('TikTok link',        normaliseHandle('https://www.tiktok.com/@hallie.cruz?lang=en'), 'hallie.cruz')
+eq('Instagram link',     normaliseHandle('instagram.com/hallie.cruz/'), 'hallie.cruz')
+eq('display name',       normaliseHandle('Hallie Cruz'), null)
+eq('emoji',              normaliseHandle('hallie💕'), null)
+eq('only @',             normaliseHandle('@'), null)
+eq('empty',              normaliseHandle(''), null)
+eq('31 characters',      normaliseHandle('a'.repeat(31)), null)
 
 console.log(fail === 0 ? '\nAll validation tests pass.\n' : `\n${fail} TEST(S) FAILED.\n`)
 process.exit(fail === 0 ? 0 : 1)

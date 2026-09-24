@@ -1,6 +1,7 @@
 import { NextResponse, after } from 'next/server'
 import type { AdminSubmission } from '@/lib/admin-db'
 import { sheetConfigured, syncToSheet } from '@/lib/sheets'
+import { normaliseHandle } from '@/lib/validate'
 
 /**
  * POST /api/submit — saves one sign-up / finished checklist to Supabase.
@@ -76,6 +77,9 @@ function clean(raw: Record<string, unknown>) {
     relationshipOther: str(raw.relationshipOther, 40),
     email: str(raw.email, 254),
     mobile: str(raw.mobile, 20),
+    tiktok: str(raw.tiktok, 80),
+    instagram: str(raw.instagram, 80),
+    noSocials: bool(raw.noSocials),
     babyStage: str(raw.babyStage, 16),
     dueDate: str(raw.dueDate, 10),
     marketingConsent: bool(raw.marketingConsent),
@@ -116,6 +120,8 @@ function problem(r: Record_): string | null {
   if (!r.relationship || !RELATIONSHIPS.has(r.relationship)) return 'relationship'
   if (!r.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) return 'email'
   if (!r.mobile || !MOBILE_RE.test(r.mobile)) return 'mobile'
+  if (r.tiktok && !normaliseHandle(r.tiktok)) return 'tiktok'
+  if (r.instagram && !normaliseHandle(r.instagram)) return 'instagram'
   if (!r.babyStage || !STAGES.has(r.babyStage)) return 'babyStage'
   if (r.dueDate && !isRealDate(r.dueDate)) return 'dueDate'
   if (r.basketTotal < 0 || r.basketTotal > MAX_BASKET_TOTAL) return 'basketTotal'
@@ -158,6 +164,11 @@ export async function POST(request: Request) {
   // would otherwise have every record refused by the database. Clamping
   // keeps the order of that phone's saves, which is all seq is for.
   record.seq = Math.min(record.seq!, Date.now() + SEQ_AHEAD_LIMIT_MS)
+
+  // Store usernames bare and lower-case; N/A only counts when neither is given.
+  record.tiktok = record.tiktok ? normaliseHandle(record.tiktok)! : undefined
+  record.instagram = record.instagram ? normaliseHandle(record.instagram)! : undefined
+  record.noSocials = record.noSocials && !record.tiktok && !record.instagram
 
   let res: Response
   try {

@@ -5,6 +5,7 @@ A mom scans a QR at the booth and:
 
 1. **Tells us about herself and her little one** — name, whether she is
    Dad, Mom, Grandparent or Others (with a box to specify), email, mobile,
+   TikTok / Instagram (tick one or both and type the username, or tick N/A),
    baby stage, due date if expecting, optional marketing consent. Her lead
    is saved the moment she taps Join.
 2. **Builds her checklist** — the ₱2,299 reward is introduced here, and the
@@ -214,9 +215,10 @@ hidden from search engines.
   counted in the database, so they hold everywhere and can't be raced.
 - **What you see:** every sign-up, newest first, with date and time (Manila),
   claim code, name, Dad/Mom/Grandparent/Others, mobile (tap to call), email,
+  TikTok / Instagram (tap to open the profile, or "No TikTok / Instagram"),
   baby stage, due date, consent, Signed up / Finished, basket total, gift
-  unlocked, bag name, and the products. Search by claim code, name, mobile or
-  email; filter by Unpaid, Paid, Gift unlocked, Finished, Signed up only or
+  unlocked, bag name, and the products. Search by claim code, name, mobile,
+  email or username; filter by Unpaid, Paid, Gift unlocked, Finished, Signed up only or
   stage. Counts on top. Refreshes itself every 30 s.
 - **Mark paid:** one tap when the purchase is verified; it records the time.
   Tap again (with a confirmation) to undo.
@@ -246,7 +248,14 @@ updates its sign-up's row; a stale retry never overwrites a fresher row). If
 Google is briefly unreachable, the row still saves here and is re-sent by the
 dashboard's **Sync sheet** button, whenever staff have the dashboard open,
 and by the daily health cron. Never reorder the sheet's columns; the script
-writes them by position. Visitor-typed text is stored as plain text, so
+writes them by position.
+
+**After changing `Code.gs`** (for example when the TikTok / Instagram columns
+were added): paste the new file, keep your `SECRET`, then **Deploy → Manage
+deployments → pencil → Version: New version → Deploy** (the URL stays the
+same). The script upgrades an older sheet in place on its next save: it
+inserts the new columns after Mobile and every existing row keeps its values.
+Then press **Sync sheet** once. Visitor-typed text is stored as plain text, so
 nothing typed on the site can run as a formula in the sheet or the CSV.
 
 **Keep the copies private.** The sheet and any downloaded CSV hold names,
@@ -284,7 +293,8 @@ when the checklist is finished.
 Editor → `select * from submissions_readable order by submitted_manila desc;`
 then **Export → CSV**. The readable view shows claim code, status, Manila
 time, name, relationship, email, mobile, stage, due date, consent, total,
-reward, bag name and a one-line product list.
+reward, bag name, a one-line product list, and TikTok / Instagram ("N/A" when
+she ticked N/A).
 
 **How a save travels:** phone → `POST /api/submit` (this site's own server,
 `app/api/submit/route.ts`) → validated field by field → database function
@@ -317,7 +327,8 @@ contact details. Export what the team needs after the fair follow-up, then
 clear it: `delete from public.submissions where submitted_at < now() - interval '90 days';`
 
 The stored record contains: claim code, timestamp, name, relationship (and
-the "Others" text), email, mobile (normalised to `+639XXXXXXXXX`), baby stage,
+the "Others" text), email, mobile (normalised to `+639XXXXXXXXX`), TikTok and
+Instagram usernames (bare and lower-case, no @) or the N/A flag, baby stage,
 due date (only when Expecting), marketing consent, selected products with
 SKUs and prices, basket total, reward-unlocked flag, bag name.
 

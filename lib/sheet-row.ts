@@ -15,6 +15,9 @@ export interface SheetRow {
   othersSpecify: string
   email: string
   mobile: string
+  /** Bare username, 'N/A' if she ticked N/A, blank if not asked. */
+  tiktok: string
+  instagram: string
   babyStage: string
   dueDate: string
   consent: 'Yes' | 'No'
@@ -39,6 +42,8 @@ export const SHEET_COLUMNS: Array<[keyof SheetRow, string]> = [
   ['othersSpecify', 'Others (specify)'],
   ['email', 'Email'],
   ['mobile', 'Mobile'],
+  ['tiktok', 'TikTok'],
+  ['instagram', 'Instagram'],
   ['babyStage', 'Baby stage'],
   ['dueDate', 'Due date'],
   ['consent', 'Marketing consent'],
@@ -104,6 +109,11 @@ export function productLines(products: AdminSubmission['selected_products']): st
     .join('\n')
 }
 
+/** A username, 'N/A' when she ticked N/A, or blank (signed up before the question). */
+function socialCell(handle: string | null, none: boolean): string {
+  return handle ?? (none ? 'N/A' : '')
+}
+
 export function toSheetRow(s: AdminSubmission): SheetRow {
   return {
     claimCode: s.submission_id,
@@ -115,6 +125,8 @@ export function toSheetRow(s: AdminSubmission): SheetRow {
     othersSpecify: formulaSafe(s.relationship_other ?? ''),
     email: formulaSafe(s.email),
     mobile: localMobile(s.mobile),
+    tiktok: formulaSafe(socialCell(s.tiktok, s.no_socials)),
+    instagram: formulaSafe(socialCell(s.instagram, s.no_socials)),
     babyStage: STAGE_LABEL[s.baby_stage] ?? formulaSafe(s.baby_stage),
     dueDate: s.due_date ?? '',
     consent: s.marketing_consent ? 'Yes' : 'No',

@@ -136,7 +136,7 @@ export default function BasketSheet({
         <div className="flex items-center gap-3 border-b border-ink/10 px-5 pb-3 pt-3 md:pt-4">
           <div className="min-w-0 flex-1">
             <h2 id="basket-sheet-title" className="font-display text-[19px] font-extrabold text-ink">
-              Your nesting basket
+              Your basket
             </h2>
             <p className="text-[12.5px] tabular-nums text-ink-soft">
               {basket.units} {basket.units === 1 ? 'item' : 'items'} ·{' '}

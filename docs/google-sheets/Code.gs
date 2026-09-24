@@ -21,9 +21,12 @@
  * The site POSTs rows here after every sign-up, every finished checklist
  * and every Paid change. Each row is matched by its Claim code (column A):
  * an existing row is updated in place, a new one is appended. A row that is
- * older than what the sheet already has (column S, Updated) is ignored, so
- * retries can never overwrite fresher data. The tab is called "Sign-ups"
- * and gets its headers on first use. Do not reorder or rename the columns.
+ * older than what the sheet already has (the Updated (ISO) column) is
+ * ignored, so retries can never overwrite fresher data. The tab is called
+ * "Sign-ups" and gets its headers on first use. A sheet made by an older
+ * version of this script is upgraded in place: the TikTok and Instagram
+ * columns are inserted after Mobile and every existing row keeps its values.
+ * Do not reorder or rename the columns.
  *
  * Text typed by visitors is stored as plain text (a leading ' is added
  * when a value starts with = + - @), so nothing typed on the site can run
@@ -35,13 +38,15 @@ var SECRET = 'PASTE_THE_SECRET_HERE';
 var TAB = 'Sign-ups';
 var HEADERS = [
   'Claim code', 'Status', 'Signed up (Manila)', 'Last update (Manila)', 'Name',
-  'Are you', 'Others (specify)', 'Email', 'Mobile', 'Baby stage', 'Due date',
+  'Are you', 'Others (specify)', 'Email', 'Mobile', 'TikTok', 'Instagram',
+  'Baby stage', 'Due date',
   'Marketing consent', 'Basket total (PHP)', 'Gift unlocked', 'Bag name',
   'Products', 'Paid', 'Paid at (Manila)', 'Updated (ISO)'
 ];
 var KEYS = [
   'claimCode', 'status', 'signedUp', 'lastUpdate', 'name',
-  'areYou', 'othersSpecify', 'email', 'mobile', 'babyStage', 'dueDate',
+  'areYou', 'othersSpecify', 'email', 'mobile', 'tiktok', 'instagram',
+  'babyStage', 'dueDate',
   'consent', 'basketTotal', 'giftUnlocked', 'bagName',
   'products', 'paid', 'paidAt', 'updatedIso'
 ];
@@ -112,19 +117,32 @@ function doGet() {
   return reply({ ok: true, message: 'Biolane sign-ups endpoint is live. The site sends rows here with POST.' });
 }
 
-/** The Sign-ups tab with headers. Returns null if row 1 holds something unexpected. */
+/**
+ * The Sign-ups tab with current headers, upgrading an older layout in place.
+ * Returns null if row 1 holds something unexpected.
+ */
 function getSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(TAB) || ss.insertSheet(TAB);
-  var first = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
-  var empty = first.every(function (v) { return String(v) === ''; });
-  if (empty) {
-    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
-    sheet.setFrozenRows(1);
-    return sheet;
+  var width = Math.max(sheet.getLastColumn(), HEADERS.length);
+  var first = sheet.getRange(1, 1, 1, width).getValues()[0].map(String);
+  var empty = first.every(function (v) { return v === ''; });
+  if (!empty) {
+    if (first[0] !== HEADERS[0]) return null;
+    // Made before the TikTok / Instagram question: open two columns right
+    // after Mobile, so every existing row keeps its values in place.
+    if (first.indexOf('TikTok') === -1) {
+      var mobile = first.indexOf('Mobile');
+      if (mobile === -1) return null;
+      sheet.insertColumnsAfter(mobile + 1, 2);
+    }
   }
-  return String(first[0]) === HEADERS[0] ? sheet : null;
+  var header = sheet.getRange(1, 1, 1, HEADERS.length);
+  if (header.getValues()[0].map(String).join('|') !== HEADERS.join('|')) {
+    header.setValues([HEADERS]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
 }
 
 /** Numbers stay numbers; everything else is stored as text, never as a formula. */

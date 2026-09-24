@@ -88,7 +88,7 @@ export const productGroups: Array<{
   {
     id: 'mommy',
     title: 'For Mommy',
-    caption: 'Because you are nesting too.',
+    caption: 'Because you need care too.',
   },
 ]
 

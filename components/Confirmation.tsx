@@ -62,7 +62,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
         </h1>
 
         <p className="mt-1.5 text-[14px] text-ink-soft">
-          Your Biolane Nesting Checklist is ready.
+          Your Biolane Checklist is ready.
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
             <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-soft text-blue">
               <BagIcon size={16} />
             </span>
-            Your nesting basket
+            Your basket
           </h2>
 
           <ul className="mt-3 flex flex-col divide-y divide-ink/10">

@@ -40,7 +40,7 @@ export default function BasketBar({ count, units, total, remaining, unlocked, on
               }`}
             >
               {unlocked ? <GiftIcon size={14} /> : <BagIcon size={14} />}
-              <span className="truncate">{unlocked ? 'Gift unlocked' : 'Your nesting basket'}</span>
+              <span className="truncate">{unlocked ? 'Gift unlocked' : 'Your basket'}</span>
             </p>
             <p className="font-display text-[22px] font-extrabold leading-tight tabular-nums text-ink">
               {/* Re-mounted on change so the total bumps. */}

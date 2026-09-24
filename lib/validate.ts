@@ -50,6 +50,19 @@ export function isPlausibleEmail(value: string): boolean {
   return local.length > 0 && domain.includes('.') && !domain.startsWith('.') && !domain.endsWith('.')
 }
 
+/**
+ * A TikTok or Instagram username as typed or pasted: "@hallie", "hallie",
+ * or a profile link. Returns the bare lower-case username (no @), or null if
+ * it cannot be one. Both apps allow only letters, numbers, . and _.
+ */
+export function normaliseHandle(raw: string): string | null {
+  let v = raw.trim()
+  const link = /^(?:https?:\/\/)?(?:www\.|m\.)?(?:tiktok\.com|instagram\.com)\/@?([^/?#\s]+)/i.exec(v)
+  if (link) v = link[1]
+  v = v.replace(/^@+/, '')
+  return /^[A-Za-z0-9._]{1,30}$/.test(v) ? v.toLowerCase() : null
+}
+
 /** Letters (any language, incl. ñ and accents), spaces, apostrophes, hyphens. */
 const BAG_NAME_ALLOWED = /^[\p{L}\p{M}\s'\-]*$/u
 
