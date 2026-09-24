@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { campaign } from '@/data/campaign'
 import { asset } from '@/lib/asset'
-import { peso } from '@/lib/format'
+import { greetingName, peso } from '@/lib/format'
 import type { Submission } from '@/lib/submission'
 import { BagIcon, CheckCircleIcon, CheckIcon, ClockIcon, GiftIcon, HeartIcon, StoreIcon } from './icons'
 import { Badge, Button, Card } from './ui'
@@ -24,9 +24,9 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [])
 
-  // Dads and grandparents sign up too, so thank them by name.
-  const first = submission.name.trim().split(/\s+/)[0] ?? ''
-  const firstName = first ? first.charAt(0).toLocaleUpperCase('en-PH') + first.slice(1) : ''
+  // Dads and grandparents sign up too, so thank them by name. The first-name
+  // box keeps two-word names ("Maria Clara") whole.
+  const firstName = greetingName(submission.firstName || submission.name.trim().split(/\s+/)[0] || '')
 
   const stamp = new Date(submission.timestamp).toLocaleString('en-PH', {
     timeZone: 'Asia/Manila',

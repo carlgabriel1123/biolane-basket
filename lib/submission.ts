@@ -2,7 +2,11 @@ import type { BabyStage, Relationship } from '../data/campaign.ts'
 
 /** The sign-up details from the first screen. */
 export interface LeadInfo {
+  /** Full name, "First name Surname" — what the dashboard, CSV and sheet show. */
   name: string
+  /** The two boxes on the form; missing on records from before the split. */
+  firstName?: string
+  lastName?: string
   /** "Are you…": dad, mom, grandparent, or others. */
   relationship: Relationship
   /** What she typed when relationship is 'others'. */

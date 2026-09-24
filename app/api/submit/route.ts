@@ -73,6 +73,8 @@ function clean(raw: Record<string, unknown>) {
     event: str(raw.event, 24),
     timestamp: str(raw.timestamp, 40),
     name: str(raw.name, 120),
+    firstName: str(raw.firstName, 60),
+    lastName: str(raw.lastName, 60),
     relationship: str(raw.relationship, 16),
     relationshipOther: str(raw.relationshipOther, 40),
     email: str(raw.email, 254),

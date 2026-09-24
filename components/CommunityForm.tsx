@@ -29,7 +29,9 @@ const SOCIAL_APPS = ['tiktok', 'instagram'] as const
 type SocialApp = (typeof SOCIAL_APPS)[number]
 
 export interface CommunityValues {
-  name: string
+  firstName: string
+  /** Surname (family name). */
+  lastName: string
   /** "Are you…" — Dad, Mom, Grandparent, or Others. */
   relationship: Relationship | ''
   /** Filled in only when relationship is 'others'. */
@@ -97,7 +99,8 @@ const STAGE_HINTS: Record<BabyStage, string> = {
 
 /** Fields are validated in this order, and the first problem gets focus. */
 const FIELD_ORDER: Array<keyof CommunityValues> = [
-  'name',
+  'firstName',
+  'lastName',
   'relationship',
   'relationshipOther',
   'email',
@@ -192,8 +195,10 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
   /** The rule for ONE field — shared by blur and submit so the messages can never drift apart. */
   const ruleFor = (key: keyof CommunityValues): string | undefined => {
     switch (key) {
-      case 'name':
-        return tidy(values.name).length < 2 ? 'Please enter your name.' : undefined
+      case 'firstName':
+        return tidy(values.firstName) ? undefined : 'Please enter your first name.'
+      case 'lastName':
+        return tidy(values.lastName) ? undefined : 'Please enter your surname.'
       case 'relationship':
         return values.relationship ? undefined : 'Please choose one.'
       case 'relationshipOther':
@@ -344,32 +349,61 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
         </h1>
 
         <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
-          {/* Name */}
-          <div>
-            <label htmlFor="name" className={labelClass}>
-              Name
-            </label>
-            <Field icon={<UserIcon size={20} />} invalid={Boolean(errors.name)}>
-              <input
-                id="name"
-                type="text"
-                value={values.name}
-                onChange={(e) => set('name', e.target.value)}
-                onBlur={() => validateField('name')}
-                autoComplete="name"
-                enterKeyHint="next"
-                onKeyDown={nextOnEnter('relationship')}
-                data-invalid={Boolean(errors.name)}
-                aria-describedby={errors.name ? 'name-error' : undefined}
-                aria-invalid={Boolean(errors.name)}
-                placeholder="Your name"
-                className={inputBase + ' ' + borderFor('name')}
-              />
-            </Field>
-            {err('name')}
+          {/* First name + surname: stacked on phones, side by side on wider screens */}
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 md:gap-3">
+            <div>
+              <label htmlFor="firstName" className={labelClass}>
+                First name
+              </label>
+              <Field icon={<UserIcon size={20} />} invalid={Boolean(errors.firstName)}>
+                <input
+                  id="firstName"
+                  type="text"
+                  value={values.firstName}
+                  onChange={(e) => set('firstName', e.target.value)}
+                  onBlur={() => validateField('firstName')}
+                  autoComplete="given-name"
+                  autoCapitalize="words"
+                  maxLength={50}
+                  enterKeyHint="next"
+                  onKeyDown={nextOnEnter('lastName')}
+                  data-invalid={Boolean(errors.firstName)}
+                  aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+                  aria-invalid={Boolean(errors.firstName)}
+                  placeholder="Your first name"
+                  className={inputBase + ' ' + borderFor('firstName')}
+                />
+              </Field>
+              {err('firstName')}
+            </div>
+            <div>
+              <label htmlFor="lastName" className={labelClass}>
+                Surname
+              </label>
+              <Field icon={<UsersIcon size={20} />} invalid={Boolean(errors.lastName)}>
+                <input
+                  id="lastName"
+                  type="text"
+                  value={values.lastName}
+                  onChange={(e) => set('lastName', e.target.value)}
+                  onBlur={() => validateField('lastName')}
+                  autoComplete="family-name"
+                  autoCapitalize="words"
+                  maxLength={50}
+                  enterKeyHint="next"
+                  onKeyDown={nextOnEnter('relationship')}
+                  data-invalid={Boolean(errors.lastName)}
+                  aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+                  aria-invalid={Boolean(errors.lastName)}
+                  placeholder="Your surname"
+                  className={inputBase + ' ' + borderFor('lastName')}
+                />
+              </Field>
+              {err('lastName')}
+            </div>
           </div>
 
-          {/* Are you… — right after Name */}
+          {/* Are you… — right after the name */}
           <fieldset
             data-invalid={Boolean(errors.relationship)}
             aria-describedby={errors.relationship ? 'relationship-error' : undefined}

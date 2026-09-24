@@ -5,6 +5,7 @@
  *  the "engines" field in package.json.)
  */
 import { normalisePhMobile, isPlausibleEmail, addDays, tidy, normaliseHandle } from '../lib/validate.ts'
+import { greetingName } from '../lib/format.ts'
 
 let fail = 0
 const eq = (label, actual, expected) => {
@@ -53,6 +54,13 @@ console.log('\nName tidying:')
 eq('trims',        tidy('  Sofia  '), 'Sofia')
 eq('collapses',    tidy('Maria   Clara'), 'Maria Clara')
 eq('keeps enye',   tidy(' Niña '), 'Niña')
+
+console.log('\nGreeting name:')
+eq('two-word first name', greetingName('maria clara'), 'Maria Clara')
+eq('extra spaces',        greetingName('  ana   marie '), 'Ana Marie')
+eq('rest left as typed',  greetingName('mcKenzie'), 'McKenzie')
+eq('accent and enye',     greetingName('ñino élise'), 'Ñino Élise')
+eq('empty',               greetingName(''), '')
 
 console.log('\nTikTok / Instagram usernames:')
 eq('plain',              normaliseHandle('hallie.cruz'), 'hallie.cruz')

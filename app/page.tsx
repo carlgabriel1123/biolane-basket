@@ -27,6 +27,7 @@ import {
   sendSubmission,
   type Submission,
 } from '@/lib/submission'
+import { greetingName } from '@/lib/format'
 import { isPrintableBagName, normalisePhMobile, tidy } from '@/lib/validate'
 
 /**
@@ -50,7 +51,8 @@ type Result = { submission: Submission; storedRemotely: boolean }
 const SESSION_KEY = 'biolane-nesting-session'
 
 const EMPTY_FORM: CommunityValues = {
-  name: '',
+  firstName: '',
+  lastName: '',
   relationship: '',
   relationshipOther: '',
   email: '',
@@ -101,7 +103,9 @@ function cleanForm(raw: unknown): CommunityValues {
   const f = raw as Partial<Record<keyof CommunityValues, unknown>>
   const str = (v: unknown) => (typeof v === 'string' ? v : '')
   return {
-    name: str(f.name),
+    // Sessions saved before the name was split into first name + surname.
+    firstName: str(f.firstName) || str((raw as { name?: unknown }).name),
+    lastName: str(f.lastName),
     relationship: isRelationship(f.relationship) ? f.relationship : '',
     relationshipOther: f.relationship === 'others' ? str(f.relationshipOther) : '',
     email: str(f.email),
@@ -123,7 +127,6 @@ function writeHistory(mode: 'push' | 'replace', step: Step, sheet = false): void
 const scrollTop = () => window.scrollTo({ top: 0, behavior: 'instant' })
 
 /** "carl" → "Carl" for the greeting. The saved record keeps what she typed. */
-const capitalize = (s: string) => (s ? s.charAt(0).toLocaleUpperCase('en-PH') + s.slice(1) : s)
 
 export default function Page() {
   const [hydrated, setHydrated] = useState(false)
@@ -294,7 +297,9 @@ export default function Page() {
         timestamp: new Date().toISOString(),
         seq: nextSeq(),
         event,
-        name: tidy(values.name),
+        name: tidy(`${values.firstName} ${values.lastName}`),
+        firstName: tidy(values.firstName),
+        lastName: tidy(values.lastName),
         relationship: values.relationship || 'others',
         ...(values.relationship === 'others' && tidy(values.relationshipOther)
           ? { relationshipOther: tidy(values.relationshipOther) }
@@ -467,7 +472,7 @@ export default function Page() {
         {/* The room takes the colour of her baby stage and crossfades on Change. */}
         <NurseryBackdrop stage={stage} />
         <ChecklistPage
-          firstName={capitalize(tidy(form.name).split(' ')[0]) || 'there'}
+          firstName={greetingName(form.firstName) || 'there'}
           stage={stage}
           quantities={quantities}
           basket={basket}

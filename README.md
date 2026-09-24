@@ -3,7 +3,7 @@
 Mobile-first microsite for the Biolane Philippines Grand Baby Fair activation.
 A mom scans a QR at the booth and:
 
-1. **Tells us about herself and her little one** — name, whether she is
+1. **Tells us about herself and her little one** — first name and surname, whether she is
    Dad, Mom, Grandparent or Others (with a box to specify), email, mobile,
    TikTok / Instagram (tick one or both and type the username, or tick N/A),
    baby stage, due date if expecting, optional marketing consent. Her lead
@@ -330,11 +330,11 @@ begin;
 insert into public.submissions (submission_id, seq, event, submitted_at, received_at, updated_at,
   name, relationship, relationship_other, email, mobile, baby_stage, due_date, marketing_consent,
   selected_products, basket_total, reward_unlocked, personalization_name, write_key_hash, paid_at,
-  sheet_synced_at, tiktok, instagram, no_socials)
+  sheet_synced_at, tiktok, instagram, no_socials, first_name, last_name)
 select submission_id, seq, event, submitted_at, received_at, updated_at,
   name, relationship, relationship_other, email, mobile, baby_stage, due_date, marketing_consent,
   selected_products, basket_total, reward_unlocked, personalization_name, write_key_hash, paid_at,
-  null, tiktok, instagram, no_socials
+  null, tiktok, instagram, no_socials, first_name, last_name
 from private.submissions_archive a
 where not exists (select 1 from public.submissions s where s.submission_id = a.submission_id);
 delete from private.submissions_archive a
@@ -343,13 +343,16 @@ commit;
 ```
 
 (`sheet_synced_at` is left empty so the rows are sent to the sheet again.)
+Columns added to `submissions` later sit after `archived_at` in the archive,
+so always archive or restore with explicit column lists, never `select *`.
 
 **To see or export them:** Supabase → Table Editor → `submissions`, or SQL
 Editor → `select * from submissions_readable order by submitted_manila desc;`
 then **Export → CSV**. The readable view shows claim code, status, Manila
 time, name, relationship, email, mobile, stage, due date, consent, total,
-reward, bag name, a one-line product list, and TikTok / Instagram ("N/A" when
-she ticked N/A).
+reward, bag name, a one-line product list, TikTok / Instagram ("N/A" when
+she ticked N/A), and first name / surname (empty for sign-ups from before
+the form asked for them separately).
 
 **How a save travels:** phone → `POST /api/submit` (this site's own server,
 `app/api/submit/route.ts`) → validated field by field → database function
@@ -384,7 +387,9 @@ clear it, the archive too:
 `delete from private.submissions_archive where submitted_at < now() - interval '90 days';`
 and delete the sheet's Backup tabs at the same time.
 
-The stored record contains: claim code, timestamp, name, relationship (and
+The stored record contains: claim code, timestamp, first name and surname
+(plus the full name, "First name Surname", which the dashboard, CSV and sheet
+show; older sign-ups have only the full name), relationship (and
 the "Others" text), email, mobile (normalised to `+639XXXXXXXXX`), TikTok and
 Instagram usernames (bare and lower-case, no @) or the N/A flag, baby stage,
 due date (only when Expecting), marketing consent, selected products with

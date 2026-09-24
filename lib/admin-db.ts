@@ -12,7 +12,11 @@ export interface AdminSubmission {
   submitted_at: string
   received_at: string
   updated_at: string
+  /** Full name ("First name Surname"). */
   name: string
+  /** Null for sign-ups from before the form asked for them separately. */
+  first_name: string | null
+  last_name: string | null
   relationship: string
   relationship_other: string | null
   email: string
