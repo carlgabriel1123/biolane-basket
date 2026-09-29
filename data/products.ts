@@ -143,16 +143,6 @@ export const productDefs: ProductDef[] = [
     whyThis: "For moms who want a separate shampoo as baby's hair grows in.",
   },
   {
-    id: 'pure-h2o-350',
-    name: 'Pure H2O',
-    size: '350ml',
-    gbfSku: '10340773',
-    group: 'first',
-    image: '/images/products/pure-h2o-350.png',
-    blurb: 'Gentle cleansing for everyday changes.',
-    whyThis: 'The medium bottle — a good first size to keep beside the changing area.',
-  },
-  {
     id: 'pure-h2o-750',
     name: 'Pure H2O',
     size: '750ml',

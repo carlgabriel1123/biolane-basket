@@ -134,9 +134,9 @@ The sale price is what biolane.ph charges; the crossed-out price is its
 Display names are the team's (`data/products.ts`), which sometimes differ
 from the store's titles: Liquid Powder is sold as "Liquid Talc", the
 Soothing Intimate Hygiene Gel as "Feminine Wash", the Topilane AD range was
-"Atopiane" here before. The Pure H2O 350ml and refill share one oddly priced
-listing on the store ("Biolane Pure H2O Cleanser 350 ml") — the site shows
-what the store says.
+"Atopiane" here before. The Pure H2O 350ml is left off the site on the
+team's request (September 2026); the refill shares its listing on the store
+("Biolane Pure H2O Cleanser 350 ml").
 
 `gbfSku` in `data/products.ts` is the team's booth SKU from their price
 sheet, kept for verification at the booth; it is blank for products that

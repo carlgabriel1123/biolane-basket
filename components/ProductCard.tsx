@@ -41,8 +41,8 @@ export default function ProductCard({
   const soldOut = priced ? !priced.available : false
   const inBasket = qty > 0
   const Heading = headingLevel === 4 ? 'h4' : 'h3'
-  // Two products share a name in different sizes (Pure H2O 350 / 750), so
-  // every control's label includes the size.
+  // Several products share a name in different sizes (the 2-in-1 cleanser
+  // 200 / 350 / 750), so every control's label includes the size.
   const fullName = product.size ? `${product.name} ${product.size}` : product.name
   const well = stage ? stageTone(stage).tint : 'bg-sky-soft'
 
