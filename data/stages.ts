@@ -9,10 +9,11 @@ import type { BabyStage } from './campaign.ts'
  * Everything else goes into the folded "See all Biolane products" section.
  * Use picks: 'all' to skip the lists and show the whole catalogue by category.
  *
- * Ids come from data/products.ts: either a priced product (`products`) or
- * one of the `unpricedProducts` the team listed that is not on the fair
- * price list yet. Unpriced ones show in place with "Price at the booth" and
- * can't be added to the basket until a price is confirmed.
+ * Ids come from `productDefs` in data/products.ts. Prices, stock and photos
+ * come from biolane.ph through data/shopify-map.ts: a product with no
+ * listing there shows in place with "Ask our team" and can't be added; one
+ * biolane.ph has sold out stays on the Checklist marked "Sold out" but is
+ * never suggested.
  *
  * The lists themselves come from the Biolane team (September 2026).
  * "Soothing Repair Balm" on their list is the Nursing Balm 40ml (biolane.ph
@@ -33,7 +34,10 @@ export interface StagePlan {
   /** One line under the Checklist heading. */
   caption: string
   picks: string[] | 'all'
-  /** "You might also like" — shown once she adds a product. */
+  /**
+   * "You might also like" — shown once she adds a product — and the only
+   * products "Almost there" may offer (lib/basket.ts suggestProducts).
+   */
   suggestions: string[]
 }
 

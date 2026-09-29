@@ -135,8 +135,9 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
                     {p.name} <span className="font-display font-extrabold tabular-nums text-blue">× {p.qty}</span>
                   </span>
                   <span className="text-[11.5px] text-ink-soft/90">
-                    {p.size ? `${p.size} · ` : ''}SKU {p.gbfSku}
-                    {p.qty > 1 ? ` · ${peso(p.price)} each` : ''}
+                    {[p.size, p.gbfSku ? `SKU ${p.gbfSku}` : '', p.qty > 1 ? `${peso(p.price)} each` : '']
+                      .filter(Boolean)
+                      .join(' · ')}
                   </span>
                 </span>
                 <span className="shrink-0 text-[14px] font-semibold tabular-nums text-ink">

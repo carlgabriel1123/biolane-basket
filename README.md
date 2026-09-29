@@ -43,7 +43,7 @@ Everything tweakable lives in three data files. No component needs touching.
 | Want to change | File | Field |
 |---|---|---|
 | Which products each baby stage sees first, and their order | `data/stages.ts` | `picks` |
-| "You might also like" per stage | `data/stages.ts` | `suggestions` |
+| "You might also like" and "Almost there" per stage | `data/stages.ts` | `suggestions` |
 | "You might also like" heading | `data/campaign.ts` | `recsTitle` |
 | Line under the Checklist heading, per stage | `data/stages.ts` | `caption` |
 | "Checklist" heading | `data/campaign.ts` | `checklistSectionTitle` |
@@ -56,9 +56,10 @@ Everything tweakable lives in three data files. No component needs touching.
 | Sign-up page heading | `data/campaign.ts` | `communityHeading`, `communitySubheading` |
 | Privacy / Terms links | `data/campaign.ts` | `privacyPolicyUrl`, `termsUrl` |
 | Consent wording | `data/campaign.ts` | `consentLabel` |
-| Prices, names, sizes | `data/products.ts` | `price`, `name`, `size` |
+| Names, sizes, groups | `data/products.ts` | `name`, `size`, `group` |
+| Which biolane.ph listing a product is | `data/shopify-map.ts` | `handle`, `variant` |
 | Product blurbs / BA talking points | `data/products.ts` | `blurb`, `whyThis` |
-| Product images | `public/images/products/` | replace the file, keep the name |
+| Product images | biolane.ph (the listing's photo) | fallback art in `public/images/products/` |
 
 **After any price, threshold, or picks edit, run `npm run verify`.** It fails
 if a pick is misspelled or repeated, if a stage's picks can no longer reach
@@ -72,22 +73,33 @@ first, in this order. **You might also like** appears under it as soon as
 the visitor adds their first product (a small "See them" nudge points to it
 if it's off-screen). Everything else stays under "See all".
 
-Items marked † are not on the fair price list: they show in place with
-"Price at the booth" and can't be added until a price is confirmed.
+Prices, sale prices, stock and photos come from biolane.ph (see below).
+Items marked † are not sold on biolane.ph: they show in place with "Ask our
+team" and can't be added. A product biolane.ph has sold out stays on the
+Checklist marked **Sold out** (the list she sees is always complete) but is
+never suggested, never in "See all", and can't be added.
 
 | Stage | Checklist (in order) | You might also like |
 |---|---|---|
-| Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Diaper Change Cream 50ml †, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream, Soothing Intimate Hygiene Gel † | Nursing Balm ("Soothing Repair Balm"), Pure H2O Wipes †, Cleansing Milk Wipes †, Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
-| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap, First Teeth Toothpaste †, Pure H2O Wipes †, Cleansing Milk Wipes †, Baby Powder † |
-| Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Pure H2O Wipes †, Cleansing Milk Wipes †, Nourishing Cream 100ml |
-| Others | All 31 priced products, by category | — |
+| Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Diaper Change Cream 50ml †, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream, Soothing Intimate Hygiene Gel | Soothing Repairing Balm, Pure H2O Wipes †, Cleansing Milk Wipes, Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
+| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap, First Teeth Toothpaste †, Pure H2O Wipes †, Cleansing Milk Wipes, Baby Powder † |
+| Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Pure H2O Wipes †, Cleansing Milk Wipes, Nourishing Cream 100ml |
+| Others | Every in-stock product, by category | — (Almost there may offer anything in stock) |
 
-**† Unpriced products** live in `data/products.ts` → `unpricedProducts`
-(LIST OF OFFERS has the 50ml diaper cream and the intimate gel only inside
-bundle sets; the wipes, toothpaste and dry baby powder not at all). To put
-one on sale: move it into `products` with its `price`, `origPrice`, `gbfSku`
-and `sheetRow`, and swap its placeholder art in `public/images/products/`.
-`npm run verify` lists which unpriced items each stage shows.
+**† Not on biolane.ph** (September 2026): Diaper Change Cream 50ml (only
+inside bundle sets), Pure H2O Wipes x72, First Teeth Toothpaste, Baby Powder
+and Kids Detangling Shampoo. Each has a `note` in `data/products.ts`. When the
+store lists one, add its handle to `data/shopify-map.ts` and run
+`npm run sync-shopify`: it gets a price, a photo and an Add button by itself.
+`npm run verify` lists which items on each stage's lists are not addable.
+
+**"Almost there"** (the box beside the progress bar) only ever offers
+products from that stage's **You might also like** list, in stock and not yet
+in the basket: one product that completes the gift if any (the cheapest
+such), else the fewest products (up to 3) that complete it, else the set that
+gets closest ("gets you closer"). It never offers a Checklist item. Others has
+no list, so it may offer anything in stock. The rules are tested in
+`scripts/test-basket.mjs`.
 
 Sun and mosquito products are never listed for Expecting or Baby:
 biolane.ph says the mosquito stick is "from 6 months" and to keep babies
@@ -96,77 +108,58 @@ available under "See all".
 
 ---
 
-## Where the prices came from
+## Where the prices come from (biolane.ph)
 
-Source: **`SKYHEGLOBAL ACTIVE SKU'S - OCTOBER 8-11.xlsx`**
-→ sheet **`LIST OF OFFERS`** → rows **4–34** — the complete E4:E34 range, all 31 SKUs
-→ column **H, `MARKDOWN PRICE`** (column G `ORIG PRICE` is shown struck through).
+Every price, crossed-out price, stock status, product photo and "View on
+biolane.ph" link is read from the Biolane Philippines Shopify store:
 
-Every product in `data/products.ts` records its `sheetRow` and `gbfSku` so any
-figure can be traced back to a specific cell.
+    https://biolane.ph/products.json?limit=250
 
-| Row | GBF SKU | Product | Size | Markdown | Orig | Group |
-|---|---|---|---|---|---|---|
-| 4 | 10339118 | 2-in-1 Body & Hair Cleanser | 200ml | ₱525 | ₱535 | First essentials |
-| 5 | 10340773 | 2-in-1 Body & Hair Cleanser | 350ml | ₱590 | ₱625 | First essentials |
-| 6 | 10339128 | 2-in-1 Body & Hair Cleanser | 750ml | ₱995 | ₱1,050 | First essentials |
-| 7 | 10339114 | Gentle Shampoo | 200ml | ₱450 | ₱470 | First essentials |
-| 8 | 10339121 | Gentle Shampoo | 350ml | ₱585 | ₱615 | First essentials |
-| 9 | 10351560 | Diaper Change Cream | 100ml | ₱570 | ₱600 | First essentials |
-| 10 | 10339120 | Nourishing & Moisturizing Cream | 100ml | ₱560 | ₱590 | Routine |
-| 11 | 10340773 | Pure H2O | 350ml | ₱590 | ₱625 | First essentials |
-| 12 | 10347447 | Pure H2O | 750ml | ₱960 | ₱995 | First essentials |
-| 13 | 10347429 | Pure H2O Refill | 400ml | ₱610 | ₱645 | First essentials |
-| 14 | 10351561 | Liquid Powder | 100ml | ₱835 | ₱880 | Routine |
-| 15 | 10339131 | Stretch Marks Cream | 200ml | ₱1,130 | ₱1,190 | For Mommy |
-| 16 | 10339123 | Nursing Balm | 40ml | ₱685 | ₱720 | For Mommy |
-| 17 | 10339117 | Skin Freshening Fragrance | 200ml | ₱470 | ₱495 | Routine |
-| 18 | 10347430 | Sweet Almond Oil Spray | 75ml | ₱495 | ₱520 | Routine |
-| 19 | 10340775 | CicaBébé Organic 3-in-1 | 40ml | ₱645 | ₱680 | Just in case |
-| 20 | 10339117 | Organic Arnica Gel | 20ml | ₱470 | ₱495 | Just in case |
-| 21 | 10339125 | Moisturizing Body Milk | 350ml | ₱845 | ₱890 | Routine |
-| 22 | 10340773 | Kids Detangling Shampoo | — | ₱590 | ₱620 | Routine |
-| 23 | 10339117 | Styling Gel | 100ml | ₱470 | ₱495 | Routine |
-| 24 | 10339130 | Gentle Cleansing Milk | 750ml | ₱1,090 | ₱1,150 | First essentials |
-| 25 | 10339128 | Atopiane Soothing Cleansing Cream | 350ml | ₱995 | ₱1,050 | Just in case |
-| 26 | 10339128 | Atopiane Protective Cleansing Oil | 350ml | ₱995 | ₱1,050 | Just in case |
-| 27 | 10339131 | Atopiane Lipid-Replenishing Body Balm | 350ml | ₱1,130 | ₱1,190 | Just in case |
-| 28 | 10351562 | Atopiane Emollient Face Cream | 50ml | ₱595 | ₱630 | Just in case |
-| 29 | 10339121 | Cradle Cap Shampoo | 150ml | ₱585 | ₱620 | First essentials |
-| 30 | 10347443 | Expert Baby Mosquito Stick | — | ₱880 | ₱895 | Out and about |
-| 31 | 10339125 | Baby Sunstick SPF 50+ | — | ₱845 | ₱865 | Out and about |
-| 32 | 10351563 | Extra Rich Soap | 150g | ₱330 | ₱345 | First essentials |
-| 33 | 10355717 | Sun Spray | — | ₱1,630 | ₱1,850 | Out and about |
-| 34 | 10340779 | Sun Cream | — | ₱795 | ₱895 | Out and about |
+`data/shopify-map.ts` says which listing (and which size variant) each
+product is. `lib/shopify.ts` fetches the store when the page is built and
+again at most every 30 minutes (`export const revalidate = 1800` in
+`app/page.tsx`), so a price or stock change on biolane.ph reaches the site
+within half an hour with no deploy. If biolane.ph can't be reached, or
+answers with fewer than 80% of the expected products, the saved copy in
+`data/shopify-snapshot.ts` is used instead, so the checklist never goes
+blank. Refresh that copy with `npm run sync-shopify` (it prints an audit of
+every product: matched, price changes, sold out, not found). The tests and
+`npm run verify` run against the saved copy.
 
-"—" means the sheet gives no size. GBF SKU numbers repeat across rows in the
-sheet (e.g. 10340773 appears three times) — they are copied as-is.
+Some biolane.ph prices have centavos (₱772.80, ₱1,850.20): the basket adds
+them up in centavos and shows them only when present (`lib/format.ts`).
+The sale price is what biolane.ph charges; the crossed-out price is its
+"compare at" price when higher.
 
-**Placeholder artwork** (`imageIsPlaceholder: true` in `data/products.ts`):
-Kids Detangling Shampoo and the Pure H2O 400ml refill are not listed on
-biolane.ph, so they use a drawn stand-in SVG. The 200ml / 750ml cleanser, the
-200ml shampoo and the 750ml cleansing milk reuse the 350ml packshot, and the
-100ml nourishing cream shows the 200ml art — all as biolane.ph itself does.
+Display names are the team's (`data/products.ts`), which sometimes differ
+from the store's titles: Liquid Powder is sold as "Liquid Talc", the
+Soothing Intimate Hygiene Gel as "Feminine Wash", the Topilane AD range was
+"Atopiane" here before. The Pure H2O 350ml and refill share one oddly priced
+listing on the store ("Biolane Pure H2O Cleanser 350 ml") — the site shows
+what the store says.
+
+`gbfSku` in `data/products.ts` is the team's booth SKU from their price
+sheet, kept for verification at the booth; it is blank for products that
+sheet never listed.
+
+**Fallback artwork** (`public/images/products/`, `imageIsPlaceholder: true`)
+is only used when the store has no photo for a product.
 
 ---
 
 ## The maths behind the reward
 
-Verified against the real 31-SKU price list (`npm run verify` — exact
-subset-sum for reachable totals, 20k sampled baskets for closability):
+`npm run verify` checks the saved biolane.ph copy against the stage lists
+(exact subset-sum over in-stock products, in centavos):
 
-- **₱2,299 is never exactly reachable.** Every price is a multiple of 5, so the
-  real boundary is **₱2,295 (locked) → ₱2,300 (unlocked)**.
-- **Cheapest qualifying basket is ₱2,300.**
-- **Minimum 2 products**, but only **13 of 465** pairs qualify — each needs the
-  ₱1,630 Sun Spray or two of the ₱1,000+ items. Realistic path is 3–4.
-- **Any 6 products always qualify.**
-- Every locked basket can be closed by adding at most 3 products, so the
-  suggestion engine can never hit a dead end.
-- All 31 products together come to ₱22,940.
-
-**For the BA script:** most baskets unlock at 3–4 products. "Just one more"
-is usually true once she is past ₱1,600.
+- The gift unlocks at **₱2,299 or more**. Prices are biolane.ph's, so exact
+  totals shift as the store changes them; the script prints the cheapest
+  qualifying basket and the minimum number of products.
+- Every stage's Checklist alone (one of each in-stock item) can reach the
+  threshold.
+- "Almost there" only uses the stage's Suggestions list, so it can hit a
+  point where nothing left completes the gift: it then shows the products
+  that get closest, worded as "gets you closer", never as "completes".
 
 ---
 
@@ -425,5 +418,6 @@ Uncomment the Meta Pixel / GA4 lines to connect. The site runs fine without them
 
 ## Assets
 
-Product packshots and the logo are downloaded from biolane.ph and served
-locally from `public/images/`, so the booth never depends on a third-party CDN.
+Product photos are biolane.ph's own (Shopify's CDN, allowed in
+`next.config.mjs` → `images.remotePatterns`) and are resized by Vercel. The
+logo and the fallback packshots are served locally from `public/images/`.

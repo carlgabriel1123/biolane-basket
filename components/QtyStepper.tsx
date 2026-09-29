@@ -11,14 +11,21 @@ interface Props {
   size?: 'md' | 'sm'
   /** Lets the parent move focus to + right after the Add button is replaced. */
   plusRef?: Ref<HTMLButtonElement>
+  /** False when biolane.ph has sold out: she can still reduce or remove, not add. */
+  canIncrease?: boolean
 }
 
 /**
  * − qty + control. Minus at 1 removes the product (shown as a bin icon so
  * the outcome is visible before the tap). Every button is a 44px target.
  */
-export default function QtyStepper({ name, qty, onChange, size = 'md', plusRef }: Props) {
+export default function QtyStepper({ name, qty, onChange, size = 'md', plusRef, canIncrease = true }: Props) {
   const atMax = qty >= campaign.maxQtyPerItem
+  const plusLabel = !canIncrease
+    ? `${name} is sold out on biolane.ph`
+    : atMax
+      ? `Limit of ${campaign.maxQtyPerItem} reached`
+      : `One more ${name}`
   // Both sizes keep the 44px target; `sm` only tightens the surrounding row.
   const box = size === 'md' ? 'h-11 w-11' : 'h-11 w-11'
 
@@ -53,8 +60,8 @@ export default function QtyStepper({ name, qty, onChange, size = 'md', plusRef }
         ref={plusRef}
         type="button"
         onClick={() => onChange(qty + 1)}
-        disabled={atMax}
-        aria-label={atMax ? `Limit of ${campaign.maxQtyPerItem} reached` : `One more ${name}`}
+        disabled={atMax || !canIncrease}
+        aria-label={plusLabel}
         className={`${box} press grid shrink-0 place-items-center rounded-pill bg-blue text-white hover:bg-blue-deep disabled:cursor-not-allowed disabled:bg-sky disabled:text-ink-soft/85`}
       >
         <PlusIcon size={18} />

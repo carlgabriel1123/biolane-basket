@@ -11,13 +11,15 @@ import { stageTone } from './ui'
 
 interface Props {
   items: Product[]
+  /** False when the items only get her closer, not over the line. */
+  completes: boolean
   remaining: number
   onAdd: (id: string) => void
   /** Tints the thumbnails with her stage's colour. */
   stage?: BabyStage
 }
 
-export default function Suggestions({ items, remaining, onAdd, stage }: Props) {
+export default function Suggestions({ items, completes, remaining, onAdd, stage }: Props) {
   if (items.length === 0) return null
 
   const addsTo = items.reduce((s, p) => s + p.price, 0)
@@ -36,12 +38,13 @@ export default function Suggestions({ items, remaining, onAdd, stage }: Props) {
       <p className="mt-1.5 text-[13px] leading-snug text-ink-soft">
         {single ? (
           <>
-            Adding <span className="font-semibold text-ink">{items[0].name}</span> puts you over the
-            line.
+            Adding <span className="font-semibold text-ink">{items[0].name}</span>{' '}
+            {completes ? 'puts you over the line.' : 'gets you closer.'}
           </>
         ) : (
           <>
-            {peso(remaining)} to go — these {items.length} would complete your basket.
+            {peso(remaining)} to go — these {items.length}{' '}
+            {completes ? 'would complete your basket.' : 'get you closer.'}
           </>
         )}
       </p>

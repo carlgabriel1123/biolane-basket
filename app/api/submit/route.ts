@@ -62,6 +62,11 @@ const str = (v: unknown, max: number): string | undefined =>
   typeof v === 'string' ? v.trim().slice(0, max) : undefined
 const int = (v: unknown): number | undefined =>
   typeof v === 'number' && Number.isSafeInteger(v) ? v : undefined
+/** Pesos to the centavo (biolane.ph prices such as 772.80), never negative. */
+const money = (v: unknown): number | undefined =>
+  typeof v === 'number' && Number.isFinite(v) && v >= 0 && Math.abs(v * 100 - Math.round(v * 100)) < 1e-6
+    ? Math.round(v * 100) / 100
+    : undefined
 const bool = (v: unknown): boolean => v === true
 
 function clean(raw: Record<string, unknown>) {
@@ -92,11 +97,11 @@ function clean(raw: Record<string, unknown>) {
         name: str(p.name, 120),
         size: str(p.size, 20),
         gbfSku: str(p.gbfSku, 20),
-        price: int(p.price),
+        price: money(p.price),
         qty: int(p.qty),
-        lineTotal: int(p.lineTotal),
+        lineTotal: money(p.lineTotal),
       })),
-    basketTotal: int(raw.basketTotal) ?? 0,
+    basketTotal: money(raw.basketTotal) ?? 0,
     rewardUnlocked: bool(raw.rewardUnlocked),
     personalizationName: str(raw.personalizationName, 15),
   }

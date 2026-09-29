@@ -6,7 +6,7 @@ import type { BabyStage } from '@/data/campaign'
 import { isPriced, type CatalogItem } from '@/data/products'
 import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
-import { CheckIcon, HelpCircleIcon, InfoIcon, PlusIcon } from './icons'
+import { BanIcon, CheckIcon, HelpCircleIcon, InfoIcon, PlusIcon } from './icons'
 import { Badge, IconButton, stageTone } from './ui'
 import QtyStepper from './QtyStepper'
 
@@ -34,8 +34,11 @@ export default function ProductCard({
 }: Props) {
   const [showWhy, setShowWhy] = useState(false)
   const whyId = useId()
-  // Not on the fair price list yet: shown in place, but can't be added.
+  // Not sold on biolane.ph: shown in place, but can't be added.
   const priced = isPriced(product) ? product : null
+  // Sold out on biolane.ph: shown on her Checklist, can't be added (a unit
+  // added before it sold out can still be removed).
+  const soldOut = priced ? !priced.available : false
   const inBasket = qty > 0
   const Heading = headingLevel === 4 ? 'h4' : 'h3'
   // Two products share a name in different sizes (Pure H2O 350 / 750), so
@@ -92,7 +95,7 @@ export default function ProductCard({
       <div className="flex gap-3 p-3 sm:gap-4 sm:p-4">
         {/* Packshot in a stage-tinted well, with a tick once it's in her basket */}
         <div className="relative h-[88px] w-[88px] shrink-0">
-          <div className={`relative h-full w-full overflow-hidden rounded-2xl ${well}`}>
+          <div className={`relative h-full w-full overflow-hidden rounded-2xl ${well} ${soldOut ? 'opacity-60' : ''}`}>
             <Image
               src={asset(product.image)}
               alt={fullName}
@@ -131,9 +134,9 @@ export default function ProductCard({
                 <span className="font-display text-lg font-extrabold tabular-nums text-blue">
                   {peso(priced.price)}
                 </span>
-                {priced.origPrice > priced.price && (
+                {priced.compareAt !== null && priced.compareAt > priced.price && (
                   <span className="text-xs tabular-nums text-ink-soft/80 line-through">
-                    {peso(priced.origPrice)}
+                    {peso(priced.compareAt)}
                   </span>
                 )}
               </p>
@@ -146,8 +149,13 @@ export default function ProductCard({
                 <InfoIcon size={16} />
                 Ask our team
               </span>
+            ) : soldOut && !inBasket ? (
+              <span className="inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border-2 border-dashed border-ink/20 px-4 text-[13px] font-semibold text-ink-soft">
+                <BanIcon size={16} />
+                Sold out
+              </span>
             ) : inBasket ? (
-              <QtyStepper name={fullName} qty={qty} onChange={step} plusRef={plusRef} />
+              <QtyStepper name={fullName} qty={qty} onChange={step} plusRef={plusRef} canIncrease={!soldOut} />
             ) : (
               /* A plain button (not <Button>) so the focus hand-off ref can land on it;
                  styled as Button secondary/sm with a 44px target. */
@@ -172,6 +180,16 @@ export default function ProductCard({
           className="animate-rise mx-3 mb-3 rounded-2xl bg-sky-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft sm:mx-4 sm:mb-4"
         >
           {product.whyThis}
+          {priced && (
+            <a
+              href={priced.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1.5 block font-semibold text-blue-deep underline decoration-blue-deep/30 underline-offset-4"
+            >
+              View on biolane.ph
+            </a>
+          )}
         </div>
       )}
     </div>

@@ -193,6 +193,7 @@ export default function BasketSheet({
                     qty={qty}
                     size="sm"
                     onChange={(n) => onChange(product.id, n)}
+                    canIncrease={product.available}
                   />
                 </li>
               ))}

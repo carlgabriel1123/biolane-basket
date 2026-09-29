@@ -8,6 +8,7 @@
     "start": "next start -p 3100",
     "lint": "next lint",
     "verify": "node scripts/verify-basket.mjs",
+    "sync-shopify": "node scripts/sync-shopify.mjs",
     "test": "node scripts/test-validate.mjs && node scripts/test-basket.mjs && node scripts/verify-basket.mjs && node --conditions=react-server scripts/test-admin.mjs"
   },
   "dependencies": {

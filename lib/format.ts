@@ -1,9 +1,14 @@
 /**
- * All Biolane fair prices are whole pesos, so the basket is integer maths.
- * No floating point is ever introduced — this avoids 2298.9999 style bugs.
+ * Money is shown to the centavo only when there are centavos: ₱1,850 and
+ * ₱1,850.20. Amounts are rounded to the centavo first, so a floating-point
+ * 2622.9999 never leaks onto the screen.
  */
 export function peso(amount: number): string {
-  return '₱' + Math.round(amount).toLocaleString('en-PH')
+  const cents = Math.round(amount * 100)
+  const sign = cents < 0 ? '-' : ''
+  const whole = Math.floor(Math.abs(cents) / 100)
+  const frac = Math.abs(cents) % 100
+  return `${sign}₱${whole.toLocaleString('en-PH')}${frac ? '.' + String(frac).padStart(2, '0') : ''}`
 }
 
 /**

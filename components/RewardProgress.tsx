@@ -12,7 +12,8 @@ interface Props {
 }
 
 export default function RewardProgress({ total, remaining, unlocked }: Props) {
-  const pct = Math.min(100, Math.round((total / campaign.rewardThreshold) * 100))
+  // Rounded down, so ₱2,298 of ₱2,299 shows 99%, never a full bar while locked.
+  const pct = unlocked ? 100 : Math.min(99, Math.floor((total / campaign.rewardThreshold) * 100))
 
   return (
     <section

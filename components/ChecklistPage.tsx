@@ -3,9 +3,9 @@
 import Image from 'next/image'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { babyStages, campaign, type BabyStage } from '@/data/campaign'
-import { catalogById, productGroups, products, type CatalogItem, type Product } from '@/data/products'
+import { isPriced, productGroups, type Catalog, type CatalogIndex, type CatalogItem } from '@/data/products'
 import { stagePlans } from '@/data/stages'
-import type { BasketState, Quantities } from '@/lib/basket'
+import type { BasketState, Quantities, Suggestion } from '@/lib/basket'
 import { asset } from '@/lib/asset'
 import { ChevronDownIcon, GiftIcon, HeartIcon, SparklesIcon, XIcon } from './icons'
 import { Button, ChoiceButton, STAGE_TONES, StepIndicator, stageTone } from './ui'
@@ -17,9 +17,12 @@ import Suggestions from './Suggestions'
 interface Props {
   firstName: string
   stage: BabyStage
+  catalog: Catalog
+  index: CatalogIndex
   quantities: Quantities
   basket: BasketState
-  suggestions: Product[]
+  /** "Almost there": from her stage's Suggestions list only. */
+  suggestion: Suggestion
   personalizationName: string
   onPersonalizationChange: (value: string) => void
   onChangeQty: (id: string, qty: number) => void
@@ -32,9 +35,11 @@ interface Props {
 export default function ChecklistPage({
   firstName,
   stage,
+  catalog,
+  index,
   quantities,
   basket,
-  suggestions,
+  suggestion,
   personalizationName,
   onPersonalizationChange,
   onChangeQty,
@@ -72,14 +77,19 @@ export default function ChecklistPage({
     headingRef.current?.focus({ preventScroll: true })
   }, [])
 
-  // Priced products and the team's not-yet-priced ones, in the team's order.
+  // Her whole Checklist, in the team's order — including products biolane.ph
+  // doesn't sell (shown without a price) or has sold out (shown as such), so
+  // the list she sees is always the complete one.
   const picks = useMemo(
     () =>
       plan.picks === 'all'
         ? null
-        : plan.picks.map((id) => catalogById.get(id)).filter((p): p is CatalogItem => Boolean(p)),
-    [plan]
+        : plan.picks.map((id) => index.catalogById.get(id)).filter((p): p is CatalogItem => Boolean(p)),
+    [plan, index]
   )
+
+  // Everywhere except her Checklist, a sold-out product is left out.
+  const inStock = useMemo(() => catalog.products.filter((p) => p.available), [catalog])
 
   const pickIds = useMemo(() => new Set(picks?.map((p) => p.id) ?? []), [picks])
 
@@ -90,10 +100,10 @@ export default function ChecklistPage({
     () =>
       picks
         ? plan.suggestions
-            .map((id) => catalogById.get(id))
-            .filter((p): p is CatalogItem => Boolean(p) && !pickIds.has(p!.id))
+            .map((id) => index.catalogById.get(id))
+            .filter((p): p is CatalogItem => Boolean(p) && !pickIds.has(p!.id) && !(isPriced(p!) && !p!.available))
         : [],
-    [plan, picks, pickIds]
+    [plan, picks, pickIds, index]
   )
   const recIds = useMemo(() => new Set(recs.map((p) => p.id)), [recs])
   const [recsRevealed, setRecsRevealed] = useState(basket.count > 0)
@@ -169,10 +179,10 @@ export default function ChecklistPage({
       productGroups
         .map((g) => ({
           ...g,
-          items: products.filter((p) => p.group === g.id && !pickIds.has(p.id) && !(showRecs && recIds.has(p.id))),
+          items: inStock.filter((p) => p.group === g.id && !pickIds.has(p.id) && !(showRecs && recIds.has(p.id))),
         }))
         .filter((g) => g.items.length > 0),
-    [pickIds, recIds, showRecs]
+    [inStock, pickIds, recIds, showRecs]
   )
 
   // A suggestion product added from "See all" as her first add moves its
@@ -192,8 +202,8 @@ export default function ChecklistPage({
 
   // Ring the suggested cards only while the suggestions panel explains them.
   const suggestedIds = useMemo(
-    () => (basket.count > 0 && !basket.unlocked ? new Set(suggestions.map((p) => p.id)) : new Set<string>()),
-    [suggestions, basket.count, basket.unlocked]
+    () => (basket.count > 0 && !basket.unlocked ? new Set(suggestion.items.map((p) => p.id)) : new Set<string>()),
+    [suggestion, basket.count, basket.unlocked]
   )
 
   // Tapping a suggestion removes it from the list, so hand focus to that
@@ -381,7 +391,7 @@ export default function ChecklistPage({
                 </div>
               </div>
               {productGroups.map((g, i) => {
-                const items = products.filter((p) => p.group === g.id)
+                const items = inStock.filter((p) => p.group === g.id)
                 return (
                   <ProductSection
                     key={g.id}
@@ -415,7 +425,13 @@ export default function ChecklistPage({
           <RewardProgress total={basket.total} remaining={basket.remaining} unlocked={basket.unlocked} />
 
           {!basket.unlocked && basket.count > 0 && (
-            <Suggestions items={suggestions} remaining={basket.remaining} onAdd={addSuggestion} stage={stage} />
+            <Suggestions
+              items={suggestion.items}
+              completes={suggestion.completes}
+              remaining={basket.remaining}
+              onAdd={addSuggestion}
+              stage={stage}
+            />
           )}
 
           {basket.unlocked && (

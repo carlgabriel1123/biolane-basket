@@ -605,7 +605,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
                           <span>
                             {p.name}
                             {p.size ? ` ${p.size}` : ''} × {p.qty}
-                            <span className="text-ink-soft"> · SKU {p.gbfSku}</span>
+                            {p.gbfSku && <span className="text-ink-soft"> · SKU {p.gbfSku}</span>}
                           </span>
                           <span className="tabular-nums">{peso(p.lineTotal)}</span>
                         </li>

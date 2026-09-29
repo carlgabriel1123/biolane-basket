@@ -4,6 +4,7 @@
  */
 
 import type { AdminSubmission } from './admin-db'
+import { peso } from './format'
 
 export interface SheetRow {
   claimCode: string
@@ -105,7 +106,7 @@ export function formatManila(iso: string | null | undefined): string {
 
 export function productLines(products: AdminSubmission['selected_products']): string {
   return (products ?? [])
-    .map((p) => `${p.name}${p.size ? ' ' + p.size : ''} ×${p.qty} = ₱${p.lineTotal}`)
+    .map((p) => `${p.name}${p.size ? ' ' + p.size : ''} ×${p.qty} = ${peso(p.lineTotal)}`)
     .join('\n')
 }
 

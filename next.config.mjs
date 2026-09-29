@@ -19,12 +19,16 @@ const nextConfig = {
         trailingSlash: true,
         basePath,
         assetPrefix: `${basePath}/`,
-        images: { unoptimized: true },
+        images: { unoptimized: true, remotePatterns: [{ protocol: 'https', hostname: 'cdn.shopify.com' }] },
       }
     : {
         // Vercel resizes the packshots and serves AVIF/WebP — lighter on
         // booth wifi than the original PNGs.
-        images: { formats: ['image/avif', 'image/webp'] },
+        // Product photos are biolane.ph's own (Shopify's CDN).
+        images: {
+          formats: ['image/avif', 'image/webp'],
+          remotePatterns: [{ protocol: 'https', hostname: 'cdn.shopify.com' }],
+        },
       }),
 
   env: {
