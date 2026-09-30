@@ -490,12 +490,13 @@ export function buildCatalog(snapshot: CatalogSnapshot, source: Catalog['source'
   const unpriced: UnpricedProduct[] = []
   for (const def of productDefs) {
     const official = officialPrices[def.id]
-    if (!official) {
-      unpriced.push(def)
-      continue
-    }
     // biolane.ph supplies the photo, stock and link — never the price.
     const listing = snapshot.listings[def.id]
+    if (!official) {
+      // No price yet, but still show the store's photo when it has one.
+      unpriced.push(listing?.image ? { ...def, image: listing.image, imageIsPlaceholder: undefined } : def)
+      continue
+    }
     products.push({
       ...def,
       image: listing?.image ?? def.image,

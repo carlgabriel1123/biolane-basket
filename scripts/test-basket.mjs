@@ -145,6 +145,7 @@ const soldOutCopy = { fetchedAt: 'test', listings: { 'pure-h2o-750': { ...shopif
 const soldOut = indexCatalog(buildCatalog(soldOutCopy)).productById.get('pure-h2o-750')
 eq('biolane.ph still decides sold out, the price stays official', [soldOut.available, soldOut.price], [false, 960])
 eq('not on the official list → no price', ['intimate-hygiene-gel', 'diaper-change-cream-50', 'first-teeth-toothpaste', 'kids-detangling-shampoo'].every((id) => !byId.has(id)), true)
+eq('a product without a price still shows the store photo', catalog.unpriced.find((p) => p.id === 'intimate-hygiene-gel').image.includes('cdn.shopify.com'), true)
 eq('highlighted rows are off the site', ['gentle-shampoo-200', 'pure-h2o-350', 'pure-h2o-400-refill'].every((id) => !byId.has(id) && !catalog.unpriced.some((p) => p.id === id)), true)
 
 console.log(fail === 0 ? '\nAll basket tests pass.\n' : `\n${fail} TEST(S) FAILED.\n`)
