@@ -49,7 +49,7 @@ eq('zero removes the product', Object.keys(q), ['nursing-balm-40'])
 eq('minus below zero stays removed', setQty({}, 'pure-h2o-750', -1, byId), {})
 eq(`capped at ${MAX}`, setQty({}, 'pure-h2o-750', MAX + 5, byId), { 'pure-h2o-750': MAX })
 eq('unknown product ignored', setQty({}, 'not-a-product', 2, byId), {})
-eq('a product with no official price cannot be added', setQty({}, 'first-teeth-toothpaste', 1, byId), {})
+eq('a product with no official price cannot be added', setQty({}, 'diaper-change-cream-50', 1, byId), {})
 eq('a sold-out product cannot be added', setQty({}, 'gone', 1, fakeById), {})
 eq('a sold-out product already in the basket can be reduced', setQty({ gone: 2 }, 'gone', 1, fakeById), { gone: 1 })
 eq('and removed', setQty({ gone: 1 }, 'gone', 0, fakeById), {})
@@ -133,7 +133,7 @@ eq('missing handle, missing size and unnamed size are all reported', m.missing, 
 console.log('\nRestoring a saved basket:')
 eq('drops unknown ids and bad values', sanitiseQuantities({ 'pure-h2o-750': 2, ghost: 3, 'nursing-balm-40': 'x', 'rich-soap-150': 99 }, byId), { 'pure-h2o-750': 2, 'rich-soap-150': MAX })
 eq('garbage in → empty basket', sanitiseQuantities('nope', byId), {})
-eq('a product with no official price is dropped', sanitiseQuantities({ 'first-teeth-toothpaste': 1 }, byId), {})
+eq('a product with no official price is dropped', sanitiseQuantities({ 'diaper-change-cream-50': 1 }, byId), {})
 eq('a product taken off the site is dropped', sanitiseQuantities({ 'gentle-shampoo-200': 1, 'pure-h2o-350': 1, 'pure-h2o-400-refill': 1 }, byId), {})
 
 console.log('\nOfficial prices (data/prices.ts), not the store:')
@@ -144,7 +144,8 @@ eq('a product not on biolane.ph counts as in stock and has no store link', [byId
 const soldOutCopy = { fetchedAt: 'test', listings: { 'pure-h2o-750': { ...shopifySnapshot.listings['pure-h2o-750'], available: false } } }
 const soldOut = indexCatalog(buildCatalog(soldOutCopy)).productById.get('pure-h2o-750')
 eq('biolane.ph still decides sold out, the price stays official', [soldOut.available, soldOut.price], [false, 960])
-eq('not on the official list → no price', ['intimate-hygiene-gel', 'diaper-change-cream-50', 'first-teeth-toothpaste', 'kids-detangling-shampoo'].every((id) => !byId.has(id)), true)
+eq('not on the official list → no price', ['intimate-hygiene-gel', 'diaper-change-cream-50', 'kids-detangling-shampoo'].every((id) => !byId.has(id)), true)
+eq('First Teeth Toothpaste is ₱380 with nothing crossed out', [price('first-teeth-toothpaste'), byId.get('first-teeth-toothpaste').compareAt], [380, null])
 eq('a product without a price still shows the store photo', catalog.unpriced.find((p) => p.id === 'intimate-hygiene-gel').image.includes('cdn.shopify.com'), true)
 eq('highlighted rows are off the site', ['gentle-shampoo-200', 'pure-h2o-350', 'pure-h2o-400-refill'].every((id) => !byId.has(id) && !catalog.unpriced.some((p) => p.id === id)), true)
 

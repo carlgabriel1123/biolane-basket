@@ -84,13 +84,13 @@ can't be added.
 | Stage | Checklist (in order) | You might also like |
 |---|---|---|
 | Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Diaper Change Cream 50ml †, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream, Soothing Intimate Hygiene Gel † | Soothing Repairing Balm, Pure H2O Wipes, Cleansing Milk Wipes, Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
-| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap, First Teeth Toothpaste †, Pure H2O Wipes, Cleansing Milk Wipes, Bath Powder 70g |
+| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap, First Teeth Toothpaste, Pure H2O Wipes, Cleansing Milk Wipes, Bath Powder 70g |
 | Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Pure H2O Wipes, Cleansing Milk Wipes, Nourishing Cream 100ml |
 | Others | Every in-stock product, by category | — (Almost there may offer anything in stock) |
 
 **† No official price** (30 September 2026): Diaper Change Cream 50ml,
-Soothing Intimate Hygiene Gel, First Teeth Toothpaste and Kids Detangling
-Shampoo. Each has a `note` in `data/products.ts`. To put one on sale, add its
+Soothing Intimate Hygiene Gel and Kids Detangling Shampoo. (First Teeth
+Toothpaste was priced separately by the team: ₱380, no SRP.) Each has a `note` in `data/products.ts`. To put one on sale, add its
 FINAL PRICE and SRP to `data/prices.ts`: it gets an Add button by itself.
 `npm run verify` lists which items on each stage's lists are not addable.
 

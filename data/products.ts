@@ -319,7 +319,7 @@ export const productDefs: ProductDef[] = [
     imageIsPlaceholder: true,
     blurb: "Gentle toothpaste for baby's very first teeth.",
     whyThis: 'A pea-sized amount twice a day, with a grown-up watching, from the first tooth.',
-    note: 'Not on the official price list or biolane.ph.',
+    note: 'Priced by the team (₱380); not on biolane.ph, so no photo, stock or link.',
   },
   {
     id: 'baby-powder-75',

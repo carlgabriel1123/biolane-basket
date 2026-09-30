@@ -54,4 +54,6 @@ export const officialPrices: Record<string, OfficialPrice> = {
   suncream: { srp: 895, price: 795 }, //                       Suncream
   'cleansing-milk-wipes-72': { srp: 440, price: 425 }, //      Cleansing Milk Wipes
   'pure-h2o-wipes-72': { srp: 440, price: 425 }, //            Pure Water Wipes
+  // Sent separately by the team (30 September 2026), no SRP given:
+  'first-teeth-toothpaste': { srp: 380, price: 380 }, //       First Teeth Toothpaste
 }
