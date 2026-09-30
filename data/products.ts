@@ -216,11 +216,11 @@ export const productDefs: ProductDef[] = [
     size: '72 wipes',
     gbfSku: '',
     group: 'first',
-    image: '/images/products/pure-h2o-wipes-72.svg',
-    imageIsPlaceholder: true,
+    // Photo from the team; its pack reads "x48", the team's list says x72 (asked 30 Sep 2026).
+    image: '/images/products/pure-h2o-wipes.webp',
     blurb: 'Thick no-rinse wipes soaked in Pure H2O.',
     whyThis: 'For the diaper area, hands and face when there is no water nearby.',
-    note: '"Pure Water Wipes" on the official price list; not on biolane.ph, so no photo, stock or link.',
+    note: '"Pure Water Wipes" on the official price list, photo from the team; not on biolane.ph, so no stock or link.',
   },
   {
     id: 'cleansing-milk-wipes-72',
