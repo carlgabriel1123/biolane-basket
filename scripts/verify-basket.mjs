@@ -14,6 +14,7 @@ import { shopifySnapshot } from '../data/shopify-snapshot.ts'
 import { campaign, babyStages } from '../data/campaign.ts'
 import { stagePlans } from '../data/stages.ts'
 import { shopifyMap } from '../data/shopify-map.ts'
+import { officialPrices } from '../data/prices.ts'
 
 const catalog = buildCatalog(shopifySnapshot)
 const P = catalog.products.map(({ id, name, size, price, available }) => ({ id, name: size ? `${name} ${size}` : name, price, available }))
@@ -28,13 +29,19 @@ const check = (label, condition, detail) => {
 const peso = (n) => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: n % 1 ? 2 : 0 })
 
 console.log(`\nbiolane.ph copy from ${shopifySnapshot.fetchedAt}`)
-console.log(`Products: ${productDefs.length} listed here, ${P.length} priced by biolane.ph, ${inStock.length} in stock.   Threshold: ${peso(T)}\n`)
+console.log(`Products: ${productDefs.length} listed here, ${P.length} with an official price, ${inStock.length} in stock.   Threshold: ${peso(T)}\n`)
 P.forEach((p) => console.log(`  ${peso(p.price).padStart(10)}  ${p.name}${p.available ? '' : '   (sold out)'}`))
-catalog.unpriced.forEach((p) => console.log(`  ${'no price'.padStart(10)}  ${p.name}${p.size ? ' ' + p.size : ''}   (${p.note ?? 'not on biolane.ph'})`))
+catalog.unpriced.forEach((p) => console.log(`  ${'no price'.padStart(10)}  ${p.name}${p.size ? ' ' + p.size : ''}   (${p.note ?? 'not on the official price list'})`))
 
 console.log('\nInvariants:')
 check('every product id is unique', new Set(productDefs.map((p) => p.id)).size === productDefs.length)
-check('every price is a positive amount in centavos', P.every((p) => p.price > 0 && Math.abs(p.price * 100 - Math.round(p.price * 100)) < 1e-6))
+const strayPrices = Object.keys(officialPrices).filter((id) => !productDefs.some((d) => d.id === id))
+check('every official price belongs to a product in products.ts', strayPrices.length === 0, strayPrices.join(', '))
+const badPrices = Object.entries(officialPrices).filter(([, v]) => !(Number.isInteger(v.price) && v.price > 0 && Number.isInteger(v.srp) && v.srp >= v.price))
+check('every official price is whole pesos with SRP ≥ FINAL PRICE', badPrices.length === 0, badPrices.map(([id]) => id).join(', '))
+const removed = ['gentle-shampoo-200', 'pure-h2o-350', 'pure-h2o-400-refill']
+check('highlighted rows are off the site', removed.every((id) => !productDefs.some((d) => d.id === id)), removed.filter((id) => productDefs.some((d) => d.id === id)).join(', '))
+check('every price is a positive amount', P.every((p) => p.price > 0 && Math.abs(p.price * 100 - Math.round(p.price * 100)) < 1e-6))
 check('every mapped product is in products.ts', Object.keys(shopifyMap).every((id) => productDefs.some((d) => d.id === id)), Object.keys(shopifyMap).filter((id) => !productDefs.some((d) => d.id === id)).join(', '))
 check('the saved copy has every mapped product', Object.keys(shopifyMap).every((id) => id in shopifySnapshot.listings), Object.keys(shopifyMap).filter((id) => !(id in shopifySnapshot.listings)).join(', '))
 

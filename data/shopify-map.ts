@@ -1,12 +1,13 @@
 import type { ShopifyRef } from '../lib/shopify-catalog.ts'
 
 /**
- * WHICH biolane.ph LISTING EACH PRODUCT IS.
+ * WHICH biolane.ph LISTING EACH PRODUCT IS — for its photo, stock status and
+ * link. Prices never come from here: they come from data/prices.ts.
  *
  * `handle` is the last part of the product's biolane.ph address; `variant`
- * is the exact size option on listings that sell several sizes. A product
- * that is not in this map (or whose listing has gone) shows on the site
- * without a price and can't be added — see data/products.ts.
+ * is the exact size option on listings that sell several sizes. A priced
+ * product that is not in this map uses its own photo from data/products.ts,
+ * counts as in stock, and has no "View on biolane.ph" link.
  *
  * After editing, run `npm run sync-shopify`: it re-reads the store, rewrites
  * data/shopify-snapshot.ts and prints what matched and what did not.
@@ -16,10 +17,8 @@ export const shopifyMap: Record<string, ShopifyRef> = {
   'cleanser-2in1-200': { handle: 'biolane-baby-body-hair-wash-gel-copy-copy', variant: '200 ml' },
   'cleanser-2in1-350': { handle: 'biolane-baby-body-hair-wash-gel-copy-copy', variant: '350 ml' },
   'cleanser-2in1-750': { handle: 'biolane-baby-body-hair-wash-gel-copy-copy', variant: '750 ml' },
-  'gentle-shampoo-200': { handle: 'biolane-gentle-shampoo-copy', variant: 'Biolane Gentle Shampoo 200ml' },
   'gentle-shampoo-350': { handle: 'biolane-gentle-shampoo-copy', variant: 'Biolane Gentle Shampoo 350ml' },
   'pure-h2o-750': { handle: 'pure-h2o' },
-  'pure-h2o-400-refill': { handle: 'biolane-pure-h2o-cleanser-copy-1', variant: 'Biolane Pure H2o Refill' },
   'cleansing-milk-750': { handle: 'biolane-gentle-cleansing-milk-for-baby-face-body-diaper-area-750ml' },
   'rich-soap-150': { handle: 'biolane-extra-rich-soap-for-baby-150g' },
   'cradle-cap-shampoo-150': { handle: 'biolane-cradle-cap-shampoo-150ml' },
@@ -27,7 +26,8 @@ export const shopifyMap: Record<string, ShopifyRef> = {
   'cleansing-milk-wipes-72': {
     handle: 'biolane-baby-milk-cleansing-wipes-72-sheets-wet-wipes-for-newborn-sensitive-skin-moisturizing',
   },
-  // Not sold on biolane.ph (September 2026): diaper-change-cream-50, pure-h2o-wipes-72
+  // Not sold on biolane.ph (September 2026): diaper-change-cream-50, pure-h2o-wipes-72,
+  // cleanser-2in1-refill-750 (the store's refill is 500ml)
 
   // Complete baby's routine
   'body-milk-350': { handle: 'biolane-moisturizing-body-milk-350ml' },

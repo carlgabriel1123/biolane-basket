@@ -180,7 +180,7 @@ export default function ProductCard({
           className="animate-rise mx-3 mb-3 rounded-2xl bg-sky-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft sm:mx-4 sm:mb-4"
         >
           {product.whyThis}
-          {priced && (
+          {priced?.url && (
             <a
               href={priced.url}
               target="_blank"

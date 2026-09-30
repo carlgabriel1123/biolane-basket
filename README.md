@@ -57,7 +57,8 @@ Everything tweakable lives in three data files. No component needs touching.
 | Privacy / Terms links | `data/campaign.ts` | `privacyPolicyUrl`, `termsUrl` |
 | Consent wording | `data/campaign.ts` | `consentLabel` |
 | Names, sizes, groups | `data/products.ts` | `name`, `size`, `group` |
-| Which biolane.ph listing a product is | `data/shopify-map.ts` | `handle`, `variant` |
+| **Prices** (FINAL PRICE and SRP) | `data/prices.ts` | `price`, `srp` |
+| Which biolane.ph listing a product is (photo, stock, link) | `data/shopify-map.ts` | `handle`, `variant` |
 | Product blurbs / BA talking points | `data/products.ts` | `blurb`, `whyThis` |
 | Product images | biolane.ph (the listing's photo) | fallback art in `public/images/products/` |
 
@@ -73,25 +74,28 @@ first, in this order. **You might also like** appears under it as soon as
 the visitor adds their first product (a small "See them" nudge points to it
 if it's off-screen). Everything else stays under "See all".
 
-Prices, sale prices, stock and photos come from biolane.ph (see below).
-Items marked † are not sold on biolane.ph: they show in place with "Ask our
-team" and can't be added. A product biolane.ph has sold out stays on the
-Checklist marked **Sold out** (the list she sees is always complete) but is
-never suggested, never in "See all", and can't be added.
+Prices come from the team's official price list (`data/prices.ts`); photos,
+stock and links from biolane.ph (see below). Items marked † have no official
+price: they show in place with "Ask our team" and can't be added. A product
+biolane.ph has sold out stays on the Checklist marked **Sold out** (the list
+she sees is always complete) but is never suggested, never in "See all", and
+can't be added.
 
 | Stage | Checklist (in order) | You might also like |
 |---|---|---|
-| Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Diaper Change Cream 50ml †, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream, Soothing Intimate Hygiene Gel | Soothing Repairing Balm, Pure H2O Wipes †, Cleansing Milk Wipes, Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
-| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap, First Teeth Toothpaste †, Pure H2O Wipes †, Cleansing Milk Wipes, Baby Powder † |
-| Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Pure H2O Wipes †, Cleansing Milk Wipes, Nourishing Cream 100ml |
+| Expecting | Pure H2O 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Diaper Change Cream 50ml †, Nourishing Cream 100ml, Liquid Powder, Stretch Marks Cream, Soothing Intimate Hygiene Gel † | Soothing Repairing Balm, Pure H2O Wipes, Cleansing Milk Wipes, Sweet Almond Oil Spray, Extra Rich Soap, Gentle Cleansing Milk 750ml |
+| Baby 0 to 12 months | Pure H2O 750ml, Gentle Cleansing Milk 750ml, 2-in-1 Cleanser 750ml / 350ml / 200ml, Diaper Change Cream 100ml, Liquid Powder, Nourishing Cream 100ml, Body Milk 350ml, Gentle Shampoo 350ml | Cradle Cap Shampoo, CicaBébé, Sweet Almond Oil Spray, Extra Rich Soap, First Teeth Toothpaste †, Pure H2O Wipes, Cleansing Milk Wipes, Bath Powder 70g |
+| Toddler 1 to 4 years old | Gentle Shampoo 350ml, 2-in-1 Cleanser 750ml / 350ml, Body Milk 350ml, Diaper Change Cream 100ml, Liquid Powder, Skin Freshening Fragrance, Styling Gel, Organic Arnica Gel, CicaBébé | Pure H2O 750ml, Gentle Cleansing Milk 750ml, Baby Sunstick SPF 50+, Pure H2O Wipes, Cleansing Milk Wipes, Nourishing Cream 100ml |
 | Others | Every in-stock product, by category | — (Almost there may offer anything in stock) |
 
-**† Not on biolane.ph** (September 2026): Diaper Change Cream 50ml (only
-inside bundle sets), Pure H2O Wipes x72, First Teeth Toothpaste, Baby Powder
-and Kids Detangling Shampoo. Each has a `note` in `data/products.ts`. When the
-store lists one, add its handle to `data/shopify-map.ts` and run
-`npm run sync-shopify`: it gets a price, a photo and an Add button by itself.
+**† No official price** (30 September 2026): Diaper Change Cream 50ml,
+Soothing Intimate Hygiene Gel, First Teeth Toothpaste and Kids Detangling
+Shampoo. Each has a `note` in `data/products.ts`. To put one on sale, add its
+FINAL PRICE and SRP to `data/prices.ts`: it gets an Add button by itself.
 `npm run verify` lists which items on each stage's lists are not addable.
+
+**Taken off the site** (highlighted on the team's list): Gentle Shampoo
+200ml, Pure H2O 350ml, Pure H2O refill.
 
 **"Almost there"** (the box beside the progress bar) only ever offers
 products from that stage's **You might also like** list, in stock and not yet
@@ -108,53 +112,49 @@ available under "See all".
 
 ---
 
-## Where the prices come from (biolane.ph)
+## Where the prices come from
 
-Every price, crossed-out price, stock status, product photo and "View on
-biolane.ph" link is read from the Biolane Philippines Shopify store:
+**Prices: the team's official price list**, copied into `data/prices.ts`
+(30 September 2026). `price` is the FINAL PRICE (what she pays and what the
+basket adds up); `srp` is the SRP, shown crossed out. A product missing from
+that file shows "Ask our team" and can't be added. biolane.ph's own prices
+are never used, even where they differ.
 
-    https://biolane.ph/products.json?limit=250
+**Photos, stock and links: biolane.ph**, the Biolane Philippines Shopify
+store (`https://biolane.ph/products.json?limit=250`). `data/shopify-map.ts`
+says which listing (and which size variant) each product is. `lib/shopify.ts`
+reads the store when the page is built and again at most every 30 minutes
+(`export const revalidate = 1800` in `app/page.tsx`), so a product going out
+of or back into stock on biolane.ph reaches the site within half an hour. If
+the store can't be reached, the saved copy in `data/shopify-snapshot.ts` is
+used instead. A priced product the store doesn't list (Pure H2O Wipes, Bath
+Powder, the 2-in-1 refill 750ml) uses its own picture, counts as in stock,
+and has no "View on biolane.ph" link.
 
-`data/shopify-map.ts` says which listing (and which size variant) each
-product is. `lib/shopify.ts` fetches the store when the page is built and
-again at most every 30 minutes (`export const revalidate = 1800` in
-`app/page.tsx`), so a price or stock change on biolane.ph reaches the site
-within half an hour with no deploy. If biolane.ph can't be reached, or
-answers with fewer than 80% of the expected products, the saved copy in
-`data/shopify-snapshot.ts` is used instead, so the checklist never goes
-blank. Refresh that copy with `npm run sync-shopify` (it prints an audit of
-every product: matched, price changes, sold out, not found). The tests and
-`npm run verify` run against the saved copy.
-
-Some biolane.ph prices have centavos (₱772.80, ₱1,850.20): the basket adds
-them up in centavos and shows them only when present (`lib/format.ts`).
-The sale price is what biolane.ph charges; the crossed-out price is its
-"compare at" price when higher.
+`npm run sync-shopify` refreshes the saved copy and prints, for every
+product, the official price next to the store's price and stock.
 
 Display names are the team's (`data/products.ts`), which sometimes differ
 from the store's titles: Liquid Powder is sold as "Liquid Talc", the
-Soothing Intimate Hygiene Gel as "Feminine Wash", the Topilane AD range was
-"Atopiane" here before. The Pure H2O 350ml is left off the site on the
-team's request (September 2026); the refill shares its listing on the store
-("Biolane Pure H2O Cleanser 350 ml").
+Atopiane range as "Topilane AD", the Nursing Balm as "Soothing Repairing
+Balm". The 2-in-1 refill 750ml shows the store's refill pouch photo (the
+store sells a 500ml refill; the photo shows no size).
 
-`gbfSku` in `data/products.ts` is the team's booth SKU from their price
-sheet, kept for verification at the booth; it is blank for products that
-sheet never listed.
+`gbfSku` in `data/products.ts` is the team's booth SKU, kept for
+verification at the booth; it is blank where the team gave none.
 
 **Fallback artwork** (`public/images/products/`, `imageIsPlaceholder: true`)
-is only used when the store has no photo for a product.
+is only used when there is no photo for a product.
 
 ---
 
 ## The maths behind the reward
 
-`npm run verify` checks the saved biolane.ph copy against the stage lists
-(exact subset-sum over in-stock products, in centavos):
+`npm run verify` checks the official prices and the saved biolane.ph stock
+against the stage lists (exact subset-sum over in-stock products):
 
-- The gift unlocks at **₱2,299 or more**. Prices are biolane.ph's, so exact
-  totals shift as the store changes them; the script prints the cheapest
-  qualifying basket and the minimum number of products.
+- The gift unlocks at **₱2,299 or more**. Every official price is a
+  multiple of 5, so the cheapest qualifying basket is ₱2,300.
 - Every stage's Checklist alone (one of each in-stock item) can reach the
   threshold.
 - "Almost there" only uses the stage's Suggestions list, so it can hit a

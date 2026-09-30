@@ -9,11 +9,11 @@ import type { BabyStage } from './campaign.ts'
  * Everything else goes into the folded "See all Biolane products" section.
  * Use picks: 'all' to skip the lists and show the whole catalogue by category.
  *
- * Ids come from `productDefs` in data/products.ts. Prices, stock and photos
- * come from biolane.ph through data/shopify-map.ts: a product with no
- * listing there shows in place with "Ask our team" and can't be added; one
- * biolane.ph has sold out stays on the Checklist marked "Sold out" but is
- * never suggested.
+ * Ids come from `productDefs` in data/products.ts. Prices come from the
+ * official price list (data/prices.ts): a product with no official price
+ * shows in place with "Ask our team" and can't be added. Stock and photos
+ * come from biolane.ph (data/shopify-map.ts): a product biolane.ph has sold
+ * out stays on the Checklist marked "Sold out" but is never suggested.
  *
  * The lists themselves come from the Biolane team (September 2026).
  * "Soothing Repair Balm" on their list is the Nursing Balm 40ml (biolane.ph

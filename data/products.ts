@@ -1,15 +1,19 @@
 /**
  * PRODUCT DATA — what each product is called here, its group, its blurb and
- * the "Why this?" line. Prices, sale prices, stock, photos and links come
- * from biolane.ph (the Biolane Philippines Shopify store) through
- * data/shopify-map.ts: `buildCatalog` joins the two.
+ * the "Why this?" line.
  *
- * A product with no biolane.ph listing (see the notes below) still shows in
- * its place on the checklist with "Price at the booth" and can't be added
- * to the basket, so nothing on the team's lists silently disappears.
+ * Prices come ONLY from the team's official price list (data/prices.ts).
+ * Photos, stock status and product links come from biolane.ph (the Biolane
+ * Philippines Shopify store) through data/shopify-map.ts. `buildCatalog`
+ * joins the three.
+ *
+ * A product with no official price still shows in its place on the
+ * checklist with "Ask our team" and can't be added to the basket, so nothing
+ * on the team's lists silently disappears.
  */
 
 import type { CatalogSnapshot } from '../lib/shopify-catalog.ts'
+import { officialPrices } from './prices.ts'
 
 export type ProductGroupId = 'first' | 'routine' | 'justincase' | 'outdoors' | 'mommy'
 
@@ -20,7 +24,7 @@ export interface ProductDef {
   /** Empty string when there is no size to show. */
   size: string
   group: ProductGroupId
-  /** Local packshot, used when biolane.ph has no photo for it. */
+  /** Packshot used when biolane.ph has no photo for it (a /public path or a full address). */
   image: string
   /** Set when the local art is a stand-in for a different size or product. */
   imageIsPlaceholder?: boolean
@@ -30,25 +34,25 @@ export interface ProductDef {
   whyThis: string
   /** GBF SKU from the team's price sheet, for booth verification. '' if none. */
   gbfSku: string
-  /** For the team: why the store does not list it. */
+  /** For the team: why it has no price, or why biolane.ph doesn't list it. */
   note?: string
 }
 
-/** A product the store lists: what the basket adds up. */
+/** A product with an official price: what the basket adds up. */
 export interface Product extends ProductDef {
-  /** biolane.ph selling price in pesos, to the centavo. */
+  /** FINAL PRICE from the official list, in pesos. */
   price: number
-  /** The crossed-out price, only when biolane.ph shows one above `price`. */
+  /** SRP from the official list, shown crossed out; null when not above `price`. */
   compareAt: number | null
   /** False when biolane.ph says sold out: shown on her checklist, never suggested or added. */
   available: boolean
-  /** The biolane.ph product page. */
-  url: string
-  /** biolane.ph's own title, for the audit. */
-  listingTitle: string
+  /** The biolane.ph product page, or null when the store doesn't list this size. */
+  url: string | null
+  /** biolane.ph's own title, for the audit; null when not on the store. */
+  listingTitle: string | null
 }
 
-/** A product on the team's lists that biolane.ph does not sell. */
+/** A product on the team's lists that has no official price yet. */
 export type UnpricedProduct = ProductDef
 
 export type CatalogItem = Product | UnpricedProduct
@@ -122,15 +126,17 @@ export const productDefs: ProductDef[] = [
     whyThis: 'The big bottle for everyday bath time — it lasts the longest.',
   },
   {
-    id: 'gentle-shampoo-200',
-    name: 'Gentle Shampoo',
-    size: '200ml',
-    gbfSku: '10339114',
+    id: 'cleanser-2in1-refill-750',
+    name: '2-in-1 Body & Hair Cleanser Refill',
+    size: '750ml',
+    gbfSku: '',
     group: 'first',
-    image: '/images/products/gentle-shampoo-200.png',
-    imageIsPlaceholder: true,
-    blurb: 'A gentle everyday shampoo, travel size.',
-    whyThis: "The small one for the hospital bag or trips to Lola's.",
+    // biolane.ph's refill pouch photo (it shows no size); the store sells a
+    // 500ml refill, not this 750ml one, so there is no store link or stock.
+    image: 'https://cdn.shopify.com/s/files/1/0606/5183/1362/files/Biolane_2in1_Body_and_Hair_Cleanser_Refll_500ml_9830f3f5-b081-41a8-b053-847763e8ef12.jpg?v=1759827541',
+    blurb: 'Refill pouch for the 2-in-1 cleanser bottle.',
+    whyThis: 'Tops up the bottle she already has — less plastic, same gentle wash.',
+    note: 'On the official price list; biolane.ph sells only a 500ml refill.',
   },
   {
     id: 'gentle-shampoo-350',
@@ -151,17 +157,6 @@ export const productDefs: ProductDef[] = [
     image: '/images/products/pure-h2o-750.png',
     blurb: 'Gentle cleansing for everyday changes.',
     whyThis: "Great to keep beside baby's changing area for everyday cleansing.",
-  },
-  {
-    id: 'pure-h2o-400-refill',
-    name: 'Pure H2O Refill',
-    size: '400ml',
-    gbfSku: '10347429',
-    group: 'first',
-    image: '/images/products/pure-h2o-400-refill.svg',
-    imageIsPlaceholder: true,
-    blurb: 'Refill pouch for your Pure H2O bottle.',
-    whyThis: 'Tops up the bottle she already has — less plastic, same everyday cleansing.',
   },
   {
     id: 'cleansing-milk-750',
@@ -214,7 +209,7 @@ export const productDefs: ProductDef[] = [
     imageIsPlaceholder: true,
     blurb: 'The changing-bag size of the diaper-area cream.',
     whyThis: 'Same zinc-oxide protection as the 100ml, in a size that fits the bag.',
-    note: 'biolane.ph sells the 50ml only inside bundle sets.',
+    note: 'Not on the official price list; biolane.ph sells the 50ml only inside bundle sets.',
   },
   {
     id: 'pure-h2o-wipes-72',
@@ -226,7 +221,7 @@ export const productDefs: ProductDef[] = [
     imageIsPlaceholder: true,
     blurb: 'Thick no-rinse wipes soaked in Pure H2O.',
     whyThis: 'For the diaper area, hands and face when there is no water nearby.',
-    note: 'Not on biolane.ph (official name: Lingettes épaisses H2O x72).',
+    note: '"Pure Water Wipes" on the official price list; not on biolane.ph, so no photo, stock or link.',
   },
   {
     id: 'cleansing-milk-wipes-72',
@@ -312,7 +307,7 @@ export const productDefs: ProductDef[] = [
     imageIsPlaceholder: true,
     blurb: 'Easier brushing for longer hair.',
     whyThis: 'For toddlers and big siblings — makes combing time calmer.',
-    note: 'Not on biolane.ph.',
+    note: 'Not on the official price list or biolane.ph.',
   },
   {
     id: 'first-teeth-toothpaste',
@@ -324,19 +319,19 @@ export const productDefs: ProductDef[] = [
     imageIsPlaceholder: true,
     blurb: "Gentle toothpaste for baby's very first teeth.",
     whyThis: 'A pea-sized amount twice a day, with a grown-up watching, from the first tooth.',
-    note: 'Not on biolane.ph.',
+    note: 'Not on the official price list or biolane.ph.',
   },
   {
     id: 'baby-powder-75',
-    name: 'Baby Powder',
-    size: '75g',
+    name: 'Bath Powder',
+    size: '70g',
     gbfSku: '',
     group: 'routine',
     image: '/images/products/baby-powder-75.svg',
     imageIsPlaceholder: true,
     blurb: 'Soft natural powder for the bath and the skin folds.',
     whyThis: 'Rice, corn and oat powder — a different product from the Liquid Powder.',
-    note: 'Not on biolane.ph (official name: Poudre de bain adoucissante 75g).',
+    note: '"Bath Powder 70g" on the official price list; not on biolane.ph, so no photo, stock or link.',
   },
 
   // ---------- LITTLE SKIN SURPRISES HAPPEN (just in case) ----------
@@ -362,7 +357,7 @@ export const productDefs: ProductDef[] = [
   },
   {
     id: 'topilane-cleansing-cream-350',
-    name: 'Topilane AD Soothing Cleansing Cream',
+    name: 'Atopiane Soothing Cleansing Cream',
     size: '350ml',
     gbfSku: '10339128',
     group: 'justincase',
@@ -372,7 +367,7 @@ export const productDefs: ProductDef[] = [
   },
   {
     id: 'topilane-cleansing-oil-350',
-    name: 'Topilane AD Protective Cleansing Oil',
+    name: 'Atopiane Protective Cleansing Oil',
     size: '350ml',
     gbfSku: '10339128',
     group: 'justincase',
@@ -382,7 +377,7 @@ export const productDefs: ProductDef[] = [
   },
   {
     id: 'topilane-body-balm-350',
-    name: 'Topilane AD Lipid-Replenishing Body Balm',
+    name: 'Atopiane Lipid-Replenishing Body Balm',
     size: '350ml',
     gbfSku: '10339131',
     group: 'justincase',
@@ -392,7 +387,7 @@ export const productDefs: ProductDef[] = [
   },
   {
     id: 'topilane-face-cream-50',
-    name: 'Topilane AD Emollient Face Cream',
+    name: 'Atopiane Emollient Face Cream',
     size: '50ml',
     gbfSku: '10351562',
     group: 'justincase',
@@ -474,17 +469,17 @@ export const productDefs: ProductDef[] = [
     imageIsPlaceholder: true,
     blurb: 'Gentle daily wash for mom, during pregnancy and after.',
     whyThis: 'Soothing and gynecologically tested — made for the months when skin is extra sensitive.',
-    note: 'Sold on biolane.ph as "Feminine Wash".',
+    note: 'Not on the official price list; sold on biolane.ph as "Feminine Wash".',
   },
 ]
 
 export const productDefById = new Map(productDefs.map((p) => [p.id, p]))
 
-/** The catalogue as the site shows it: definitions joined with biolane.ph. */
+/** The catalogue as the site shows it: definitions + official prices + biolane.ph. */
 export interface Catalog {
-  /** Products biolane.ph lists, in the order of `productDefs`. Includes sold-out ones. */
+  /** Products with an official price, in the order of `productDefs`. Includes sold-out ones. */
   products: Product[]
-  /** Products on the team's lists that biolane.ph does not sell. */
+  /** Products on the team's lists without an official price ("Ask our team"). */
   unpriced: UnpricedProduct[]
   source: 'live' | 'snapshot'
   fetchedAt: string
@@ -494,20 +489,23 @@ export function buildCatalog(snapshot: CatalogSnapshot, source: Catalog['source'
   const products: Product[] = []
   const unpriced: UnpricedProduct[] = []
   for (const def of productDefs) {
-    const listing = snapshot.listings[def.id]
-    if (!listing) {
+    const official = officialPrices[def.id]
+    if (!official) {
       unpriced.push(def)
       continue
     }
+    // biolane.ph supplies the photo, stock and link — never the price.
+    const listing = snapshot.listings[def.id]
     products.push({
       ...def,
-      image: listing.image ?? def.image,
-      imageIsPlaceholder: listing.image ? undefined : def.imageIsPlaceholder,
-      price: listing.price,
-      compareAt: listing.compareAt,
-      available: listing.available,
-      url: listing.url,
-      listingTitle: listing.title,
+      image: listing?.image ?? def.image,
+      imageIsPlaceholder: listing?.image ? undefined : def.imageIsPlaceholder,
+      price: official.price,
+      compareAt: official.srp > official.price ? official.srp : null,
+      // Not on the store: the team sells it at the booth, so it counts as in stock.
+      available: listing ? listing.available : true,
+      url: listing?.url ?? null,
+      listingTitle: listing?.title ?? null,
     })
   }
   return { products, unpriced, source, fetchedAt: snapshot.fetchedAt }
