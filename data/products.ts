@@ -325,11 +325,10 @@ export const productDefs: ProductDef[] = [
     size: '70g',
     gbfSku: '',
     group: 'routine',
-    image: '/images/products/baby-powder-75.svg',
-    imageIsPlaceholder: true,
+    image: '/images/products/bath-powder.webp', // photo from the team
     blurb: 'Soft natural powder for the bath and the skin folds.',
     whyThis: 'Rice, corn and oat powder — a different product from the Liquid Powder.',
-    note: '"Bath Powder 70g" on the official price list; not on biolane.ph, so no photo, stock or link.',
+    note: '"Bath Powder 70g" on the official price list, photo from the team; not on biolane.ph, so no stock or link.',
   },
 
   // ---------- LITTLE SKIN SURPRISES HAPPEN (just in case) ----------
