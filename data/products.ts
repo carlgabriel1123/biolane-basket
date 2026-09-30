@@ -205,8 +205,7 @@ export const productDefs: ProductDef[] = [
     size: '50ml',
     gbfSku: '',
     group: 'first',
-    image: '/images/products/diaper-change-cream-100.png',
-    imageIsPlaceholder: true,
+    image: '/images/products/diaper-change-cream-50.webp', // photo from the team
     blurb: 'The changing-bag size of the diaper-area cream.',
     whyThis: 'Same zinc-oxide protection as the 100ml, in a size that fits the bag.',
     note: 'Not on the official price list; biolane.ph sells the 50ml only inside bundle sets.',
