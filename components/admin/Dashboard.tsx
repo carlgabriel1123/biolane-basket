@@ -307,7 +307,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
     { label: 'Today', n: counts.today, Icon: ClockIcon, chip: 'bg-sky text-blue' },
     { label: 'Sign-ups', n: counts.total, Icon: UsersIcon, chip: 'bg-sky text-blue' },
     { label: 'Finished', n: counts.finished, Icon: CheckCircleIcon, chip: 'bg-blue text-white' },
-    { label: 'Gift unlocked', n: counts.gift, Icon: GiftIcon, chip: 'bg-cream text-gold' },
+    { label: 'Gift unlocked', n: counts.gift, Icon: GiftIcon, chip: 'bg-cream text-gold-ink' },
     { label: 'Paid', n: counts.paid, Icon: TagIcon, chip: 'bg-mint-soft text-success' },
   ]
 

@@ -60,11 +60,20 @@ export default function Suggestions({ items, completes, remaining, onAdd, stage 
               <span className={`relative h-11 w-11 shrink-0 overflow-hidden rounded-xl ${well}`}>
                 <Image src={asset(p.image)} alt="" fill sizes="44px" className="object-contain p-1" loading="lazy" />
               </span>
+              {/* On small phones and in the narrow desktop rail the price sits under
+                  the name, so the whole name fits (one price shows at a time). */}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13.5px] font-semibold text-ink">{p.name}</span>
-                {p.size && <span className="text-xs text-ink-soft/90">{p.size}</span>}
+                <span className="line-clamp-3 text-[13.5px] font-semibold leading-snug text-ink">{p.name}</span>
+                <span className="flex flex-wrap items-baseline gap-x-1.5">
+                  <span className="hidden font-display text-[15px] font-extrabold tabular-nums text-blue max-[374px]:inline lg:inline">
+                    {peso(p.price)}
+                  </span>
+                  {p.size && <span className="text-xs text-ink-soft/90">{p.size}</span>}
+                </span>
               </span>
-              <span className="shrink-0 font-display text-[15px] font-extrabold tabular-nums text-blue">{peso(p.price)}</span>
+              <span className="shrink-0 font-display text-[15px] font-extrabold tabular-nums text-blue max-[374px]:hidden lg:hidden">
+                {peso(p.price)}
+              </span>
               <span
                 aria-hidden="true"
                 className="grid h-8 w-8 shrink-0 place-items-center rounded-pill bg-blue text-white"

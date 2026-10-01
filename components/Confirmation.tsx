@@ -40,8 +40,10 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
         <Image
           src={asset('/images/brand/biolane-logo.png')}
           alt="Biolane"
-          width={110}
-          height={32}
+          // Same intrinsic size as the other logos, so the copy cached on the
+          // sign-up page is reused (it shows even if the booth wifi drops).
+          width={547}
+          height={159}
           priority
           className="mx-auto h-auto w-[104px]"
         />
@@ -67,7 +69,10 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
       </div>
 
       {/* Claim code — the thing staff actually read. Styled as a ticket. */}
-      <div className="relative mt-6 rounded-card border-2 border-dashed border-ink/15 bg-white p-5 text-center">
+      <div
+        className="animate-unfold relative mt-6 rounded-card border-2 border-dashed border-ink/15 bg-white p-5 text-center"
+        style={{ animationDelay: '120ms' }}
+      >
         <span aria-hidden="true" className="absolute -left-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-sky-soft" />
         <span aria-hidden="true" className="absolute -right-3 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-sky-soft" />
 
@@ -101,7 +106,7 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
           >
             <GiftIcon size={24} />
           </span>
-          <p className="mt-3 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold">
+          <p className="mt-3 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold-ink">
             {campaign.rewardShortName} unlocked
           </p>
           {submission.bagColor && (

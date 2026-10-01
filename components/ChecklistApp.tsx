@@ -25,9 +25,11 @@ import {
   newWriteKey,
   nextSeq,
   sendSubmission,
+  SAVED_EVENT,
   type Submission,
 } from '@/lib/submission'
 import { greetingName } from '@/lib/format'
+import { scrollBehavior } from '@/lib/motion'
 import { cleanBagName, isPrintableBagName, normalisePhMobile, tidy } from '@/lib/validate'
 
 /**
@@ -51,7 +53,9 @@ import { cleanBagName, isPrintableBagName, normalisePhMobile, tidy } from '@/lib
 type Step = 'join' | 'checklist' | 'done'
 type Result = { submission: Submission; storedRemotely: boolean }
 
-const SESSION_KEY = 'biolane-nesting-session'
+const SESSION_KEY = 'biolane-nesting-session' // also read by the restore flag in app/layout.tsx
+/** How long Finish waits for the network before showing the claim code anyway. */
+const FINISH_WAIT_MS = 5000
 
 const EMPTY_FORM: CommunityValues = {
   firstName: '',
@@ -221,6 +225,18 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
     writeHistory('replace', initial)
     setHydrated(true)
 
+    // "Will sync" on the thank-you screen becomes "Saved" as soon as any
+    // send gets her finished record through (also after a reload).
+    const onSaved = (e: Event) => {
+      const saved = (e as CustomEvent<{ submissionId: string; seq: number }>).detail
+      setResult((r) =>
+        r && !r.storedRemotely && r.submission.submissionId === saved.submissionId && saved.seq >= r.submission.seq
+          ? { ...r, storedRemotely: true }
+          : r
+      )
+    }
+    window.addEventListener(SAVED_EVENT, onSaved)
+
     // Anything that failed to send earlier goes now, and again when the
     // connection comes back.
     flushPending()
@@ -259,10 +275,16 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
     window.addEventListener('popstate', onPop)
     return () => {
       window.removeEventListener('popstate', onPop)
+      window.removeEventListener(SAVED_EVENT, onSaved)
       window.removeEventListener('online', flushPending)
       window.clearInterval(retryTimer)
     }
   }, [])
+
+  // The saved screen is back: show the page (see the restore flag in app/layout.tsx).
+  useEffect(() => {
+    if (hydrated) document.documentElement.removeAttribute('data-restoring')
+  }, [hydrated])
 
   useEffect(() => {
     if (!hydrated) return
@@ -417,7 +439,7 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
         ? document.querySelector<HTMLElement>('input[name="bag-color"]')
         : document.getElementById('personalization')
       ;(needsColor ? document.getElementById('bag-color-group') : target)?.scrollIntoView({
-        behavior: 'smooth',
+        behavior: scrollBehavior(),
         block: 'center',
       })
       target?.focus({ preventScroll: true })
@@ -445,7 +467,14 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
     finishingRef.current = true // synchronous — blocks the double-tap
     setFinishing(true)
     const submission = buildSubmission(submissionId, writeKey, 'checklist_completed', form)
-    const storedRemotely = await sendSubmission(submission)
+    // Slow booth wifi must not keep her waiting: the record is already kept
+    // on this phone, so after a few seconds show the claim code anyway
+    // ("Will sync") and flip it to "Saved" if the send gets through later.
+    // (The SAVED_EVENT listener flips it to "Saved" once any send succeeds.)
+    const storedRemotely = await Promise.race([
+      sendSubmission(submission),
+      new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), FINISH_WAIT_MS)),
+    ])
     track('form_submitted', { total: basket.total, units: basket.units, unlocked: basket.unlocked })
     finishingRef.current = false
     setFinishing(false)

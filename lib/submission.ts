@@ -162,6 +162,9 @@ function purgeSynced(): void {
  *            so it is dropped.
  */
 type Outcome = 'saved' | 'retry' | 'rejected'
+
+/** Window event fired when the database accepts a record; detail = { submissionId, seq }. */
+export const SAVED_EVENT = 'biolane:saved'
 const REJECTED_STATUSES = new Set([400, 413, 422])
 
 async function post(submission: Submission): Promise<Outcome> {
@@ -177,6 +180,11 @@ async function post(submission: Submission): Promise<Outcome> {
     clearTimeout(timeout)
     if (res.ok) {
       markSynced(submission.submissionId, submission.seq)
+      // Lets the thank-you screen switch "Will sync" to "Saved", whichever
+      // send (first try, timer retry, back online, reload) got it through.
+      window.dispatchEvent(
+        new CustomEvent(SAVED_EVENT, { detail: { submissionId: submission.submissionId, seq: submission.seq } })
+      )
       return 'saved'
     }
     if (REJECTED_STATUSES.has(res.status)) {

@@ -36,7 +36,7 @@ export default function RewardUnlocked({
   return (
     <section
       aria-labelledby="reward-unlocked-heading"
-      className="animate-rise relative overflow-hidden rounded-card border border-gold/35 bg-cream p-5 text-center shadow-lift"
+      className="animate-unfold relative overflow-hidden rounded-card border border-gold/35 bg-cream p-5 text-center shadow-lift"
     >
       <div
         aria-hidden="true"
@@ -62,7 +62,7 @@ export default function RewardUnlocked({
           Your Biolane reward is unlocked.
         </p>
 
-        <p className="mt-4 flex items-center justify-center gap-1.5 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold">
+        <p className="mt-4 flex items-center justify-center gap-1.5 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold-ink">
           <GiftIcon size={18} /> Free {campaign.rewardName}
         </p>
 
@@ -80,7 +80,12 @@ export default function RewardUnlocked({
                   checked={bagColor === c.value}
                   onChange={() => onChangeColor(c.value)}
                   label={c.label}
-                  icon={<span className={`block h-5 w-5 rounded-full ring-2 ring-white ${SWATCH[c.value]}`} />}
+                  icon={
+                    <span
+                      key={bagColor === c.value ? 'chosen' : 'not-chosen'}
+                      className={`block h-5 w-5 rounded-full ring-2 ring-white ${SWATCH[c.value]} ${bagColor === c.value ? 'animate-flip' : ''}`}
+                    />
+                  }
                   tone={c.value === 'pink' ? STAGE_TONES.expecting : STAGE_TONES.baby}
                 />
               ))}

@@ -40,7 +40,7 @@ const VARIANT: Record<Variant, string> = {
   primary: 'bg-blue text-white shadow-lift hover:bg-blue-deep',
   secondary: 'border-2 border-blue bg-white text-blue hover:bg-blue hover:text-white',
   ghost: 'text-blue-deep hover:bg-white hover:text-blue',
-  gold: 'bg-gold text-white shadow-lift hover:bg-gold-deep',
+  gold: 'bg-gold-strong text-white shadow-lift hover:bg-gold-ink',
   success: 'bg-success text-white hover:bg-success-deep',
   'danger-ghost': 'text-danger hover:bg-blush-soft',
 }
@@ -111,14 +111,14 @@ export function ChoiceChip({ label, hint, icon, tone, kind = 'radio', compact = 
   return (
     <label
       className={`press flex min-h-[52px] cursor-pointer items-center rounded-2xl border-2 transition-colors has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-blue ${
-        compact ? 'gap-2.5 px-3 py-2' : 'gap-3 px-4 py-2.5'
+        compact ? 'gap-2.5 px-3 py-2 max-[409px]:gap-2 max-[409px]:px-2.5' : 'gap-3 px-4 py-2.5'
       } ${checked ? `${t.accent} ${t.bg} shadow-soft` : 'border-ink/10 bg-white hover:border-ink/25'} ${className}`}
     >
       <input type={kind} className="sr-only" checked={checked} {...input} />
       {icon && (
         <span className="relative shrink-0">
           <span
-            className={`grid place-items-center rounded-full ${compact ? 'h-8 w-8' : 'h-9 w-9'} ${
+            className={`grid place-items-center rounded-full ${compact ? 'h-8 w-8 max-[409px]:h-7 max-[409px]:w-7' : 'h-9 w-9'} ${
               checked ? `${t.tint} ${t.text}` : 'bg-sky-soft text-ink-soft'
             }`}
           >
@@ -137,7 +137,13 @@ export function ChoiceChip({ label, hint, icon, tone, kind = 'radio', compact = 
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className={`block font-semibold leading-snug text-ink ${compact ? 'text-[14px]' : 'text-[15px]'}`}>{label}</span>
+        <span
+          className={`block font-semibold leading-snug text-ink [overflow-wrap:anywhere] ${
+            compact ? 'text-[14px] max-[409px]:text-[13px] max-[409px]:tracking-tight' : 'text-[15px]'
+          }`}
+        >
+          {label}
+        </span>
         {hint && <span className="block text-[12px] leading-snug text-ink-soft">{hint}</span>}
       </span>
       {!compact && (
@@ -205,7 +211,7 @@ type BadgeTone = 'ink' | 'blue' | 'gold' | 'success' | 'danger' | 'soft'
 const BADGE: Record<BadgeTone, string> = {
   ink: 'bg-ink text-white',
   blue: 'bg-blue text-white',
-  gold: 'bg-cream text-gold',
+  gold: 'bg-cream text-gold-ink',
   success: 'bg-success-soft text-success',
   danger: 'bg-blush-soft text-danger',
   soft: 'bg-sky-soft text-ink-soft',

@@ -9,6 +9,8 @@ import { peso } from '@/lib/format'
 import { BanIcon, CheckIcon, HelpCircleIcon, InfoIcon, PlusIcon } from './icons'
 import { Badge, IconButton, stageTone } from './ui'
 import QtyStepper from './QtyStepper'
+import { useTilt } from './useTilt'
+import { revealIfHidden } from '@/lib/motion'
 
 interface Props {
   product: CatalogItem
@@ -48,6 +50,20 @@ export default function ProductCard({
 
   // Add and the stepper replace each other, so the button she just used
   // disappears. Hand focus to its replacement instead of dropping it.
+  // A little depth: the card tilts toward the mouse, and the photo hops
+  // when the product goes into the basket (not when a saved basket loads).
+  const tiltRef = useTilt<HTMLDivElement>()
+  const [hop, setHop] = useState(false)
+  const wasInBasket = useRef(inBasket)
+  useEffect(() => {
+    const added = inBasket && !wasInBasket.current
+    wasInBasket.current = inBasket
+    if (!added) return
+    setHop(true)
+    const t = window.setTimeout(() => setHop(false), 600)
+    return () => window.clearTimeout(t)
+  }, [inBasket])
+
   const addRef = useRef<HTMLButtonElement>(null)
   const plusRef = useRef<HTMLButtonElement>(null)
   const pendingFocus = useRef<'plus' | 'add' | null>(null)
@@ -55,8 +71,17 @@ export default function ProductCard({
   useEffect(() => {
     const target = pendingFocus.current
     pendingFocus.current = null
-    if (target === 'plus') plusRef.current?.focus({ preventScroll: true })
-    if (target === 'add') addRef.current?.focus({ preventScroll: true })
+    const el = target === 'plus' ? plusRef.current : target === 'add' ? addRef.current : null
+    if (!el) return
+    el.focus({ preventScroll: true })
+    // Keyboard users: never leave the focused button under the basket bar.
+    let keyboard = false
+    try {
+      keyboard = el.matches(':focus-visible')
+    } catch {
+      /* very old browsers: no :focus-visible */
+    }
+    if (keyboard) revealIfHidden(el)
   }, [inBasket])
 
   const add = () => {
@@ -71,6 +96,7 @@ export default function ProductCard({
 
   return (
     <div
+      ref={tiltRef}
       id={`product-${product.id}`}
       className={[
         'relative scroll-mt-24 rounded-card border bg-white transition-[border-color,box-shadow] duration-200',
@@ -94,7 +120,7 @@ export default function ProductCard({
 
       <div className="flex gap-3 p-3 sm:gap-4 sm:p-4">
         {/* Packshot in a stage-tinted well, with a tick once it's in her basket */}
-        <div className="relative h-[88px] w-[88px] shrink-0">
+        <div className={`relative h-[88px] w-[88px] shrink-0 ${hop ? 'animate-hop' : ''}`}>
           <div className={`relative h-full w-full overflow-hidden rounded-2xl ${well} ${soldOut ? 'opacity-60' : ''}`}>
             <Image
               src={asset(product.image)}
@@ -116,7 +142,8 @@ export default function ProductCard({
           )}
         </div>
 
-        <div className="min-w-0 flex-1">
+        {/* z-[1]: the tilt's light passes under the text and buttons, never over them. */}
+        <div className="relative z-[1] min-w-0 flex-1">
           <Heading className="pr-10 font-display text-[15px] font-bold leading-snug text-ink sm:text-base">
             {product.name}
           </Heading>
@@ -177,7 +204,7 @@ export default function ProductCard({
       {showWhy && (
         <div
           id={whyId}
-          className="animate-rise mx-3 mb-3 rounded-2xl bg-sky-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft sm:mx-4 sm:mb-4"
+          className="animate-rise relative z-[1] mx-3 mb-3 rounded-2xl bg-sky-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft sm:mx-4 sm:mb-4"
         >
           {product.whyThis}
           {priced?.url && (
@@ -185,7 +212,7 @@ export default function ProductCard({
               href={priced.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1.5 block font-semibold text-blue-deep underline decoration-blue-deep/30 underline-offset-4"
+              className="-mb-2.5 block w-fit py-3 font-semibold text-blue-deep underline decoration-blue-deep/30 underline-offset-4"
             >
               View on biolane.ph
             </a>

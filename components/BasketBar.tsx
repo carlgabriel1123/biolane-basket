@@ -18,7 +18,7 @@ export default function BasketBar({ count, units, total, remaining, unlocked, on
   const pct = Math.min(100, Math.round((total / campaign.rewardThreshold) * 100))
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40">
+    <div id="basket-bar" className="fixed inset-x-0 bottom-0 z-40">
       <div
         className={`border-t shadow-bar ${
           unlocked ? 'border-gold/30 bg-cream' : 'border-ink/10 bg-white/95 backdrop-blur'
@@ -36,7 +36,7 @@ export default function BasketBar({ count, units, total, remaining, unlocked, on
           <div className="min-w-0 flex-1">
             <p
               className={`flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide ${
-                unlocked ? 'text-gold' : 'text-ink-soft/90'
+                unlocked ? 'text-gold-ink' : 'text-ink-soft/90'
               }`}
             >
               {unlocked ? <GiftIcon size={14} /> : <BagIcon size={14} />}
@@ -48,12 +48,21 @@ export default function BasketBar({ count, units, total, remaining, unlocked, on
                 {peso(total)}
               </span>
             </p>
+            {/* Shorter wording under 400px so the line never gets cut off. */}
             <p className="truncate text-[11.5px] leading-tight text-ink-soft">
-              {unlocked
-                ? `${campaign.rewardShortName} unlocked`
-                : count === 0
-                  ? 'Add your first essential'
-                  : `${peso(remaining)} more to unlock your gift`}
+              {unlocked ? (
+                <>
+                  <span className="min-[400px]:hidden">Toiletry bag unlocked</span>
+                  <span className="hidden min-[400px]:inline">{campaign.rewardShortName} unlocked</span>
+                </>
+              ) : count === 0 ? (
+                'Add your first essential'
+              ) : (
+                <>
+                  {peso(remaining)} more <span className="min-[400px]:hidden">for your gift</span>
+                  <span className="hidden min-[400px]:inline">to unlock your gift</span>
+                </>
+              )}
             </p>
           </div>
 

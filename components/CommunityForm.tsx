@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { babyStages, campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
 import { track } from '@/lib/analytics'
+import { scrollBehavior } from '@/lib/motion'
 import type { LeadInfo } from '@/lib/submission'
 import { addDays, isPlausibleEmail, manilaToday, normaliseHandle, normalisePhMobile, tidy } from '@/lib/validate'
 import {
@@ -301,7 +302,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
           ? document.querySelector<HTMLElement>(`input[name="${firstKey}"]`)
           : document.getElementById(firstKey)
       el?.focus({ preventScroll: true })
-      ;(el?.closest('label, div') ?? el)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      ;(el?.closest('label, div') ?? el)?.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
       return false
     }
     return true
@@ -410,8 +411,9 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             onBlur={validateGroupOnBlur('relationship')}
           >
             <legend className={labelClass}>Are you…</legend>
-            {/* Two columns everywhere; compact chips keep "Grandparent" on one line at 375px. */}
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            {/* Two columns from 360px (compact chips keep "Grandparent" on one line);
+                one column on the smallest phones. */}
+            <div className="mt-2 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
               {relationships.map((option) => {
                 const active = values.relationship === option.value
                 const Icon = RELATIONSHIP_ICONS[option.value]
@@ -452,7 +454,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
                   data-invalid={Boolean(errors.relationshipOther)}
                   aria-describedby={errors.relationshipOther ? 'relationshipOther-error' : undefined}
                   aria-invalid={Boolean(errors.relationshipOther)}
-                  placeholder="Tita, ninang, family friend"
+                  placeholder="Tita, ninang, friend"
                   className={inputBase + ' ' + borderFor('relationshipOther')}
                 />
               </Field>
@@ -529,7 +531,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
             <p id="socials-help" className="mt-0.5 text-[11.5px] text-ink-soft/90">
               Tick one or both. No account? Tick N/A.
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="mt-2 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
               {SOCIAL_OPTIONS.map(({ value, label, hint, Icon }) => (
                 <ChoiceChip
                   compact
@@ -543,7 +545,7 @@ export default function CommunityForm({ values, onChange, onSubmit, submitting }
                   hint={hint}
                   icon={<Icon size={18} />}
                   tone={STAGE_TONES.baby}
-                  className={value === 'none' ? 'col-span-2' : ''}
+                  className={value === 'none' ? 'min-[360px]:col-span-2' : ''}
                 />
               ))}
             </div>

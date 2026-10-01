@@ -7,6 +7,7 @@ import { isPriced, productGroups, type Catalog, type CatalogIndex, type CatalogI
 import { stagePlans } from '@/data/stages'
 import type { BasketState, Quantities, Suggestion } from '@/lib/basket'
 import { asset } from '@/lib/asset'
+import { isClearOnScreen, scrollBehavior } from '@/lib/motion'
 import { ChevronDownIcon, GiftIcon, HeartIcon, SparklesIcon, XIcon } from './icons'
 import { Button, ChoiceButton, STAGE_TONES, StepIndicator, stageTone } from './ui'
 import ProductSection from './ProductSection'
@@ -164,6 +165,31 @@ export default function ChecklistPage({
       seen?.disconnect()
     }
   }, [nudge, stage])
+  // While the pill shows, keep focused controls clear of it too: raise the
+  // page's bottom scroll padding to the pill, and lift the control that was
+  // just focused (e.g. the + that replaced Add) if the pill landed on it.
+  useEffect(() => {
+    if (!(nudge && showRecs) || !pillRef.current) return
+    const root = document.documentElement
+    // Where the pill comes to rest (its rise-in is still moving it on this
+    // frame), plus room for a focus ring.
+    const wrap = pillRef.current.parentElement as HTMLElement
+    const pillTop = window.innerHeight - parseFloat(getComputedStyle(wrap).bottom) - wrap.offsetHeight
+    root.style.scrollPaddingBottom = `${Math.ceil(window.innerHeight - pillTop + 12)}px`
+    const active = document.activeElement
+    let keyboard = false
+    try {
+      keyboard = active instanceof HTMLElement && active.matches(':focus-visible')
+    } catch {
+      /* very old browsers: no :focus-visible */
+    }
+    if (keyboard && active instanceof HTMLElement && active.getBoundingClientRect().bottom > pillTop - 8) {
+      active.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() })
+    }
+    return () => {
+      root.style.scrollPaddingBottom = ''
+    }
+  }, [nudge, showRecs])
   const dismissNudge = () => {
     const hadFocus = pillRef.current?.contains(document.activeElement)
     setNudge(false)
@@ -214,15 +240,53 @@ export default function ChecklistPage({
   )
 
   // Tapping a suggestion removes it from the list, so hand focus to that
-  // product's + button (or the progress card if the product is folded away).
+  // product's + button when it is on screen; otherwise keep her place in
+  // the panel (the next suggestion, or the progress card).
   const addSuggestion = (id: string) => {
     onChangeQty(id, (quantities[id] ?? 0) + 1)
     requestAnimationFrame(() => {
       const plus = document.querySelector<HTMLElement>(`#product-${id} [aria-label^="One more"]`)
-      const fallback = document.getElementById('basket-status')
-      ;(plus ?? fallback)?.focus({ preventScroll: true })
+      const nextSuggestion = document.querySelector<HTMLElement>('[aria-labelledby="suggestions-heading"] li button')
+      const target = plus && isClearOnScreen(plus) ? plus : (nextSuggestion ?? document.getElementById('basket-status'))
+      target?.focus({ preventScroll: true })
     })
   }
+
+  // On laptops the rail beside the list is capped at the screen height. When
+  // the gift unlocks, scroll the rail (never the page) so the gift box is in
+  // view, and fade its bottom edge while there is more to scroll to.
+  const railRef = useRef<HTMLElement>(null)
+  const wasUnlocked = useRef(basket.unlocked)
+  useEffect(() => {
+    const justUnlocked = basket.unlocked && !wasUnlocked.current
+    wasUnlocked.current = basket.unlocked
+    const rail = railRef.current
+    if (!justUnlocked || !rail || rail.scrollHeight <= rail.clientHeight) return
+    const gift = document.getElementById('reward-unlocked-heading')?.closest('section')
+    if (!(gift instanceof HTMLElement)) return
+    const top = gift.offsetParent === rail ? gift.offsetTop : gift.getBoundingClientRect().top - rail.getBoundingClientRect().top + rail.scrollTop
+    rail.scrollTo({ top: Math.max(0, top - 8), behavior: scrollBehavior() })
+  }, [basket.unlocked])
+  const [railFade, setRailFade] = useState<'top' | 'bottom' | 'both' | undefined>(undefined)
+  useEffect(() => {
+    const rail = railRef.current
+    if (!rail) return
+    const update = () => {
+      const above = rail.scrollTop > 8
+      const below = rail.scrollHeight - rail.clientHeight - rail.scrollTop > 8
+      setRailFade(above && below ? 'both' : above ? 'top' : below ? 'bottom' : undefined)
+    }
+    update()
+    rail.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null
+    if (ro) for (const child of Array.from(rail.children)) ro.observe(child)
+    return () => {
+      rail.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+      ro?.disconnect()
+    }
+  }, [basket.unlocked, basket.count])
 
   return (
     <main
@@ -424,13 +488,18 @@ export default function ChecklistPage({
         {/* Progress, suggestions and the reward: below her picks on phones,
             a sticky rail beside them on desktop. */}
         <aside
+          ref={railRef}
           id="basket-status"
           tabIndex={-1}
           aria-label="Your basket status"
           /* *:shrink-0: on desktop this rail is capped at the screen height and
              scrolls; without it the gift box (overflow-hidden) shrinks instead
              and hides its own name field. */
-          className="mt-7 flex flex-col gap-4 outline-none *:shrink-0 md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-8rem)] lg:w-full lg:self-start lg:overflow-y-auto lg:p-1.5"
+          /* data-fade: soft edges where the rail has more to scroll (app/globals.css).
+             scroll-p: anything focused inside the rail stops clear of those edges.
+             scrollbar-gutter: the rail's own scrollbar never re-wraps its cards. */
+          data-fade={railFade}
+          className="mt-7 flex flex-col gap-4 outline-none *:shrink-0 md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-8rem)] lg:w-full lg:self-start lg:overflow-y-auto lg:scroll-pt-6 lg:scroll-pb-16 lg:p-1.5 lg:[scrollbar-gutter:stable]"
         >
           <RewardProgress total={basket.total} remaining={basket.remaining} unlocked={basket.unlocked} />
 
@@ -511,10 +580,11 @@ export default function ChecklistPage({
 
       {nudge && showRecs && (
         <div
-          className="animate-rise fixed inset-x-0 z-30 flex justify-center px-4"
+          /* Only the pill takes taps, never the empty strip on either side of it. */
+          className="animate-rise pointer-events-none fixed inset-x-0 z-30 flex justify-center px-4"
           style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
         >
-          <div ref={pillRef} className="flex items-center gap-1 rounded-pill bg-ink py-1 pl-1 pr-1 text-white shadow-lift">
+          <div ref={pillRef} id="recs-nudge-pill" className="pointer-events-auto flex items-center gap-1 rounded-pill bg-ink py-1 pl-1 pr-1 text-white shadow-lift">
             <button
               type="button"
               onClick={goToRecs}

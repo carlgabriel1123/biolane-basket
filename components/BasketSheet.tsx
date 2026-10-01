@@ -68,6 +68,11 @@ export default function BasketSheet({
     const previouslyFocused = document.activeElement as HTMLElement | null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    // The page keeps a scrollbar gutter (no sideways jump); the dim backdrop
+    // can't reach into it, so paint the gutter the same dim colour.
+    const root = document.documentElement
+    const previousRootBg = root.style.backgroundColor
+    root.style.backgroundColor = 'color-mix(in srgb, var(--color-ink) 45%, var(--color-sky-soft))'
     closeRef.current?.focus()
 
     const onKey = (e: KeyboardEvent) => {
@@ -95,6 +100,7 @@ export default function BasketSheet({
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = previousOverflow
+      root.style.backgroundColor = previousRootBg
       previouslyFocused?.focus?.()
     }
   }, [open, onClose])
@@ -109,6 +115,53 @@ export default function BasketSheet({
     }
   }, [open, lineCount])
 
+  // Phones: pull the sheet down by its handle or header to close it.
+  const drag = useRef<{ id: number; y: number; t: number; dy: number } | null>(null)
+  // Sideways phones scroll the whole panel: at the top, a finger moving up
+  // scrolls it and a finger moving down pulls the sheet closed; once
+  // scrolled, the handle and header scroll both ways like the rest.
+  const [scrolled, setScrolled] = useState(false)
+  const dragTouch = scrolled ? 'max-md:short:touch-pan-y' : 'max-md:short:touch-pan-down'
+  const dragStart = (e: React.PointerEvent<HTMLElement>) => {
+    if (wide || e.button !== 0 || (e.target as HTMLElement).closest('button')) return
+    drag.current = { id: e.pointerId, y: e.clientY, t: e.timeStamp, dy: 0 }
+    e.currentTarget.setPointerCapture(e.pointerId)
+    const panel = panelRef.current
+    if (panel) {
+      panel.style.animation = 'none'
+      panel.style.transition = 'none'
+    }
+  }
+  const dragMove = (e: React.PointerEvent<HTMLElement>) => {
+    const d = drag.current
+    if (!d || d.id !== e.pointerId || !panelRef.current) return
+    d.dy = Math.max(0, e.clientY - d.y)
+    panelRef.current.style.transform = `translateY(${d.dy}px)`
+  }
+  const dragEnd = (e: React.PointerEvent<HTMLElement>) => {
+    const d = drag.current
+    if (!d || d.id !== e.pointerId) return
+    drag.current = null
+    const panel = panelRef.current
+    if (!panel) return
+    // Far enough, or a quick flick: let it go. Otherwise it settles back.
+    const flick = d.dy > 24 && d.dy / Math.max(1, e.timeStamp - d.t) > 0.5
+    if (e.type === 'pointerup' && !finishing && (d.dy > 90 || flick)) {
+      panel.style.transition = 'transform 180ms ease-in'
+      panel.style.transform = 'translateY(100%)'
+      window.setTimeout(onClose, 170)
+    } else {
+      panel.style.transition = 'transform 250ms var(--ease-soft)'
+      panel.style.transform = ''
+    }
+  }
+  const dragZone = {
+    onPointerDown: dragStart,
+    onPointerMove: dragMove,
+    onPointerUp: dragEnd,
+    onPointerCancel: dragEnd,
+  }
+
   if (!open) return null
 
   const pct = Math.min(100, Math.round((basket.total / campaign.rewardThreshold) * 100))
@@ -117,7 +170,7 @@ export default function BasketSheet({
   const hasValidBagName = bagName !== '' && isPrintableBagName(bagName)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6 md:short:p-1">
       <button
         type="button"
         aria-label="Close basket"
@@ -131,12 +184,24 @@ export default function BasketSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="basket-sheet-title"
-        className={`${wide ? 'animate-rise' : 'animate-slide-up'} relative flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-[1.75rem] bg-white shadow-lift md:rounded-card`}
+        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
+        /* short: a phone held sideways has room for barely one row, so the
+           whole panel scrolls there instead of only the list. */
+        className={`${wide ? 'animate-rise' : 'animate-slide-up'} relative flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-[1.75rem] bg-white shadow-lift md:rounded-card short:max-h-[calc(100dvh-0.5rem)] short:overflow-y-auto`}
       >
-        {/* Decorative drag handle: this is a sheet you can pull down. */}
-        <span aria-hidden="true" className="mx-auto mt-2.5 block h-1.5 w-10 shrink-0 rounded-pill bg-ink/15 md:hidden" />
+        {/* Drag handle: pull the sheet down by it (or the header) to close. */}
+        <span
+          aria-hidden="true"
+          {...dragZone}
+          className={`mx-auto block shrink-0 touch-none px-6 pb-1 pt-2.5 md:hidden ${dragTouch}`}
+        >
+          <span className="block h-1.5 w-10 rounded-pill bg-ink/15" />
+        </span>
 
-        <div className="flex items-center gap-3 border-b border-ink/10 px-5 pb-3 pt-3 md:pt-4">
+        <div
+          {...dragZone}
+          className={`flex touch-none items-center gap-3 border-b border-ink/10 px-5 pb-3 pt-2 md:touch-auto md:pt-4 ${dragTouch}`}
+        >
           <div className="min-w-0 flex-1">
             <h2 id="basket-sheet-title" className="font-display text-[19px] font-extrabold text-ink">
               Your basket
@@ -158,7 +223,7 @@ export default function BasketSheet({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-3">
+        <div className="flex-1 overflow-y-auto px-5 py-3 short:flex-none short:overflow-visible">
           {basket.lines.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
               <span aria-hidden="true" className="grid h-16 w-16 place-items-center rounded-pill bg-sky text-blue">
@@ -208,7 +273,7 @@ export default function BasketSheet({
           className="border-t border-ink/10 px-5 pt-3"
           style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
         >
-          <div className="h-2 w-full overflow-hidden rounded-pill bg-sky">
+          <div className="h-2 w-full overflow-hidden rounded-pill bg-sky short:hidden">
             <div
               className={`progress-fill h-full rounded-pill ${
                 basket.unlocked ? 'bg-gradient-to-r from-gold-soft to-gold' : 'bg-blue'
@@ -220,7 +285,7 @@ export default function BasketSheet({
             {basket.unlocked ? (
               !bagColor ? (
                 <>
-                  <span className="font-semibold text-gold">Gift unlocked.</span>{' '}
+                  <span className="font-semibold text-gold-ink">Gift unlocked.</span>{' '}
                   <button
                     type="button"
                     onClick={onGoToPersonalization}
@@ -231,12 +296,12 @@ export default function BasketSheet({
                 </>
               ) : hasValidBagName ? (
                 <>
-                  <span className="font-semibold text-gold">Gift unlocked</span> ·{' '}
+                  <span className="font-semibold text-gold-ink">Gift unlocked</span> ·{' '}
                   {bagColorLabel(bagColor)} bag personalized with &ldquo;{bagName}&rdquo;
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-gold">Gift unlocked</span> · {bagColorLabel(bagColor)} bag.{' '}
+                  <span className="font-semibold text-gold-ink">Gift unlocked</span> · {bagColorLabel(bagColor)} bag.{' '}
                   <button
                     type="button"
                     onClick={onGoToPersonalization}

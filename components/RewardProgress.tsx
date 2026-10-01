@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { campaign } from '@/data/campaign'
 import { peso } from '@/lib/format'
 import { GiftIcon } from './icons'
@@ -15,6 +16,31 @@ export default function RewardProgress({ total, remaining, unlocked }: Props) {
   // Rounded down, so ₱2,298 of ₱2,299 shows 99%, never a full bar while locked.
   const pct = unlocked ? 100 : Math.min(99, Math.floor((total / campaign.rewardThreshold) * 100))
 
+  // The bottle sways once, gently, when something is added or removed.
+  const bottleRef = useRef<HTMLSpanElement>(null)
+  const swayRef = useRef<Animation | null>(null)
+  const firstTotal = useRef(true)
+  useEffect(() => {
+    if (firstTotal.current) {
+      firstTotal.current = false
+      return
+    }
+    const el = bottleRef.current
+    if (!el?.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // Quick taps: let the sway that is playing finish instead of restarting it.
+    if (swayRef.current?.playState === 'running') return
+    swayRef.current = el.animate(
+      [
+        { transform: 'rotate(0deg)' },
+        { transform: 'rotate(-5deg)' },
+        { transform: 'rotate(3.5deg)' },
+        { transform: 'rotate(-1.5deg)' },
+        { transform: 'rotate(0deg)' },
+      ],
+      { duration: 700, easing: 'ease-out' }
+    )
+  }, [total])
+
   return (
     <section
       aria-labelledby="reward-progress-heading"
@@ -28,7 +54,9 @@ export default function RewardProgress({ total, remaining, unlocked }: Props) {
 
       <div className="flex items-center gap-4">
         {/* The bottle fills as she adds; the numbers beside it do the talking. */}
-        <BottleMeter pct={pct} unlocked={unlocked} className="shrink-0" />
+        <span ref={bottleRef} className="inline-block shrink-0" style={{ transformOrigin: '50% 92%' }}>
+          <BottleMeter pct={pct} unlocked={unlocked} />
+        </span>
 
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 font-display text-sm font-bold text-ink">
@@ -68,7 +96,7 @@ export default function RewardProgress({ total, remaining, unlocked }: Props) {
 
           <p className="mt-2 text-[13px] leading-snug text-ink-soft">
             {unlocked ? (
-              <span className="font-semibold text-gold">
+              <span className="font-semibold text-gold-ink">
                 You&rsquo;ve unlocked your {campaign.rewardShortName}.
               </span>
             ) : (

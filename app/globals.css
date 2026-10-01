@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Short screens: a phone held sideways. */
+@custom-variant short (@media (max-height: 480px));
+
 /* ---------------------------------------------------------------
    Biolane brand tokens — "Nursery Soft".
    Colours come from the live biolane.ph theme; the stage tints are the
@@ -18,7 +21,9 @@
   --color-blush: #ffe4db;      /* soft peach                           */
   --color-blush-soft: #fff4f1;
   --color-blush-deep: #e08b73; /* peach accent for borders / icons     */
-  --color-gold: #c8901b;       /* reward accent, AA on cream           */
+  --color-gold: #c8901b;       /* reward accent: icons, fills, bottle   */
+  --color-gold-ink: #876112;   /* gold TEXT: 5:1 on cream, 5.6:1 white  */
+  --color-gold-strong: #996e15;/* gold button: white text 4.6:1         */
   --color-gold-soft: #f2d456;
   --color-mint: #cfece7;
   --color-mint-soft: #edf8f5;
@@ -31,7 +36,6 @@
   --color-success: #2e7d32;    /* paid / saved — AA on white           */
   --color-success-deep: #256628;
   --color-success-soft: #e6f4ea;
-  --color-gold-deep: #ad7b14;  /* gold button hover                    */
   --color-danger: #b3261e;     /* errors — AA on white                 */
 
   --font-display: var(--font-nunito), ui-rounded, 'Segoe UI', system-ui, sans-serif;
@@ -59,10 +63,65 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 1rem;
+  /* Anything scrolled or tabbed into view stops above the fixed basket bar. */
+  scroll-padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  /* Keep room for the scrollbar, so opening the basket (which locks the
+     page scroll) doesn't shift everything sideways on Windows. */
+  scrollbar-gutter: stable;
   -webkit-text-size-adjust: 100%;
 }
 
+/* A refresh mid-checklist: hide the sign-up form the server sent until the
+   saved screen is back (set in app/layout.tsx, cleared by ChecklistApp).
+   If the scripts never run, the page shows itself after 8 s anyway, and a
+   quiet line of text appears if the wait passes 0.8 s. The !important lets
+   these beat the reduced-motion rule, which would otherwise skip the delays. */
+@keyframes restore-reveal { to { visibility: visible; } }
+@keyframes restore-cue-hide { to { visibility: hidden; } }
+html[data-restoring] main {
+  visibility: hidden;
+  animation: restore-reveal 0s linear 8s forwards !important;
+}
+html[data-restoring] body::after {
+  content: 'Loading your checklist…';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  font: 600 15px/1.4 var(--font-sans);
+  color: var(--color-ink-soft);
+  pointer-events: none;
+  visibility: hidden;
+  animation: restore-reveal 0s linear 0.8s forwards, restore-cue-hide 0s linear 8s forwards !important;
+}
+
+/* Laptop rail (ChecklistPage): fade the edge that has more to scroll to,
+   but never over the bag-name field she is typing in or a keyboard-focused
+   control. */
+@media (min-width: 1024px) {
+  #basket-status[data-fade='bottom'] {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 3.5rem), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 3.5rem), transparent);
+  }
+  #basket-status[data-fade='top'] {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 1.5rem);
+    mask-image: linear-gradient(to bottom, transparent, #000 1.5rem);
+  }
+  #basket-status[data-fade='both'] {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 1.5rem, #000 calc(100% - 3.5rem), transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 1.5rem, #000 calc(100% - 3.5rem), transparent);
+  }
+  #basket-status:has(#personalization:focus, :focus-visible) {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
 body {
+  /* Keeps the nursery backdrop (-z-10) above body's own background when the
+     open basket paints <html> (BasketSheet). */
+  isolation: isolate;
   background: var(--color-sky-soft);
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -101,10 +160,14 @@ button, a, input, label, select, [role='button'] {
    --------------------------------------------------------------- */
 /* Press: a small squeeze on tap. Transform only, so layout never moves. */
 .press {
-  transition: transform var(--duration-fast) var(--ease-soft), background-color var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast);
+  transition: transform var(--duration-fast) var(--ease-soft), translate var(--duration-fast) var(--ease-soft), background-color var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 .press:active:not(:disabled) { transform: scale(0.97); }
 .press-lg:active:not(:disabled) { transform: scale(0.985); }
+/* With a mouse, pressable things rise 1px under the pointer. */
+@media (hover: hover) and (pointer: fine) {
+  .press:hover:not(:disabled) { translate: 0 -1px; }
+}
 
 /* ---------------------------------------------------------------
    Entrances & state changes
@@ -154,6 +217,53 @@ button, a, input, label, select, [role='button'] {
   background-repeat: no-repeat;
   animation: sheen 1.5s ease-out 1 both;
 }
+
+/* ---------------------------------------------------------------
+   Depth: a little 3D, always short, never looping. Transform and
+   opacity only, so nothing shifts the layout; the reduced-motion rule
+   at the top switches all of it off.
+   --------------------------------------------------------------- */
+/* Product cards tilt a few degrees toward the mouse (components/useTilt.ts;
+   mouse and trackpad only, never on touch screens). The card's text column
+   sits above the light (z-[1]), so text and buttons keep their contrast. */
+[data-tilt] {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 450ms var(--ease-soft), border-color 200ms, box-shadow 200ms;
+}
+[data-tilt]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.25), transparent 55%);
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+}
+[data-tilt]:hover::after { opacity: 1; }
+
+/* A product's photo hops into the basket when it is added. */
+@keyframes hop {
+  0%   { transform: perspective(500px) translateY(0) rotateY(0deg); }
+  35%  { transform: perspective(500px) translateY(-6px) rotateY(-14deg); }
+  70%  { transform: perspective(500px) translateY(0) rotateY(6deg); }
+  100% { transform: perspective(500px) translateY(0) rotateY(0deg); }
+}
+.animate-hop { animation: hop 520ms var(--ease-soft); }
+
+/* The gift box and the claim-code ticket unfold toward her, once. */
+@keyframes unfold {
+  from { opacity: 0; transform: perspective(900px) rotateX(-14deg) translateY(14px); }
+  to   { opacity: 1; transform: perspective(900px) rotateX(0deg) translateY(0); }
+}
+.animate-unfold { animation: unfold 600ms var(--ease-soft) backwards; transform-origin: 50% 0; }
+
+/* A colour swatch turns over when it is chosen. */
+@keyframes flip-in {
+  from { transform: perspective(300px) rotateY(-180deg); }
+  to   { transform: perspective(300px) rotateY(0deg); }
+}
+.animate-flip { animation: flip-in 480ms var(--ease-soft) backwards; }
 
 /* Reward progress fills. */
 .progress-fill { transition: width 0.55s var(--ease-soft); }
