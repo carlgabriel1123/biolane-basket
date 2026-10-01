@@ -314,20 +314,21 @@ when the checklist is finished.
 
 **Archive.** On 2026-09-24 the 9 sign-ups made before the fair (tests and early
 sign-ups) were moved, not deleted, into `private.submissions_archive` (same
-columns plus `archived_at`) so the admin could start fresh. It is only
-reachable from the SQL Editor; the dashboard, CSV and sheet never read it.
-To bring them back:
+columns plus `archived_at`) so the admin could start fresh. On 2026-10-01 the
+19 team test sign-ups (Sep 24 to Oct 1) were moved there too, so the archive
+holds 28. It is only reachable from the SQL Editor; the dashboard, CSV and
+sheet never read it. To bring them back:
 
 ```sql
 begin;
 insert into public.submissions (submission_id, seq, event, submitted_at, received_at, updated_at,
   name, relationship, relationship_other, email, mobile, baby_stage, due_date, marketing_consent,
   selected_products, basket_total, reward_unlocked, personalization_name, write_key_hash, paid_at,
-  sheet_synced_at, tiktok, instagram, no_socials, first_name, last_name)
+  sheet_synced_at, tiktok, instagram, no_socials, first_name, last_name, bag_color)
 select submission_id, seq, event, submitted_at, received_at, updated_at,
   name, relationship, relationship_other, email, mobile, baby_stage, due_date, marketing_consent,
   selected_products, basket_total, reward_unlocked, personalization_name, write_key_hash, paid_at,
-  null, tiktok, instagram, no_socials, first_name, last_name
+  null, tiktok, instagram, no_socials, first_name, last_name, bag_color
 from private.submissions_archive a
 where not exists (select 1 from public.submissions s where s.submission_id = a.submission_id);
 delete from private.submissions_archive a
