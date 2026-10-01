@@ -427,7 +427,10 @@ export default function ChecklistPage({
           id="basket-status"
           tabIndex={-1}
           aria-label="Your basket status"
-          className="mt-7 flex flex-col gap-4 outline-none md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-8rem)] lg:w-full lg:self-start lg:overflow-y-auto lg:p-1.5"
+          /* *:shrink-0: on desktop this rail is capped at the screen height and
+             scrolls; without it the gift box (overflow-hidden) shrinks instead
+             and hides its own name field. */
+          className="mt-7 flex flex-col gap-4 outline-none *:shrink-0 md:mx-auto md:max-w-lg lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100dvh-8rem)] lg:w-full lg:self-start lg:overflow-y-auto lg:p-1.5"
         >
           <RewardProgress total={basket.total} remaining={basket.remaining} unlocked={basket.unlocked} />
 
