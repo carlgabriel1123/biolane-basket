@@ -4,7 +4,7 @@
  * (Node 22.18+ / 23.6+ strip the TypeScript annotations natively; see
  *  the "engines" field in package.json.)
  */
-import { normalisePhMobile, isPlausibleEmail, addDays, tidy, normaliseHandle } from '../lib/validate.ts'
+import { normalisePhMobile, isPlausibleEmail, addDays, tidy, normaliseHandle, isPrintableBagName, cleanBagName } from '../lib/validate.ts'
 import { greetingName } from '../lib/format.ts'
 
 let fail = 0
@@ -54,6 +54,18 @@ console.log('\nName tidying:')
 eq('trims',        tidy('  Sofia  '), 'Sofia')
 eq('collapses',    tidy('Maria   Clara'), 'Maria Clara')
 eq('keeps enye',   tidy(' Niña '), 'Niña')
+
+console.log('\nName on the gift bag (up to 3 letters):')
+eq('3 letters',              isPrintableBagName('Ana'), true)
+eq('1 letter',               isPrintableBagName('A'), true)
+eq('ñ and accents count as one letter each', JSON.stringify([isPrintableBagName('Niñ'), isPrintableBagName('Zo\u00e9'), isPrintableBagName('Zoe\u0301')]), '[true,true,true]')
+eq('4 letters refused',      isPrintableBagName('Anna'), false)
+eq('a long name refused',    isPrintableBagName('Sofia'), false)
+eq('a space refused',        isPrintableBagName('A B'), false)
+eq('numbers / symbols refused', JSON.stringify([isPrintableBagName('A1'), isPrintableBagName("A'B"), isPrintableBagName('A-B'), isPrintableBagName('😀')]), '[false,false,false,false]')
+eq('spaces around it are ignored', isPrintableBagName('  Bea '), true)
+eq('empty is fine (the name is optional)', isPrintableBagName(''), true)
+eq('saved trimmed, accents as one letter', JSON.stringify([cleanBagName(' Zoe\u0301 '), cleanBagName(' Zoe\u0301 ').length]), JSON.stringify(['Zo\u00e9', 3]))
 
 console.log('\nGreeting name:')
 eq('two-word first name', greetingName('maria clara'), 'Maria Clara')

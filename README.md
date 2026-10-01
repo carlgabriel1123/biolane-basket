@@ -11,7 +11,8 @@ A mom scans a QR at the booth and:
 2. **Builds her checklist** — the ₱2,299 reward is introduced here, and the
    products picked for her baby stage come first, everything else is folded under "See all". Each product has
    **Add**, then **− qty +**. Her total climbs toward ₱2,299 and unlocks a
-   free personalized toiletry bag.
+   free personalized toiletry bag: she picks Blue or Pink (required) and a
+   name of up to 3 letters (optional).
 3. **Shows the confirmation** to the Biolane team at the booth.
 
 Next.js 15 · TypeScript · Tailwind v4 · no external UI libraries.
@@ -209,7 +210,7 @@ hidden from search engines.
   claim code, name, Dad/Mom/Grandparent/Others, mobile (tap to call), email,
   TikTok / Instagram (tap to open the profile, or "No TikTok / Instagram"),
   baby stage, due date, consent, Signed up / Finished, basket total, gift
-  unlocked, bag name, and the products. Search by claim code, name, mobile,
+  unlocked, bag colour and name (e.g. "Pink bag “SOF”"), and the products. Search by claim code, name, mobile,
   email or username; filter by Unpaid, Paid, Gift unlocked, Finished, Signed up only or
   stage. Counts on top (always for all dates). Refreshes itself every 30 s.
 - **Date filter:** the date box next to the search lists every day that has
@@ -342,7 +343,7 @@ so always archive or restore with explicit column lists, never `select *`.
 Editor → `select * from submissions_readable order by submitted_manila desc;`
 then **Export → CSV**. The readable view shows claim code, status, Manila
 time, name, relationship, email, mobile, stage, due date, consent, total,
-reward, bag name, a one-line product list, TikTok / Instagram ("N/A" when
+reward, bag name, a one-line product list, bag colour, TikTok / Instagram ("N/A" when
 she ticked N/A), and first name / surname (empty for sign-ups from before
 the form asked for them separately).
 
@@ -385,7 +386,9 @@ show; older sign-ups have only the full name), relationship (and
 the "Others" text), email, mobile (normalised to `+639XXXXXXXXX`), TikTok and
 Instagram usernames (bare and lower-case, no @) or the N/A flag, baby stage,
 due date (only when Expecting), marketing consent, selected products with
-SKUs and prices, basket total, reward-unlocked flag, bag name.
+SKUs and prices, basket total, reward-unlocked flag, bag colour (blue / pink) and
+bag name (up to 3 letters). In the Google Sheet and the CSV the two share the
+"Bag name" column, e.g. "SOF · Pink".
 
 ## Analytics
 

@@ -73,3 +73,15 @@ export const relationships = [
 ] as const
 
 export type Relationship = (typeof relationships)[number]['value']
+
+/** Gift bag colours. Choosing one is required once the gift is unlocked. */
+export const bagColors = [
+  { value: 'blue', label: 'Blue' },
+  { value: 'pink', label: 'Pink' },
+] as const
+
+export type BagColor = (typeof bagColors)[number]['value']
+
+export const isBagColor = (v: unknown): v is BagColor => bagColors.some((c) => c.value === v)
+
+export const bagColorLabel = (v: BagColor): string => bagColors.find((c) => c.value === v)?.label ?? v

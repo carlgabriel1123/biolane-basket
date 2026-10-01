@@ -4,7 +4,7 @@
  */
 
 import type { AdminSubmission } from './admin-db'
-import { peso } from './format'
+import { peso } from './format.ts'
 
 export interface SheetRow {
   claimCode: string
@@ -79,6 +79,16 @@ const STAGE_LABEL: Record<string, string> = {
   others: 'Others',
 }
 
+const BAG_COLOR_LABEL: Record<string, string> = { blue: 'Blue', pink: 'Pink' }
+
+/**
+ * "SOF · Pink": the bag name and colour share the sheet's Bag name column,
+ * so the sheet script doesn't need a new column.
+ */
+function bagCell(name: string | null, color: string | null): string {
+  return [name ?? '', color ? (BAG_COLOR_LABEL[color] ?? color) : ''].filter(Boolean).join(' · ')
+}
+
 const RELATIONSHIP_LABEL: Record<string, string> = {
   dad: 'Dad',
   mom: 'Mom',
@@ -133,7 +143,7 @@ export function toSheetRow(s: AdminSubmission): SheetRow {
     consent: s.marketing_consent ? 'Yes' : 'No',
     basketTotal: s.basket_total,
     giftUnlocked: s.reward_unlocked ? 'Yes' : 'No',
-    bagName: formulaSafe(s.personalization_name ?? ''),
+    bagName: formulaSafe(bagCell(s.personalization_name, s.bag_color)),
     products: formulaSafe(productLines(s.selected_products)),
     paid: s.paid_at ? 'Yes' : 'No',
     paidAt: formatManila(s.paid_at),

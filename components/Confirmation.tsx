@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { campaign } from '@/data/campaign'
+import { bagColorLabel, campaign } from '@/data/campaign'
 import { asset } from '@/lib/asset'
 import { greetingName, peso } from '@/lib/format'
 import type { Submission } from '@/lib/submission'
@@ -104,6 +104,17 @@ export default function Confirmation({ submission, storedRemotely, onStartOver }
           <p className="mt-3 font-display text-[15px] font-extrabold uppercase tracking-wide text-gold">
             {campaign.rewardShortName} unlocked
           </p>
+          {submission.bagColor && (
+            <p className="mt-3 flex items-center justify-center gap-2 font-display text-[17px] font-extrabold text-ink">
+              <span
+                aria-hidden="true"
+                className={`h-5 w-5 rounded-full ring-2 ring-white ${
+                  submission.bagColor === 'pink' ? 'bg-bag-pink' : 'bg-bag-blue'
+                }`}
+              />
+              {bagColorLabel(submission.bagColor)} bag
+            </p>
+          )}
           {submission.personalizationName && (
             <>
               <p className="mt-3 text-[11px] uppercase tracking-wide text-ink-soft/90">

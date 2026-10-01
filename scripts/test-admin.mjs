@@ -59,7 +59,7 @@ const sub = {
   name: 'Maria "Yaya" Santos', relationship: 'others', relationship_other: 'Tita', email: 'maria@example.com', mobile: '+639171234567',
   baby_stage: 'baby', due_date: null, marketing_consent: true,
   selected_products: [{ id: 'pure-h2o-750', name: 'Pure H2O', size: '750ml', gbfSku: '10347447', price: 960, qty: 2, lineTotal: 1920 }, { id: 'sunstick', name: 'Baby Sunstick SPF 50+', size: '', gbfSku: '10339125', price: 845, qty: 1, lineTotal: 845 }],
-  basket_total: 2765, reward_unlocked: true, personalization_name: 'Sofia', paid_at: '2026-10-08T07:00:00.000Z', sheet_synced_at: null,
+  basket_total: 2765, reward_unlocked: true, personalization_name: 'SOF', bag_color: 'pink', paid_at: '2026-10-08T07:00:00.000Z', sheet_synced_at: null,
   tiktok: 'maria.s', instagram: null, no_socials: false,
 }
 const row = toSheetRow(sub)
@@ -78,6 +78,10 @@ eq('hostile name cannot become a formula in the sheet or CSV', toSheetRow({ ...s
 eq('odd mobile falls back safely', localMobile('12345'), '12345')
 eq('unpaid columns', [toSheetRow({ ...sub, paid_at: null }).paid, toSheetRow({ ...sub, paid_at: null }).paidAt], ['No', ''])
 eq('null due date is blank', row.dueDate, '')
+eq('bag name and colour share the Bag name column', row.bagName, 'SOF · Pink')
+eq('colour only', toSheetRow({ ...sub, personalization_name: null, bag_color: 'blue' }).bagName, 'Blue')
+eq('name only (signed up before colours existed)', toSheetRow({ ...sub, bag_color: null }).bagName, 'SOF')
+eq('neither', toSheetRow({ ...sub, personalization_name: null, bag_color: null }).bagName, '')
 eq('TikTok only: username, Instagram blank', [row.tiktok, row.instagram], ['maria.s', ''])
 const none = toSheetRow({ ...sub, tiktok: null, no_socials: true })
 eq('N/A shown in both columns', [none.tiktok, none.instagram], ['N/A', 'N/A'])

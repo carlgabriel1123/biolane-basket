@@ -8,7 +8,7 @@ import BasketBar from '@/components/BasketBar'
 import BasketSheet from '@/components/BasketSheet'
 import NurseryBackdrop from '@/components/NurseryBackdrop'
 import { socialsFor, type CommunityValues, type Social } from '@/components/CommunityForm'
-import { campaign, relationships, type BabyStage, type Relationship } from '@/data/campaign'
+import { campaign, isBagColor, relationships, type BabyStage, type BagColor, type Relationship } from '@/data/campaign'
 import { indexCatalog, type Catalog, type Product } from '@/data/products'
 import { stagePlans } from '@/data/stages'
 import {
@@ -28,7 +28,7 @@ import {
   type Submission,
 } from '@/lib/submission'
 import { greetingName } from '@/lib/format'
-import { isPrintableBagName, normalisePhMobile, tidy } from '@/lib/validate'
+import { cleanBagName, isPrintableBagName, normalisePhMobile, tidy } from '@/lib/validate'
 
 /**
  * The interactive part of the page. app/page.tsx renders it on the server
@@ -76,6 +76,7 @@ interface SavedSession {
   draft: CommunityValues
   quantities: Quantities
   personalizationName: string
+  bagColor?: BagColor | ''
   submissionId: string | null
   /** Never displayed; proves later saves come from this phone. */
   writeKey: string | null
@@ -140,6 +141,9 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
   const [draft, setDraft] = useState<CommunityValues>(EMPTY_FORM)
   const [quantities, setQuantities] = useState<Quantities>({})
   const [personalizationName, setPersonalizationName] = useState('')
+  const [bagColor, setBagColor] = useState<BagColor | ''>('')
+  // Set when she tries to finish without a colour; the picker then says why.
+  const [bagColorMissing, setBagColorMissing] = useState(false)
   const [submissionId, setSubmissionId] = useState<string | null>(null)
   const [writeKey, setWriteKey] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -191,6 +195,7 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
         setDraft(saved.draft ? cleanForm(saved.draft) : savedForm)
         setQuantities(sanitiseQuantities(saved.quantities, indexRef.current.productById))
         if (typeof saved.personalizationName === 'string') setPersonalizationName(saved.personalizationName)
+        if (isBagColor(saved.bagColor)) setBagColor(saved.bagColor)
         if (saved.step === 'done' && saved.result?.submission) {
           setResult(saved.result)
           setSubmissionId(saved.result.submission.submissionId)
@@ -268,6 +273,7 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
         draft,
         quantities,
         personalizationName,
+        bagColor,
         submissionId,
         writeKey,
         result: step === 'done' ? result : null,
@@ -276,7 +282,7 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
     } catch {
       /* storage unavailable — everything still works in memory */
     }
-  }, [hydrated, step, form, draft, quantities, personalizationName, submissionId, writeKey, result])
+  }, [hydrated, step, form, draft, quantities, personalizationName, bagColor, submissionId, writeKey, result])
 
   /* ---------------- analytics ---------------- */
   useEffect(() => {
@@ -292,7 +298,7 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
   /* ---------------- building the record ---------------- */
   const buildSubmission = useCallback(
     (id: string, key: string, event: Submission['event'], values: CommunityValues): Submission => {
-      const bagName = tidy(personalizationName)
+      const bagName = cleanBagName(personalizationName)
       return {
         submissionId: id,
         writeKey: key,
@@ -326,9 +332,10 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
         ...(basket.unlocked && bagName && isPrintableBagName(bagName)
           ? { personalizationName: bagName }
           : {}),
+        ...(basket.unlocked && bagColor ? { bagColor } : {}),
       }
     },
-    [basket, personalizationName]
+    [basket, personalizationName, bagColor]
   )
 
   /* ---------------- actions ---------------- */
@@ -399,19 +406,38 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
     else setSheetOpen(false)
   }, [])
 
+  // Take her to the gift details: the colour first if it isn't chosen yet,
+  // otherwise the name on the bag.
   const goToPersonalization = useCallback(() => {
     closeBasket()
+    const needsColor = !bagColor
     // Wait for the sheet to unmount and the scroll lock to lift.
     window.setTimeout(() => {
-      const input = document.getElementById('personalization')
-      input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      input?.focus({ preventScroll: true })
+      const target = needsColor
+        ? document.querySelector<HTMLElement>('input[name="bag-color"]')
+        : document.getElementById('personalization')
+      ;(needsColor ? document.getElementById('bag-color-group') : target)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+      target?.focus({ preventScroll: true })
     }, 150)
-  }, [closeBasket])
+  }, [closeBasket, bagColor])
+
+  const chooseBagColor = useCallback((color: BagColor) => {
+    setBagColor(color)
+    setBagColorMissing(false)
+  }, [])
 
   const handleFinish = useCallback(async () => {
     if (finishingRef.current || basket.count === 0 || !submissionId || !writeKey) return
-    // A bag name the vendor can't print: send her back to fix it first.
+    // The gift needs a bag colour, and a name the bag can take: send her
+    // back to fix either first.
+    if (basket.unlocked && !bagColor) {
+      setBagColorMissing(true)
+      goToPersonalization()
+      return
+    }
     if (basket.unlocked && personalizationName.trim() && !isPrintableBagName(personalizationName)) {
       goToPersonalization()
       return
@@ -426,7 +452,7 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
     setResult({ submission, storedRemotely })
     setSheetOpen(false)
     goTo('done')
-  }, [basket, submissionId, writeKey, personalizationName, buildSubmission, form, goTo, goToPersonalization])
+  }, [basket, submissionId, writeKey, personalizationName, bagColor, buildSubmission, form, goTo, goToPersonalization])
 
   const handleStartOver = useCallback(() => {
     if (finishingRef.current) return
@@ -442,6 +468,8 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
     setDraft(EMPTY_FORM)
     setQuantities({})
     setPersonalizationName('')
+    setBagColor('')
+    setBagColorMissing(false)
     setSubmissionId(null)
     setWriteKey(null)
     joinedRef.current = false
@@ -483,6 +511,9 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
           suggestion={suggestion}
           personalizationName={personalizationName}
           onPersonalizationChange={setPersonalizationName}
+          bagColor={bagColor}
+          onBagColorChange={chooseBagColor}
+          bagColorMissing={bagColorMissing}
           onChangeQty={changeQty}
           onChangeStage={changeStage}
           onOpenBasket={openBasket}
@@ -500,6 +531,7 @@ export default function ChecklistApp({ catalog }: { catalog: Catalog }) {
           open={sheetOpen}
           basket={basket}
           personalizationName={personalizationName}
+          bagColor={bagColor}
           finishing={finishing}
           onChange={changeQty}
           onClose={closeBasket}

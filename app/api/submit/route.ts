@@ -1,7 +1,8 @@
 import { NextResponse, after } from 'next/server'
 import type { AdminSubmission } from '@/lib/admin-db'
 import { sheetConfigured, syncToSheet } from '@/lib/sheets'
-import { normaliseHandle } from '@/lib/validate'
+import { isBagColor } from '@/data/campaign'
+import { cleanBagName, isPrintableBagName, normaliseHandle } from '@/lib/validate'
 
 /**
  * POST /api/submit — saves one sign-up / finished checklist to Supabase.
@@ -104,6 +105,7 @@ function clean(raw: Record<string, unknown>) {
     basketTotal: money(raw.basketTotal) ?? 0,
     rewardUnlocked: bool(raw.rewardUnlocked),
     personalizationName: str(raw.personalizationName, 15),
+    bagColor: isBagColor(raw.bagColor) ? raw.bagColor : undefined,
   }
 }
 
@@ -176,6 +178,12 @@ export async function POST(request: Request) {
   record.tiktok = record.tiktok ? normaliseHandle(record.tiktok)! : undefined
   record.instagram = record.instagram ? normaliseHandle(record.instagram)! : undefined
   record.noSocials = record.noSocials && !record.tiktok && !record.instagram
+
+  // The bag takes up to 3 letters. A name it can't take (e.g. from a phone
+  // still running an older version) is left off rather than refusing the
+  // whole record, so the sign-up and basket are never lost.
+  const bagName = record.personalizationName ? cleanBagName(record.personalizationName) : ''
+  record.personalizationName = bagName && isPrintableBagName(bagName) ? bagName : undefined
 
   let res: Response
   try {

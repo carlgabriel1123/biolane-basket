@@ -219,6 +219,7 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
         r.email.toLowerCase().includes(q) ||
         (digits.length >= 3 && r.mobile.replace(/\D/g, '').includes(digits)) ||
         (r.personalization_name ?? '').toLowerCase().includes(q) ||
+        (r.bag_color ?? '') === q ||
         (handle.length >= 2 && [r.tiktok, r.instagram].some((h) => h?.includes(handle)))
       )
     })
@@ -585,7 +586,21 @@ export default function Dashboard({ username, sheetConfigured }: Props) {
                     ) : (
                       ' · no marketing'
                     )}
-                    {r.personalization_name ? ` · bag: ${r.personalization_name}` : ''}
+                    {(r.bag_color || r.personalization_name) && (
+                      <>
+                        {' · '}
+                        {r.bag_color && (
+                          <span
+                            aria-hidden="true"
+                            className={`-mt-0.5 mr-1 inline-block h-2.5 w-2.5 rounded-full align-middle ${
+                              r.bag_color === 'pink' ? 'bg-bag-pink' : 'bg-bag-blue'
+                            }`}
+                          />
+                        )}
+                        {r.bag_color ? `${r.bag_color === 'pink' ? 'Pink' : 'Blue'} bag` : 'bag'}
+                        {r.personalization_name ? ` “${r.personalization_name}”` : r.bag_color ? ', no name' : ''}
+                      </>
+                    )}
                   </p>
                   {r.selected_products.length > 0 && (
                     <button

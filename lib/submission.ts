@@ -1,4 +1,4 @@
-import type { BabyStage, Relationship } from '../data/campaign.ts'
+import type { BabyStage, BagColor, Relationship } from '../data/campaign.ts'
 
 /** The sign-up details from the first screen. */
 export interface LeadInfo {
@@ -54,6 +54,8 @@ export interface Submission extends LeadInfo {
   basketTotal: number
   rewardUnlocked: boolean
   personalizationName?: string
+  /** Gift bag colour; sent once the gift is unlocked. */
+  bagColor?: BagColor
 }
 
 interface StoredSubmission extends Submission {

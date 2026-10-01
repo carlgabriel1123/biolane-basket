@@ -63,12 +63,22 @@ export function normaliseHandle(raw: string): string | null {
   return /^[A-Za-z0-9._]{1,30}$/.test(v) ? v.toLowerCase() : null
 }
 
-/** Letters (any language, incl. ñ and accents), spaces, apostrophes, hyphens. */
-const BAG_NAME_ALLOWED = /^[\p{L}\p{M}\s'\-]*$/u
+/** The most letters the gift bag can be personalized with. */
+export const BAG_NAME_MAX_LETTERS = 3
 
-/** True if the bag vendor can print this name. Empty counts as printable. */
+/** The bag name as saved: trimmed, with accents as one letter ("é", not e + ◌́). */
+export function cleanBagName(value: string): string {
+  return value.trim().normalize('NFC')
+}
+
+/**
+ * True if the bag can be personalized with this: up to 3 letters (any
+ * language, ñ and accents included), no spaces, numbers or symbols.
+ * Empty counts as printable (the name is optional).
+ */
 export function isPrintableBagName(value: string): boolean {
-  return BAG_NAME_ALLOWED.test(value)
+  const v = cleanBagName(value)
+  return [...v].length <= BAG_NAME_MAX_LETTERS && /^\p{L}*$/u.test(v)
 }
 
 /** Collapse whitespace and trim — used before storing any typed name. */

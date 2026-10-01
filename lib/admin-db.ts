@@ -28,6 +28,8 @@ export interface AdminSubmission {
   basket_total: number
   reward_unlocked: boolean
   personalization_name: string | null
+  /** Gift bag colour, once the gift is unlocked. */
+  bag_color: 'blue' | 'pink' | null
   paid_at: string | null
   sheet_synced_at: string | null
   /** Bare lower-case usernames; null when not given. */

@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
-import { campaign, type BabyStage } from '@/data/campaign'
+import { bagColorLabel, campaign, type BabyStage, type BagColor } from '@/data/campaign'
 import type { BasketState } from '@/lib/basket'
 import { asset } from '@/lib/asset'
 import { peso } from '@/lib/format'
@@ -15,11 +15,13 @@ interface Props {
   open: boolean
   basket: BasketState
   personalizationName: string
+  /** Gift bag colour, '' until she chooses. */
+  bagColor: BagColor | ''
   finishing: boolean
   onChange: (id: string, qty: number) => void
   onClose: () => void
   onFinish: () => void
-  /** Close the sheet and take her to the bag-name field. */
+  /** Close the sheet and take her to the bag colour, or the bag name. */
   onGoToPersonalization: () => void
   /** Tints the line-item thumbnails with her stage's colour. */
   stage?: BabyStage
@@ -47,6 +49,7 @@ export default function BasketSheet({
   open,
   basket,
   personalizationName,
+  bagColor,
   finishing,
   onChange,
   onClose,
@@ -215,14 +218,25 @@ export default function BasketSheet({
           </div>
           <p className="mt-2 text-[12.5px] text-ink-soft">
             {basket.unlocked ? (
-              hasValidBagName ? (
+              !bagColor ? (
                 <>
-                  <span className="font-semibold text-gold">Gift unlocked</span> · bag
-                  personalized with &ldquo;{bagName}&rdquo;
+                  <span className="font-semibold text-gold">Gift unlocked.</span>{' '}
+                  <button
+                    type="button"
+                    onClick={onGoToPersonalization}
+                    className="inline-flex min-h-[44px] items-center font-semibold text-blue underline underline-offset-2"
+                  >
+                    Choose your bag color
+                  </button>
+                </>
+              ) : hasValidBagName ? (
+                <>
+                  <span className="font-semibold text-gold">Gift unlocked</span> ·{' '}
+                  {bagColorLabel(bagColor)} bag personalized with &ldquo;{bagName}&rdquo;
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-gold">Gift unlocked.</span>{' '}
+                  <span className="font-semibold text-gold">Gift unlocked</span> · {bagColorLabel(bagColor)} bag.{' '}
                   <button
                     type="button"
                     onClick={onGoToPersonalization}

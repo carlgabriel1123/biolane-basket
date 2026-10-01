@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { babyStages, campaign, type BabyStage } from '@/data/campaign'
+import { babyStages, campaign, type BabyStage, type BagColor } from '@/data/campaign'
 import { isPriced, productGroups, type Catalog, type CatalogIndex, type CatalogItem } from '@/data/products'
 import { stagePlans } from '@/data/stages'
 import type { BasketState, Quantities, Suggestion } from '@/lib/basket'
@@ -25,6 +25,10 @@ interface Props {
   suggestion: Suggestion
   personalizationName: string
   onPersonalizationChange: (value: string) => void
+  bagColor: BagColor | ''
+  onBagColorChange: (color: BagColor) => void
+  /** She tried to finish without choosing a colour. */
+  bagColorMissing: boolean
   onChangeQty: (id: string, qty: number) => void
   onChangeStage: (stage: BabyStage) => void
   onOpenBasket: () => void
@@ -42,6 +46,9 @@ export default function ChecklistPage({
   suggestion,
   personalizationName,
   onPersonalizationChange,
+  bagColor,
+  onBagColorChange,
+  bagColorMissing,
   onChangeQty,
   onChangeStage,
   onOpenBasket,
@@ -435,7 +442,13 @@ export default function ChecklistPage({
           )}
 
           {basket.unlocked && (
-            <RewardUnlocked personalizationName={personalizationName} onChangeName={onPersonalizationChange} />
+            <RewardUnlocked
+              personalizationName={personalizationName}
+              onChangeName={onPersonalizationChange}
+              bagColor={bagColor}
+              onChangeColor={onBagColorChange}
+              colorMissing={bagColorMissing}
+            />
           )}
 
           <Button variant="secondary" full onClick={onOpenBasket}>
